@@ -90,6 +90,19 @@ export function RoleFormPage() {
         {isNew ? 'Нова роль' : 'Редагування ролі'}
       </NavBar>
 
+      {isSystem && (
+        <div style={{
+          margin: '12px 12px 0',
+          padding: '10px 14px',
+          background: 'var(--color-primary-bg)',
+          borderRadius: 'var(--radius-md)',
+          color: 'var(--color-primary-dark)',
+          fontSize: 13,
+        }}>
+          Системна роль — перегляд без можливості редагування
+        </div>
+      )}
+
       <Form layout="vertical" style={{ '--border-inner': 'none' } as React.CSSProperties}>
 
         {/* Name */}

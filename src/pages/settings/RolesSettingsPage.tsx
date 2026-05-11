@@ -63,20 +63,11 @@ export function RolesSettingsPage() {
           {roles.map((role) => (
             <List.Item
               key={role.id}
-              prefix={
-                <div style={{
-                  width: 12, height: 12, borderRadius: '50%',
-                  background: role.color, flexShrink: 0,
-                  boxShadow: `0 0 0 3px ${role.color}33`,
-                }} />
-              }
               description={
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2 }}>
-                  {role.description && <span style={{ color: 'var(--color-text-secondary)', fontSize: 12 }}>{role.description}</span>}
-                  {role.isSystem && <span style={{ fontSize: 11, color: 'var(--color-primary)', background: 'var(--color-primary-bg)', padding: '1px 6px', borderRadius: 4 }}>Системна</span>}
-                  {role.isDefault && <span style={{ fontSize: 11, color: 'var(--color-success)', background: 'var(--color-success-bg)', padding: '1px 6px', borderRadius: 4 }}>За замовч.</span>}
-                  <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>{role.userCount} користувачів</span>
-                </div>
+                <span style={{ color: 'var(--color-text-tertiary)', fontSize: 12 }}>
+                  {role.userCount} користувачів
+                  {role.description ? ` · ${role.description}` : ''}
+                </span>
               }
               extra={
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -101,7 +92,7 @@ export function RolesSettingsPage() {
                 </div>
               }
             >
-              {role.name}
+              <span style={{ color: role.color, fontWeight: 600 }}>{role.name}</span>
             </List.Item>
           ))}
         </List>
