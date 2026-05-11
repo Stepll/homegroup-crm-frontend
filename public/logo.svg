@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <clipPath id="innerCircle">
+      <circle cx="100" cy="100" r="82"/>
+    </clipPath>
+  </defs>
+
+  <!-- Outer teal circle -->
+  <circle cx="100" cy="100" r="100" fill="#2AAFCA"/>
+  <!-- White inner circle -->
+  <circle cx="100" cy="100" r="82" fill="white"/>
+
+  <!-- Church silhouette clipped to white circle -->
+  <g clip-path="url(#innerCircle)">
+    <!-- Cross: vertical bar -->
+    <rect x="96.5" y="17" width="7" height="26" rx="2" fill="#2AAFCA"/>
+    <!-- Cross: horizontal bar -->
+    <rect x="84.5" y="26" width="31" height="7" rx="2" fill="#2AAFCA"/>
+
+    <!-- Central spire (triangle) -->
+    <polygon points="100,42 88,75 112,75" fill="#2AAFCA"/>
+    <!-- Central nave body -->
+    <rect x="88" y="75" width="24" height="96" fill="#2AAFCA"/>
+
+    <!-- Left wing: slanted top + vertical body -->
+    <polygon points="88,75 50,91 50,171 88,171" fill="#2AAFCA"/>
+    <!-- Right wing: slanted top + vertical body -->
+    <polygon points="112,75 150,91 150,171 112,171" fill="#2AAFCA"/>
+
+    <!-- Left stained glass diamond (white cutout) -->
+    <polygon points="69,117 50,136 69,155 88,136" fill="white"/>
+    <!-- Right stained glass diamond (white cutout) -->
+    <polygon points="131,117 150,136 131,155 112,136" fill="white"/>
+  </g>
+</svg>

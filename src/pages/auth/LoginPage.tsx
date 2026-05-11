@@ -1,18 +1,28 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Toast, NavBar } from 'antd-mobile'
+import { Button, Toast } from 'antd-mobile'
+import { EyeInvisibleOutline, EyeOutline } from 'antd-mobile-icons'
 import { authApi } from '@/api/auth'
 import { useAuth } from '@/store/auth'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [focused, setFocused] = useState<'email' | 'password' | null>(null)
 
-  const onFinish = async (values: { email: string; password: string }) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email || !password) {
+      Toast.show({ content: 'Заповніть усі поля', icon: 'fail' })
+      return
+    }
     setLoading(true)
     try {
-      const data = await authApi.login(values.email, values.password)
+      const data = await authApi.login(email, password)
       login(data)
       navigate('/', { replace: true })
     } catch {
@@ -22,24 +32,182 @@ export function LoginPage() {
     }
   }
 
+  const fieldStyle = (name: 'email' | 'password'): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    border: `1.5px solid ${focused === name ? 'var(--color-primary)' : 'var(--color-border)'}`,
+    borderRadius: 'var(--radius-md)',
+    padding: '11px 14px',
+    background: focused === name ? '#fff' : '#F9FAFB',
+    transition: 'border-color 0.18s, background 0.18s',
+  })
+
   return (
-    <div>
-      <NavBar back={null}>HomeGroup CRM</NavBar>
-      <div style={{ padding: '24px 16px' }}>
-        <h2 style={{ marginBottom: 24, textAlign: 'center' }}>Вхід</h2>
-        <Form onFinish={onFinish} layout="vertical" footer={
-          <Button block type="submit" color="primary" size="large" loading={loading}>
+    <div style={{
+      minHeight: '100dvh',
+      background: 'linear-gradient(155deg, #074F63 0%, #0E7A96 40%, #2AAFCA 75%, #46C8DC 100%)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px 16px',
+    }}>
+
+      {/* Card */}
+      <div style={{
+        width: '100%',
+        maxWidth: 400,
+        background: 'white',
+        borderRadius: 'var(--radius-2xl)',
+        padding: '40px 28px 32px',
+        boxShadow: 'var(--shadow-xl)',
+      }}>
+
+        {/* Logo */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+          <img
+            src="/logo.svg"
+            alt="Philad Homegroup"
+            style={{ width: 88, height: 88, display: 'block' }}
+          />
+        </div>
+
+        {/* Title */}
+        <h1 style={{
+          margin: '0 0 6px',
+          textAlign: 'center',
+          fontSize: 'var(--font-xl)',
+          fontWeight: 700,
+          color: 'var(--color-text)',
+          letterSpacing: '-0.02em',
+        }}>
+          Philad Homegroup CRM
+        </h1>
+        <p style={{
+          margin: '0 0 32px',
+          textAlign: 'center',
+          fontSize: 'var(--font-sm)',
+          color: 'var(--color-text-secondary)',
+        }}>
+          Управління домашніми групами
+        </p>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} noValidate>
+
+          {/* Email */}
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <label style={{
+              display: 'block',
+              fontSize: 'var(--font-sm)',
+              fontWeight: 600,
+              color: 'var(--color-text)',
+              marginBottom: 'var(--space-2)',
+            }}>
+              Email
+            </label>
+            <div style={fieldStyle('email')}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setFocused('email')}
+                onBlur={() => setFocused(null)}
+                placeholder="your@email.com"
+                autoComplete="email"
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: 'var(--font-base)',
+                  color: 'var(--color-text)',
+                  padding: 0,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Password */}
+          <div style={{ marginBottom: 'var(--space-6)' }}>
+            <label style={{
+              display: 'block',
+              fontSize: 'var(--font-sm)',
+              fontWeight: 600,
+              color: 'var(--color-text)',
+              marginBottom: 'var(--space-2)',
+            }}>
+              Пароль
+            </label>
+            <div style={fieldStyle('password')}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setFocused('password')}
+                onBlur={() => setFocused(null)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: 'var(--font-base)',
+                  color: 'var(--color-text)',
+                  padding: 0,
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  color: 'var(--color-text-tertiary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: 18,
+                }}
+              >
+                {showPassword ? <EyeOutline /> : <EyeInvisibleOutline />}
+              </button>
+            </div>
+          </div>
+
+          {/* Submit */}
+          <Button
+            type="submit"
+            block
+            loading={loading}
+            style={{
+              '--background-color': 'var(--color-primary)',
+              '--border-color': 'var(--color-primary)',
+              '--text-color': '#fff',
+              '--border-radius': 'var(--radius-md)',
+              height: '48px',
+              fontSize: 'var(--font-base)',
+              fontWeight: 600,
+              letterSpacing: '0.01em',
+            } as React.CSSProperties}
+          >
             Увійти
           </Button>
-        }>
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-            <Input type="email" placeholder="your@email.com" />
-          </Form.Item>
-          <Form.Item name="password" label="Пароль" rules={[{ required: true, min: 6 }]}>
-            <Input type="password" placeholder="••••••" />
-          </Form.Item>
-        </Form>
+        </form>
       </div>
+
+      {/* Footer */}
+      <p style={{
+        marginTop: 'var(--space-6)',
+        fontSize: 'var(--font-xs)',
+        color: 'rgba(255,255,255,0.45)',
+        letterSpacing: '0.04em',
+      }}>
+        PHILAD CHURCH · HOMEGROUP CRM
+      </p>
     </div>
   )
 }
