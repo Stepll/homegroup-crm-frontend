@@ -8,28 +8,35 @@
   <!-- Outer teal circle -->
   <circle cx="100" cy="100" r="100" fill="#2AAFCA"/>
   <!-- White inner circle -->
-  <circle cx="100" cy="100" r="82" fill="white"/>
+  <circle cx="100" cy="100" r="82" fill="#FFFFFF"/>
 
-  <!-- Church silhouette clipped to white circle -->
   <g clip-path="url(#innerCircle)">
-    <!-- Cross: vertical bar -->
-    <rect x="96.5" y="17" width="7" height="26" rx="2" fill="#2AAFCA"/>
-    <!-- Cross: horizontal bar -->
-    <rect x="84.5" y="26" width="31" height="7" rx="2" fill="#2AAFCA"/>
+    <!-- Cross at top -->
+    <rect x="96" y="22" width="8" height="24" rx="1.5" fill="#2AAFCA"/>
+    <rect x="86" y="28" width="28" height="8" rx="1.5" fill="#2AAFCA"/>
 
-    <!-- Central spire (triangle) -->
-    <polygon points="100,42 88,75 112,75" fill="#2AAFCA"/>
-    <!-- Central nave body -->
-    <rect x="88" y="75" width="24" height="96" fill="#2AAFCA"/>
+    <!-- Main church silhouette: spire + sloped shoulders + side towers -->
+    <path fill="#2AAFCA" d="
+      M 100 46
+      L 87 70
+      L 87 92
+      L 48 104
+      L 48 174
+      L 152 174
+      L 152 104
+      L 113 92
+      L 113 70
+      Z
+    "/>
 
-    <!-- Left wing: slanted top + vertical body -->
-    <polygon points="88,75 50,91 50,171 88,171" fill="#2AAFCA"/>
-    <!-- Right wing: slanted top + vertical body -->
-    <polygon points="112,75 150,91 150,171 112,171" fill="#2AAFCA"/>
+    <!-- Left stained glass window (rhombus with cross panes) -->
+    <polygon points="70,118 53,138 70,158 87,138" fill="#FFFFFF"/>
+    <line x1="70" y1="118" x2="70" y2="158" stroke="#2AAFCA" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="53" y1="138" x2="87" y2="138" stroke="#2AAFCA" stroke-width="2.5" stroke-linecap="round"/>
 
-    <!-- Left stained glass diamond (white cutout) -->
-    <polygon points="69,117 50,136 69,155 88,136" fill="white"/>
-    <!-- Right stained glass diamond (white cutout) -->
-    <polygon points="131,117 150,136 131,155 112,136" fill="white"/>
+    <!-- Right stained glass window -->
+    <polygon points="130,118 113,138 130,158 147,138" fill="#FFFFFF"/>
+    <line x1="130" y1="118" x2="130" y2="158" stroke="#2AAFCA" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="113" y1="138" x2="147" y2="138" stroke="#2AAFCA" stroke-width="2.5" stroke-linecap="round"/>
   </g>
 </svg>
