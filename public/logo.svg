@@ -5,10 +5,7 @@
     </clipPath>
   </defs>
 
-  <!-- Outer teal background circle -->
-  <circle cx="640" cy="640" r="400" fill="#2AAFCA"/>
-
-  <!-- Inner teal disc — the church silhouette will show through where the white "frame" path leaves a hole -->
+  <!-- Teal disc — the church silhouette will show through where the white "frame" path leaves a hole -->
   <circle cx="640" cy="640" r="320" fill="#2AAFCA"/>
 
   <!-- White overlay (vectorized): square frame with church-shaped hole, clipped to circle -->

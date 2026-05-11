@@ -69,7 +69,7 @@ export function LoginPage() {
           <img
             src="/logo.svg"
             alt="Philad Homegroup"
-            style={{ width: 88, height: 88, display: 'block' }}
+            style={{ width: 120, height: 120, display: 'block' }}
           />
         </div>
 
