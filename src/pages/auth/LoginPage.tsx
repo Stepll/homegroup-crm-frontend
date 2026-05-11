@@ -60,16 +60,16 @@ export function LoginPage() {
         maxWidth: 400,
         background: 'white',
         borderRadius: 'var(--radius-2xl)',
-        padding: '40px 28px 32px',
+        padding: '20px 28px 20px',
         boxShadow: 'var(--shadow-xl)',
       }}>
 
         {/* Logo */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
           <img
             src="/logo.svg"
             alt="Philad Homegroup"
-            style={{ width: 120, height: 120, display: 'block' }}
+            style={{ width: 200, height: 200, display: 'block' }}
           />
         </div>
 
@@ -85,7 +85,7 @@ export function LoginPage() {
           Philad Homegroup CRM
         </h1>
         <p style={{
-          margin: '0 0 32px',
+          margin: '0 0 20px',
           textAlign: 'center',
           fontSize: 'var(--font-sm)',
           color: 'var(--color-text-secondary)',
