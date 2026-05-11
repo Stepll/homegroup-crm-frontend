@@ -12,6 +12,7 @@ import { AttendancePage } from '@/pages/attendance/AttendancePage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { AdminsPage } from '@/pages/admins/AdminsPage'
 import { RolesSettingsPage } from '@/pages/settings/RolesSettingsPage'
+import { RoleFormPage } from '@/pages/settings/RoleFormPage'
 import { HomeGroupsSettingsPage } from '@/pages/settings/HomeGroupsSettingsPage'
 
 export function App() {
@@ -36,6 +37,7 @@ export function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/admins" element={<AdminsPage />} />
             <Route path="settings/roles" element={<RolesSettingsPage />} />
+            <Route path="settings/roles/:id" element={<RoleFormPage />} />
             <Route path="settings/home-groups" element={<HomeGroupsSettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
