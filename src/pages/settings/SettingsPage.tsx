@@ -3,6 +3,7 @@ import { NavBar, List } from 'antd-mobile'
 import { RightOutline } from 'antd-mobile-icons'
 
 const items = [
+  { label: 'Адміни', path: '/settings/admins' },
   { label: 'Ролі', path: '/settings/roles' },
   { label: 'Домашні групи', path: '/settings/home-groups' },
 ]

@@ -4,14 +4,15 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/AppLayout'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
-import { AdminsPage } from '@/pages/admins/AdminsPage'
+import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { PeoplePage } from '@/pages/people/PeoplePage'
-import { SettingsPage } from '@/pages/settings/SettingsPage'
-import { RolesSettingsPage } from '@/pages/settings/RolesSettingsPage'
-import { HomeGroupsSettingsPage } from '@/pages/settings/HomeGroupsSettingsPage'
 import { GroupsPage } from '@/pages/groups/GroupsPage'
 import { GroupDetailPage } from '@/pages/groups/GroupDetailPage'
 import { AttendancePage } from '@/pages/attendance/AttendancePage'
+import { SettingsPage } from '@/pages/settings/SettingsPage'
+import { AdminsPage } from '@/pages/admins/AdminsPage'
+import { RolesSettingsPage } from '@/pages/settings/RolesSettingsPage'
+import { HomeGroupsSettingsPage } from '@/pages/settings/HomeGroupsSettingsPage'
 
 export function App() {
   return (
@@ -27,12 +28,13 @@ export function App() {
             }
           >
             <Route index element={<DashboardPage />} />
-            <Route path="admins" element={<AdminsPage />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="people" element={<PeoplePage />} />
             <Route path="groups" element={<GroupsPage />} />
             <Route path="groups/:id" element={<GroupDetailPage />} />
             <Route path="groups/:id/attendance" element={<AttendancePage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="settings/admins" element={<AdminsPage />} />
             <Route path="settings/roles" element={<RolesSettingsPage />} />
             <Route path="settings/home-groups" element={<HomeGroupsSettingsPage />} />
           </Route>
