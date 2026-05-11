@@ -1,12 +1,13 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { TabBar } from 'antd-mobile'
-import { AppOutline, UserOutline, TeamOutline, UserSetOutline } from 'antd-mobile-icons'
+import { AppOutline, UserOutline, TeamOutline, UserSetOutline, SetOutline } from 'antd-mobile-icons'
 
 const tabs = [
   { key: '/', title: 'Дашборд', icon: <AppOutline /> },
   { key: '/admins', title: 'Адміни', icon: <UserSetOutline /> },
   { key: '/people', title: 'Люди', icon: <UserOutline /> },
-  { key: '/groups', title: 'Групи', icon: <TeamOutline /> },
+  { key: '/groups', title: 'Група', icon: <TeamOutline /> },
+  { key: '/settings', title: 'Налаштування', icon: <SetOutline /> },
 ]
 
 export function AppLayout() {
