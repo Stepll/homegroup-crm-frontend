@@ -6,8 +6,6 @@ import { LoginPage } from '@/pages/auth/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { PeoplePage } from '@/pages/people/PeoplePage'
-import { GroupsPage } from '@/pages/groups/GroupsPage'
-import { GroupDetailPage } from '@/pages/groups/GroupDetailPage'
 import { AttendancePage } from '@/pages/attendance/AttendancePage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { AdminsPage } from '@/pages/admins/AdminsPage'
@@ -38,12 +36,10 @@ export function App() {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="cabinet" element={<GroupCabinetPage />} />
             <Route path="cabinet/:id" element={<GroupCabinetPage />} />
+            <Route path="cabinet/:id/attendance" element={<AttendancePage />} />
             <Route path="people" element={<PeoplePage />} />
             <Route path="people/new" element={<PersonCreatePage />} />
             <Route path="people/:id" element={<PersonDetailPage />} />
-            <Route path="groups" element={<GroupsPage />} />
-            <Route path="groups/:id" element={<GroupDetailPage />} />
-            <Route path="groups/:id/attendance" element={<AttendancePage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/admins" element={<AdminsPage />} />
             <Route path="settings/admins/new" element={<AdminCreatePage />} />

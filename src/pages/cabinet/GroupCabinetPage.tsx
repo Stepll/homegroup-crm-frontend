@@ -23,7 +23,7 @@ function GroupSelector() {
 
   return (
     <div>
-      <NavBar back={null}>Кабінет</NavBar>
+      <NavBar back={null}>Домашка</NavBar>
       <List style={{ marginTop: 12 }}>
         {groups.map((g) => (
           <List.Item
@@ -56,7 +56,7 @@ export function GroupCabinetPage() {
 
   if (!groupId) return (
     <div>
-      <NavBar back={null}>Кабінет</NavBar>
+      <NavBar back={null}>Домашка</NavBar>
       <Empty description="Вас не призначено до жодної групи" style={{ marginTop: 60 }} />
     </div>
   )
@@ -82,7 +82,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
 
   if (loading || !cabinet) return (
     <div>
-      <NavBar back={isAdmin ? undefined : null} onBack={isAdmin ? () => navigate('/cabinet') : undefined}>Кабінет</NavBar>
+      <NavBar back={isAdmin ? undefined : null} onBack={isAdmin ? () => navigate('/cabinet') : undefined}>Домашка</NavBar>
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><SpinLoading color="primary" /></div>
     </div>
   )
@@ -101,7 +101,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar back={isAdmin ? undefined : null} onBack={isAdmin ? () => navigate('/cabinet') : undefined}>Кабінет</NavBar>
+      <NavBar back={isAdmin ? undefined : null} onBack={isAdmin ? () => navigate('/cabinet') : undefined}>Домашка</NavBar>
 
       <div style={{ padding: '0 16px' }}>
 
@@ -171,7 +171,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
               {lastMeetingDate && (
                 <Button size="small" fill="solid"
                   style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
-                  onClick={() => navigate(`/groups/${groupId}/attendance`)}>
+                  onClick={() => navigate(`/cabinet/${groupId}/attendance`)}>
                   Відмітити
                 </Button>
               )}

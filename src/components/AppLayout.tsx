@@ -21,7 +21,7 @@ function CabinetIcon() {
 const tabs: { key: string; title: string; icon: FC }[] = [
   { key: '/', title: 'Дашборд', icon: AppOutline },
   { key: '/people', title: 'Люди', icon: UserOutline },
-  { key: '/cabinet', title: 'Кабінет', icon: CabinetIcon },
+  { key: '/cabinet', title: 'Домашка', icon: CabinetIcon },
   { key: '/profile', title: 'Профіль', icon: ProfileIcon },
   { key: '/settings', title: 'Налаштування', icon: SetOutline },
 ]
