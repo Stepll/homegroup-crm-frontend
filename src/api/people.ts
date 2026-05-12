@@ -2,8 +2,8 @@ import { api } from './client'
 import type { Person, CustomField } from '@/types'
 
 export const peopleApi = {
-  getAll: (search?: string) =>
-    api.get<Person[]>('/people', { params: { search } }).then((r) => r.data),
+  getAll: (search?: string, noGroup?: boolean) =>
+    api.get<Person[]>('/people', { params: { search, noGroup: noGroup || undefined } }).then((r) => r.data),
 
   getById: (id: number) =>
     api.get<Person>(`/people/${id}`).then((r) => r.data),

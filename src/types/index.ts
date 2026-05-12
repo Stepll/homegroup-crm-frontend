@@ -17,6 +17,7 @@ export interface Person {
   dateOfBirth?: string
   primaryGroupId?: number
   primaryGroupName?: string
+  primaryGroupColor?: string
   createdAt: string
   customFields?: CustomField[]
 }

@@ -48,24 +48,29 @@ export function HomeGroupFormPage() {
       .finally(() => setLoading(false))
   }, [id, isNew])
 
-  const handleSearch = (val: string) => {
-    setSearch(val)
-    setSelected(null)
-    if (!val.trim()) { setSearchResults([]); return }
+  const fetchNoGroup = (query: string) => {
     if (searchTimer.current) clearTimeout(searchTimer.current)
     setSearching(true)
     searchTimer.current = setTimeout(() => {
-      peopleApi.getAll(val)
-        .then((results) => setSearchResults(
-          results.filter((p) => !members.some((m) => m.id === p.id))
-        ))
+      peopleApi.getAll(query || undefined, true)
+        .then((results) => setSearchResults(results.filter((p) => !members.some((m) => m.id === p.id))))
         .finally(() => setSearching(false))
-    }, 300)
+    }, query ? 300 : 0)
+  }
+
+  const handleSearchFocus = () => {
+    if (searchResults.length === 0 && !searching) fetchNoGroup(search)
+  }
+
+  const handleSearch = (val: string) => {
+    setSearch(val)
+    setSelected(null)
+    fetchNoGroup(val)
   }
 
   const handleSelect = (person: Person) => {
     setSelected(person)
-    setSearch(person.name)
+    setSearch([person.name, person.lastName].filter(Boolean).join(' '))
     setSearchResults([])
   }
 
@@ -225,6 +230,7 @@ export function HomeGroupFormPage() {
                   placeholder="Пошук по імені..."
                   value={search}
                   onChange={handleSearch}
+                  onFocus={handleSearchFocus}
                   style={{ flex: 1 }}
                 />
                 {search && (
@@ -247,7 +253,7 @@ export function HomeGroupFormPage() {
                   {searching ? (
                     <div style={{ padding: '12px', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 13 }}>Пошук...</div>
                   ) : (
-                    searchResults.slice(0, 6).map((person) => (
+                    searchResults.slice(0, 8).map((person) => (
                       <button
                         key={person.id}
                         onClick={() => handleSelect(person)}
@@ -256,10 +262,11 @@ export function HomeGroupFormPage() {
                           background: 'none', border: 'none', cursor: 'pointer',
                           fontSize: 14, color: 'var(--color-text)',
                           borderBottom: '1px solid var(--color-border-light)',
+                          display: 'flex', alignItems: 'center', gap: 8,
                         }}
                       >
-                        {person.name}
-                        {person.phone && <span style={{ color: 'var(--color-text-tertiary)', fontSize: 12, marginLeft: 8 }}>{person.phone}</span>}
+                        <span style={{ flex: 1 }}>{[person.name, person.lastName].filter(Boolean).join(' ')}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#fff', background: '#1a1a2e', borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap' }}>без групи</span>
                       </button>
                     ))
                   )}
@@ -296,7 +303,7 @@ export function HomeGroupFormPage() {
                     style={{ flex: 1, fontSize: 14, color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 500 }}
                     onClick={() => navigate(`/people/${person.id}`)}
                   >
-                    {person.name}
+                    {[person.name, person.lastName].filter(Boolean).join(' ')}
                   </span>
                   <button
                     onClick={() => handleRemoveMember(person.id)}

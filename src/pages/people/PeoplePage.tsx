@@ -37,7 +37,7 @@ export function PeoplePage() {
             <List.Item
               key={p.id}
               extra={p.primaryGroupName
-                ? <span style={groupTag}>{p.primaryGroupName}</span>
+                ? <span style={{ ...groupTag, color: p.primaryGroupColor ?? 'var(--color-primary)', background: `${p.primaryGroupColor ?? 'var(--color-primary)'}18` }}>{p.primaryGroupName}</span>
                 : null}
               onClick={() => navigate(`/people/${p.id}`)}
               arrow
