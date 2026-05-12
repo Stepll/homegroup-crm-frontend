@@ -233,17 +233,23 @@ export function PersonDetailPage() {
         </div>
 
         {/* Block 3: Custom fields */}
-        <div style={block}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12 }}>
+        <div style={{ ...block, padding: '12px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Додаткова інформація
             </span>
-            <button onClick={handleAddField} style={{ ...iconBtn, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
-              <AddOutline /> Додати поле
-            </button>
+            {person.primaryGroupId && (
+              <button onClick={handleAddField} style={{ ...iconBtn, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
+                <AddOutline /> Додати поле
+              </button>
+            )}
           </div>
 
-          {(person.customFields ?? []).length === 0 && (
+          {!person.primaryGroupId && (
+            <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>Призначте людину до групи, щоб додавати поля</span>
+          )}
+
+          {person.primaryGroupId && (person.customFields ?? []).length === 0 && (
             <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>Немає додаткових полів</span>
           )}
 

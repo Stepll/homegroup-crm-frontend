@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Group, Person } from '@/types'
+import type { Group, GroupCustomField, Person } from '@/types'
 
 export const groupsApi = {
   getAll: () => api.get<Group[]>('/groups').then((r) => r.data),
@@ -24,4 +24,13 @@ export const groupsApi = {
     api.delete(`/groups/${groupId}/members/${personId}`),
 
   delete: (groupId: number) => api.delete(`/groups/${groupId}`),
+
+  getCustomFields: (groupId: number) =>
+    api.get<GroupCustomField[]>(`/groups/${groupId}/custom-fields`).then((r) => r.data),
+
+  addCustomField: (groupId: number, name: string) =>
+    api.post<GroupCustomField>(`/groups/${groupId}/custom-fields`, { name }).then((r) => r.data),
+
+  deleteCustomField: (groupId: number, fieldId: number) =>
+    api.delete(`/groups/${groupId}/custom-fields/${fieldId}`),
 }

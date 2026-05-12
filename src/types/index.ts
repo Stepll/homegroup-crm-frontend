@@ -27,6 +27,11 @@ export interface CustomField {
   value?: string
 }
 
+export interface GroupCustomField {
+  id: number
+  name: string
+}
+
 export interface Group {
   id: number
   name: string

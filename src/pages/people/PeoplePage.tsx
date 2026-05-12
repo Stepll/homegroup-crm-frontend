@@ -36,7 +36,9 @@ export function PeoplePage() {
           {people.map((p) => (
             <List.Item
               key={p.id}
-              description={p.phone ?? p.email}
+              extra={p.primaryGroupName
+                ? <span style={groupTag}>{p.primaryGroupName}</span>
+                : null}
               onClick={() => navigate(`/people/${p.id}`)}
               arrow
             >
@@ -47,4 +49,12 @@ export function PeoplePage() {
       )}
     </div>
   )
+}
+
+const groupTag: React.CSSProperties = {
+  fontSize: 11, fontWeight: 600,
+  color: 'var(--color-primary)',
+  background: 'rgba(42,175,202,0.1)',
+  borderRadius: 6, padding: '2px 7px',
+  whiteSpace: 'nowrap',
 }
