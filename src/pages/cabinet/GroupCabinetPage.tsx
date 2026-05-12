@@ -45,7 +45,6 @@ function GroupSelector() {
 export function GroupCabinetPage() {
   const { id } = useParams<{ id?: string }>()
   const { user } = useAuth()
-  const navigate = useNavigate()
 
   const isAdmin = user?.roles?.some((r) => ADMIN_ROLES.includes(r)) ?? false
 
@@ -63,6 +62,7 @@ export function GroupCabinetPage() {
   )
 
   return <CabinetView groupId={groupId} isAdmin={isAdmin} />
+}
 }
 
 // ── Cabinet content ───────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
 
   if (loading || !cabinet) return (
     <div>
-      <NavBar back={isAdmin ? () => navigate('/cabinet') : null}>Кабінет</NavBar>
+      <NavBar back={isAdmin ? undefined : null} onBack={isAdmin ? () => navigate('/cabinet') : undefined}>Кабінет</NavBar>
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><SpinLoading color="primary" /></div>
     </div>
   )
@@ -102,7 +102,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar back={isAdmin ? () => navigate('/cabinet') : null}>Кабінет</NavBar>
+      <NavBar back={isAdmin ? undefined : null} onBack={isAdmin ? () => navigate('/cabinet') : undefined}>Кабінет</NavBar>
 
       <div style={{ padding: '0 16px' }}>
 
