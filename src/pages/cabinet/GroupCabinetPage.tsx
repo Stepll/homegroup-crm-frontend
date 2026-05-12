@@ -63,7 +63,6 @@ export function GroupCabinetPage() {
 
   return <CabinetView groupId={groupId} isAdmin={isAdmin} />
 }
-}
 
 // ── Cabinet content ───────────────────────────────────────────────────────────
 
