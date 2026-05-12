@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button } from 'antd-mobile'
-import { EditSOutline, RightOutline, DownOutline, UpOutline } from 'antd-mobile-icons'
+import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
 import { useAuth } from '@/store/auth'
-import type { Group, GroupCabinet } from '@/types'
+import type { Group, GroupCabinet, GroupEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 
@@ -71,12 +71,42 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const [cabinet, setCabinet] = useState<GroupCabinet | null>(null)
   const [loading, setLoading] = useState(true)
   const [editVisible, setEditVisible] = useState(false)
+  const [events, setEvents] = useState<GroupEvent[]>([])
+  const [addEventVisible, setAddEventVisible] = useState(false)
+  const [newEventName, setNewEventName] = useState('')
+  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0])
+  const [newEventHasYear, setNewEventHasYear] = useState(false)
+  const [addingEvent, setAddingEvent] = useState(false)
 
   const load = () =>
-    groupsApi.getCabinet(groupId)
-      .then(setCabinet)
+    Promise.all([groupsApi.getCabinet(groupId), groupsApi.getEvents(groupId)])
+      .then(([cab, evts]) => { setCabinet(cab); setEvents(evts) })
       .catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))
+
+  const handleAddEvent = async () => {
+    if (!newEventName.trim() || !newEventDate) return
+    const [y, m, d] = newEventDate.split('-').map(Number)
+    setAddingEvent(true)
+    try {
+      const evt = await groupsApi.addEvent(groupId, {
+        name: newEventName.trim(), month: m, day: d,
+        year: newEventHasYear ? y : undefined,
+      })
+      setEvents((prev) => [...prev, evt].sort((a, b) => a.daysUntil - b.daysUntil).slice(0, 5))
+      setAddEventVisible(false)
+      setNewEventName('')
+      setNewEventHasYear(false)
+    } catch {
+      Toast.show({ content: 'Помилка', icon: 'fail' })
+    }
+    setAddingEvent(false)
+  }
+
+  const handleDeleteEvent = async (eventId: number) => {
+    await groupsApi.deleteEvent(groupId, eventId)
+    setEvents((prev) => prev.filter((e) => e.id !== eventId))
+  }
 
   useEffect(() => { load() }, [groupId])
 
@@ -210,7 +240,57 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           }
         </div>
 
-        {/* Block 6: Stats */}
+        {/* Block 6: Custom events */}
+        <div style={{ ...block, padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <SectionLabel>Найближчі події</SectionLabel>
+            <button onClick={() => setAddEventVisible(true)} style={{ ...iconBtn, color: 'var(--color-primary)' }}>
+              <AddOutline style={{ fontSize: 18 }} />
+            </button>
+          </div>
+          {events.length === 0 ? (
+            <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', display: 'block' }}>Немає запланованих подій</span>
+          ) : events.map((ev) => (
+            <div key={ev.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{ev.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{formatEventDate(ev.month, ev.day, ev.year)}</div>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: ev.daysUntil === 0 ? 'var(--color-error)' : 'var(--color-text-secondary)', marginRight: 10 }}>
+                {ev.daysUntil === 0 ? 'Сьогодні!' : ev.daysUntil === 1 ? 'Завтра' : `за ${ev.daysUntil} дн.`}
+              </span>
+              <button onClick={() => handleDeleteEvent(ev.id)} style={{ ...iconBtn, color: 'var(--color-error)', padding: 2 }}>
+                <DeleteOutline style={{ fontSize: 16 }} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Add event popup */}
+        <Popup visible={addEventVisible} onMaskClick={() => setAddEventVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Нова подія</div>
+          <FormField label="Назва">
+            <Input value={newEventName} onChange={setNewEventName} placeholder="Назва події" autoFocus />
+          </FormField>
+          <FormField label="Дата">
+            <input type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)}
+              style={{ ...nativeSelect, padding: 0 }} />
+          </FormField>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, cursor: 'pointer' }}>
+            <input type="checkbox" checked={newEventHasYear} onChange={(e) => setNewEventHasYear(e.target.checked)}
+              style={{ width: 18, height: 18, accentColor: 'var(--color-primary)', cursor: 'pointer' }} />
+            <span style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>З роком (одноразова подія)</span>
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button block loading={addingEvent} onClick={handleAddEvent}
+              style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>
+              Додати
+            </Button>
+            <Button block fill="outline" onClick={() => setAddEventVisible(false)}>Скасувати</Button>
+          </div>
+        </Popup>
+
+        {/* Stats */}
         <div style={block}>
           <div style={{ padding: '14px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -399,6 +479,12 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 
 function formatBirthday(iso: string) {
   const d = new Date(iso + 'T00:00:00')
+  return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })
+}
+
+function formatEventDate(month: number, day: number, year?: number) {
+  const d = new Date(year ?? 2000, month - 1, day)
+  if (year) return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
   return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })
 }
 

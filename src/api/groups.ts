@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Group, GroupCabinet, GroupCustomField, Person } from '@/types'
+import type { Group, GroupCabinet, GroupCustomField, GroupEvent, Person } from '@/types'
 
 export const groupsApi = {
   getAll: () => api.get<Group[]>('/groups').then((r) => r.data),
@@ -36,4 +36,13 @@ export const groupsApi = {
 
   getCabinet: (groupId: number) =>
     api.get<GroupCabinet>(`/groups/${groupId}/cabinet`).then((r) => r.data),
+
+  getEvents: (groupId: number) =>
+    api.get<GroupEvent[]>(`/groups/${groupId}/events`).then((r) => r.data),
+
+  addEvent: (groupId: number, data: { name: string; month: number; day: number; year?: number }) =>
+    api.post<GroupEvent>(`/groups/${groupId}/events`, data).then((r) => r.data),
+
+  deleteEvent: (groupId: number, eventId: number) =>
+    api.delete(`/groups/${groupId}/events/${eventId}`),
 }

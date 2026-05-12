@@ -100,6 +100,15 @@ export interface GroupCabinet {
   stats: { avgAttendanceRate: number; newMembersThisMonth: number; totalMembers: number }
 }
 
+export interface GroupEvent {
+  id: number
+  name: string
+  month: number
+  day: number
+  year?: number
+  daysUntil: number
+}
+
 export interface AttendanceRecord {
   id: number
   personId: number
