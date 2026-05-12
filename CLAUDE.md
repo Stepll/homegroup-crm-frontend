@@ -5,126 +5,225 @@ React SPA з мобайл-фьорст дизайном для CRM церков�
 ## Tech Stack
 
 - **Bundler**: Vite
-- **Framework**: React 18+
+- **Framework**: React 18 + TypeScript
 - **Routing**: React Router v6
-- **UI Library**: Ant Design Mobile (antd-mobile)
-- **Language**: TypeScript
-- **HTTP**: Axios або native fetch
-- **State**: React Context + useReducer (або Zustand якщо ускладниться)
-- **Auth**: JWT токени (localStorage / httpOnly cookie)
+- **UI Library**: antd-mobile v5 (NavBar, List, Button, Input, Dialog, Popup, Toast, SpinLoading, etc.)
+- **HTTP**: Axios (через `src/api/client.ts`, автоматично додає JWT)
+- **State**: React Context (AuthContext) + useState/useEffect per page
+- **Auth**: JWT в localStorage
 
-## Project Structure
+## Actual Project Structure
 
 ```
 src/
-  api/              # API-клієнт, запити до бекенду
-  components/       # Перевикористовувані компоненти
-  pages/            # Сторінки (роути)
+  api/
+    client.ts             — Axios instance з baseURL + JWT interceptor
+    people.ts             — peopleApi (getAll, getById, create, update, remove, custom fields)
+    groups.ts             — groupsApi (CRUD, members, syncMembers, custom fields)
+    roles.ts              — rolesApi (CRUD)
+    attendance.ts         — attendanceApi
+  components/
+    AppLayout.tsx         — bottom tab bar (5 tabs) + <Outlet />
+    ProtectedRoute.tsx    — redirect to /login if not authed
+  pages/
     auth/
-    groups/
+      LoginPage.tsx
+    DashboardPage.tsx
+    profile/
+      ProfilePage.tsx     — аватар з ініціалами, роль, logout
     people/
+      PeoplePage.tsx      — список з пошуком + colored group tag
+      PersonCreatePage.tsx — форма: Name*, LastName, Group
+      PersonDetailPage.tsx — inline editing per-field, custom fields block
+    groups/
+      GroupsPage.tsx
+      GroupDetailPage.tsx
     attendance/
-  hooks/            # Кастомні хуки
-  store/            # Глобальний стан (auth, user)
-  types/            # TypeScript типи/інтерфейси
-  utils/            # Хелпери
-  App.tsx
+      AttendancePage.tsx
+    settings/
+      SettingsPage.tsx           — меню: Адміни, Ролі, Домашні групи
+      AdminsPage.tsx
+      RolesSettingsPage.tsx      — список ролей
+      RoleFormPage.tsx           — форма ролі (назва, колір, permissions, isDefault)
+      HomeGroupsSettingsPage.tsx — список груп
+      HomeGroupFormPage.tsx      — форма групи (назва, колір, учасники, кастомні поля)
+  store/
+    auth.tsx              — AuthContext, useAuth hook, login/logout
+  types/
+    index.ts              — Person, Group, CustomField, GroupCustomField, AuthResponse, etc.
+  App.tsx                 — BrowserRouter + Routes
   main.tsx
 public/
+  logo.svg               — SVG логотип, viewBox="320 320 640 640" (обрізаний до кола)
 ```
 
-## Routing Structure
+## Routing
 
 ```
-/login                  — авторизація
-/                       — дашборд / головна
-/groups                 — список домашніх груп
-/groups/:id             — деталі групи + учасники
-/groups/:id/attendance  — відвідуваність групи
-/people                 — список людей
-/people/:id             — картка людини
+/login
+/                          — Dashboard
+/profile
+/people                    — список людей
+/people/new                — створення людини
+/people/:id                — деталі / редагування людини
+/groups                    — список груп (перегляд)
+/groups/:id                — деталі групи
+/groups/:id/attendance     — відвідуваність
+/settings                  — меню налаштувань
+/settings/admins
+/settings/roles            — список ролей
+/settings/roles/:id        — форма ролі (id="new" для створення)
+/settings/home-groups      — список домашніх груп (налаштування)
+/settings/home-groups/:id  — форма групи (id="new" для створення)
 ```
 
-## Design Principles
+## Bottom Tab Bar
 
-- **Mobile-first**: всі компоненти проектуються для мобільних спочатку
-- **Ant Design Mobile**: використовувати компоненти antd-mobile (NavBar, TabBar, List, Card, Form, etc.)
-- **Offline-friendly**: мінімальна залежність від мережі де можливо
-- **Touch-friendly**: достатні tap target-и, свайп-жести де доречно
+5 tabs у `AppLayout.tsx`, активна вкладка визначається по `pathname`:
+```
+/ → Дашборд
+/people → Люди
+/groups → Група
+/profile → Профіль
+/settings → Налаштування
+```
+Активна вкладка: teal top-border (3px pill). Реалізовано як кастомні кнопки (не antd-mobile TabBar).
 
-## API
+## Key Patterns
 
-Бекенд: `http://localhost:5000/api/v1` (dev) / `https://api.your-domain.com/api/v1` (prod)
+### Inline Editing (PersonDetailPage)
+`EditableField` компонент: показує `label + value + іконка олівця`. По кліку на олівець — інпут + Зберегти/Скасувати. `onSave` отримує рядок і робить API call.
 
-Авторизація: `Authorization: Bearer <token>` у всіх запитах.
+```tsx
+<EditableField
+  label="Ім'я"
+  display={person.name}
+  onSave={(v) => save({ name: v })}
+  renderEditor={(v, onChange) => <Input value={v} onChange={onChange} />}
+/>
+```
+
+### Custom Fields (Group-Scoped)
+Поля визначаються на рівні `HomeGroup`, люди мають лише значення:
+- Додати поле через сторінку людини → `POST /people/:id/custom-fields` → створює поле для всієї групи
+- Видалити поле → видаляється для всіх учасників групи
+- Редагувати значення → `PUT /people/:id/custom-fields/:fieldId` (upsert)
+- Якщо людина не має групи — блок кастомних полів показує повідомлення
+
+### Group Member Search (HomeGroupFormPage)
+- При першому фокусі на інпуті — одразу завантажує всіх людей без групи (`?noGroup=true`)
+- При наборі тексту — debounce 300ms, пошук тільки серед людей без групи
+- В dropdown кожна людина має чорний тег "без групи"
+
+### Bidirectional Group Sync
+- Зміна "Домашня група" на сторінці людини → бекенд автоматично оновлює `HomeGroupMembers`
+- Збереження учасників на сторінці групи → бекенд автоматично оновлює `PrimaryGroupId` кожної людини
+
+### Popup замість Dialog.prompt
+`antd-mobile v5` не має `Dialog.prompt`. Використовуємо `<Popup>` з `<Input>` всередині для введення тексту.
+
+### Group Color Tag (PeoplePage)
+```tsx
+<span style={{ color: p.primaryGroupColor, background: `${p.primaryGroupColor}18` }}>
+  {p.primaryGroupName}
+</span>
+```
+`18` в кінці hex — 10% opacity для фону.
+
+## CSS Design Tokens
+
+Всі кольори та розміри через CSS змінні (визначені в `index.css`):
+```css
+--color-primary       /* teal */
+--color-error
+--color-text
+--color-text-secondary
+--color-text-tertiary
+--color-border
+--color-border-light
+--radius-md
+--radius-lg
+--shadow-sm
+--shadow-lg
+--font-base
+```
+
+## Input Style (стандарт для всіх форм)
+
+```tsx
+const inputWrap: React.CSSProperties = {
+  background: '#fff',
+  borderRadius: 'var(--radius-md)',
+  border: '1.5px solid var(--color-border)',
+  padding: '10px 14px',
+}
+const labelStyle: React.CSSProperties = {
+  display: 'block', fontSize: 13, fontWeight: 600,
+  color: 'var(--color-text-secondary)', marginBottom: 8,
+  textTransform: 'uppercase', letterSpacing: '0.04em',
+}
+```
+
+## Types (src/types/index.ts)
+
+```typescript
+Person: { id, name, lastName?, phone?, email?, notes?, status, oversightInfo?,
+          dateOfBirth?, primaryGroupId?, primaryGroupName?, primaryGroupColor?,
+          createdAt, customFields?: CustomField[] }
+
+CustomField: { id, name, value? }   // id = HomeGroupCustomField.Id
+
+Group: { id, name, description?, color, meetingDay?, meetingTime?,
+         location?, leaderId?, leaderName?, isActive, memberCount }
+
+GroupCustomField: { id, name }
+
+AuthResponse: { token, name, email, role }
+AttendanceRecord: { id, personId, personName, homeGroupId, meetingDate, wasPresent, notes? }
+AttendanceSummary: { meetingDate, totalMembers, presentCount, attendanceRate }
+```
+
+## API Client (src/api/client.ts)
+
+Axios instance з `baseURL = import.meta.env.VITE_API_URL`. Request interceptor додає `Authorization: Bearer <token>` з localStorage. Response interceptor: 401 → redirect до `/login`.
 
 ## Development Commands
 
 ```bash
-# Встановити залежності
 npm install
-
-# Запустити dev-сервер
-npm run dev
-
-# Build
-npm run build
-
-# Preview build
+npm run dev          # dev server
+npm run build        # tsc -b && vite build
 npm run preview
-
-# TypeScript перевірка
-npm run type-check
 ```
 
 ## Environment Variables
 
 ```
-VITE_API_URL=http://localhost:5000/api/v1
+VITE_API_URL=https://your-api.domain.com/api/v1
 ```
+
+## What's Done
+
+- [x] Auth (login, JWT, ProtectedRoute, logout)
+- [x] Bottom tab bar (5 tabs, active state)
+- [x] Profile page (avatar з ініціалами, роль)
+- [x] Settings menu (Адміни, Ролі, Домашні групи)
+- [x] Roles CRUD (список, форма з color palette + permissions + isDefault)
+- [x] HomeGroups CRUD (список, форма з member search + custom fields)
+- [x] People CRUD (список з group tag, create form, detail з inline editing)
+- [x] Group-scoped custom fields (add/edit/delete від людини і від групи)
+- [x] Bidirectional group sync (person ↔ group members)
+- [x] Group tag в списку людей (кольором групи)
+- [x] No-group search у формі групи (відкривається одразу, тільки без групи)
 
 ## TODO
 
-### Ініціалізація
-- [ ] Створити Vite + React + TypeScript проект
-- [ ] Встановити та налаштувати antd-mobile
-- [ ] Встановити React Router v6, налаштувати роути
-- [ ] Налаштувати Axios/fetch з базовим URL та interceptor для JWT
-- [ ] Налаштувати `.env` файли (dev / prod)
-
-### Auth
-- [ ] Сторінка логіну `/login`
-- [ ] Зберігання JWT токену
-- [ ] ProtectedRoute компонент (redirect якщо не авторизований)
-- [ ] Автоматичне додавання токену до запитів
-- [ ] Logout + очистка токену
-
-### Домашні групи
-- [ ] Список груп `/groups` (antd-mobile List / Card)
-- [ ] Сторінка деталей групи `/groups/:id`
-- [ ] Список учасників групи
-- [ ] Форма додавання / редагування групи
-
-### Люди
-- [ ] Список людей `/people` з пошуком
-- [ ] Картка людини `/people/:id`
-- [ ] Форма додавання / редагування людини
-- [ ] Прив'язка людини до групи
-
-### Відвідуваність
-- [ ] Сторінка відмітки відвідуваності `/groups/:id/attendance`
-- [ ] Чекбокси по учасниках для конкретної дати
-- [ ] Перегляд статистики відвідуваності по групі
-- [ ] Фільтр по даті
-
-### UX / Загальне
-- [ ] Bottom navigation (TabBar) — Групи / Люди / Профіль
-- [ ] Дашборд з ключовими метриками
-- [ ] Pull-to-refresh де потрібно
-- [ ] Порожні стани (empty states) для списків
-- [ ] Обробка помилок API (тости/повідомлення)
-- [ ] Loading стани (Skeleton / Spinner)
-
-### Deployment
-- [ ] Build артефакт через Nginx або CDN
-- [ ] Налаштувати CORS на бекенді для продакшн домену
+- [ ] Dashboard (реальна статистика)
+- [ ] Groups page (перегляд, не налаштування)
+- [ ] Attendance page (відмітка відвідуваності)
+- [ ] Admins page (CRUD користувачів системи)
+- [ ] Статуси людини — configurable список
+- [ ] Опіка (Oversight) — configurable список
+- [ ] Enforcement прав доступу (показувати/ховати секції по ролі)
+- [ ] Pull-to-refresh
+- [ ] Pagination для великих списків
