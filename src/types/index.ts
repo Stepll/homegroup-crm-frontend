@@ -47,6 +47,31 @@ export interface Group {
   memberCount: number
 }
 
+export interface RoleTag {
+  id: number
+  name: string
+  color: string
+}
+
+export interface GroupTag {
+  id: number
+  name: string
+  color: string
+}
+
+export interface Admin {
+  id: number
+  name: string
+  lastName?: string
+  email: string
+  roles: RoleTag[]
+  primaryGroupId?: number
+  primaryGroupName?: string
+  primaryGroupColor?: string
+  visibleGroups: GroupTag[]
+  createdAt: string
+}
+
 export interface AttendanceRecord {
   id: number
   personId: number

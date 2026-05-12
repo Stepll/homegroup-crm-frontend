@@ -11,6 +11,8 @@ import { GroupDetailPage } from '@/pages/groups/GroupDetailPage'
 import { AttendancePage } from '@/pages/attendance/AttendancePage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { AdminsPage } from '@/pages/admins/AdminsPage'
+import { AdminDetailPage } from '@/pages/admins/AdminDetailPage'
+import { AdminCreatePage } from '@/pages/admins/AdminCreatePage'
 import { RolesSettingsPage } from '@/pages/settings/RolesSettingsPage'
 import { RoleFormPage } from '@/pages/settings/RoleFormPage'
 import { HomeGroupsSettingsPage } from '@/pages/settings/HomeGroupsSettingsPage'
@@ -41,6 +43,8 @@ export function App() {
             <Route path="groups/:id/attendance" element={<AttendancePage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/admins" element={<AdminsPage />} />
+            <Route path="settings/admins/new" element={<AdminCreatePage />} />
+            <Route path="settings/admins/:id" element={<AdminDetailPage />} />
             <Route path="settings/roles" element={<RolesSettingsPage />} />
             <Route path="settings/roles/:id" element={<RoleFormPage />} />
             <Route path="settings/home-groups" element={<HomeGroupsSettingsPage />} />
