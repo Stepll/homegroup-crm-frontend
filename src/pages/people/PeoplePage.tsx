@@ -40,7 +40,7 @@ export function PeoplePage() {
               onClick={() => navigate(`/people/${p.id}`)}
               arrow
             >
-              {p.name}
+              {[p.name, p.lastName].filter(Boolean).join(' ')}
             </List.Item>
           ))}
         </List>

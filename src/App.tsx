@@ -15,6 +15,8 @@ import { RolesSettingsPage } from '@/pages/settings/RolesSettingsPage'
 import { RoleFormPage } from '@/pages/settings/RoleFormPage'
 import { HomeGroupsSettingsPage } from '@/pages/settings/HomeGroupsSettingsPage'
 import { HomeGroupFormPage } from '@/pages/settings/HomeGroupFormPage'
+import { PersonCreatePage } from '@/pages/people/PersonCreatePage'
+import { PersonDetailPage } from '@/pages/people/PersonDetailPage'
 
 export function App() {
   return (
@@ -32,6 +34,8 @@ export function App() {
             <Route index element={<DashboardPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="people" element={<PeoplePage />} />
+            <Route path="people/new" element={<PersonCreatePage />} />
+            <Route path="people/:id" element={<PersonDetailPage />} />
             <Route path="groups" element={<GroupsPage />} />
             <Route path="groups/:id" element={<GroupDetailPage />} />
             <Route path="groups/:id/attendance" element={<AttendancePage />} />

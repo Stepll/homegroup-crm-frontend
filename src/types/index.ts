@@ -8,11 +8,23 @@ export interface AuthResponse {
 export interface Person {
   id: number
   name: string
+  lastName?: string
   phone?: string
   email?: string
   notes?: string
   status: string
+  oversightInfo?: string
+  dateOfBirth?: string
+  primaryGroupId?: number
+  primaryGroupName?: string
   createdAt: string
+  customFields?: CustomField[]
+}
+
+export interface CustomField {
+  id: number
+  name: string
+  value?: string
 }
 
 export interface Group {
