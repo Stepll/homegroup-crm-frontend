@@ -13,7 +13,7 @@ export const peopleApi = {
 
   update: (id: number, data: {
     name: string; lastName?: string; phone?: string; email?: string
-    notes?: string; status: string; oversightInfo?: string
+    notes?: string; status: string; oversightInfo?: string; oversightUserId?: number
     dateOfBirth?: string; primaryGroupId?: number
   }) => api.put<Person>(`/people/${id}`, data).then((r) => r.data),
 

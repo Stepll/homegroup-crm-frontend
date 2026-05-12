@@ -5,6 +5,8 @@ interface AuthUser {
   name: string
   email: string
   role: string
+  roles: string[]
+  primaryGroupId?: number
 }
 
 interface AuthContextValue {
@@ -29,9 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(loadUser)
 
   const login = (data: AuthResponse) => {
+    const u: AuthUser = {
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      roles: data.roles ?? [data.role].filter(Boolean),
+      primaryGroupId: data.primaryGroupId,
+    }
     localStorage.setItem('token', data.token)
-    localStorage.setItem('user', JSON.stringify({ name: data.name, email: data.email, role: data.role }))
-    setUser({ name: data.name, email: data.email, role: data.role })
+    localStorage.setItem('user', JSON.stringify(u))
+    setUser(u)
   }
 
   const logout = () => {

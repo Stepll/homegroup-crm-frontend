@@ -19,6 +19,7 @@ import { HomeGroupsSettingsPage } from '@/pages/settings/HomeGroupsSettingsPage'
 import { HomeGroupFormPage } from '@/pages/settings/HomeGroupFormPage'
 import { PersonCreatePage } from '@/pages/people/PersonCreatePage'
 import { PersonDetailPage } from '@/pages/people/PersonDetailPage'
+import { GroupCabinetPage } from '@/pages/cabinet/GroupCabinetPage'
 
 export function App() {
   return (
@@ -35,6 +36,8 @@ export function App() {
           >
             <Route index element={<DashboardPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="cabinet" element={<GroupCabinetPage />} />
+            <Route path="cabinet/:id" element={<GroupCabinetPage />} />
             <Route path="people" element={<PeoplePage />} />
             <Route path="people/new" element={<PersonCreatePage />} />
             <Route path="people/:id" element={<PersonDetailPage />} />

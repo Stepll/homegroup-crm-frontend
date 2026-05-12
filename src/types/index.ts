@@ -3,6 +3,8 @@ export interface AuthResponse {
   name: string
   email: string
   role: string
+  roles: string[]
+  primaryGroupId?: number
 }
 
 export interface Person {
@@ -14,6 +16,8 @@ export interface Person {
   notes?: string
   status: string
   oversightInfo?: string
+  oversightUserId?: number
+  oversightUserName?: string
   dateOfBirth?: string
   primaryGroupId?: number
   primaryGroupName?: string
@@ -70,6 +74,30 @@ export interface Admin {
   primaryGroupColor?: string
   visibleGroups: GroupTag[]
   createdAt: string
+}
+
+export interface GroupCabinet {
+  group: {
+    id: number
+    name: string
+    color: string
+    meetingDay?: string
+    meetingTime?: string
+    location?: string
+  }
+  nextMeetingDate?: string
+  lastMeetingDate?: string
+  lastAttendance?: { present: number; total: number }
+  upcomingEvents: { personId: number; fullName: string; dateOfBirth: string; daysUntil: number }[]
+  orgTeam: {
+    id: number
+    name: string
+    lastName?: string
+    email: string
+    overseeCount: number
+    oversees: { id: number; fullName: string }[]
+  }[]
+  stats: { avgAttendanceRate: number; newMembersThisMonth: number; totalMembers: number }
 }
 
 export interface AttendanceRecord {

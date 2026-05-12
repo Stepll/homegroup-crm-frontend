@@ -4,7 +4,8 @@ import { NavBar, Input, Button, Toast, SpinLoading, Dialog, Popup } from 'antd-m
 import { EditSOutline, DeleteOutline, AddOutline } from 'antd-mobile-icons'
 import { peopleApi } from '@/api/people'
 import { groupsApi } from '@/api/groups'
-import type { Person, CustomField, Group } from '@/types'
+import { adminsApi } from '@/api/admins'
+import type { Person, CustomField, Group, Admin } from '@/types'
 
 // ── Editable field component ──────────────────────────────────────────────────
 
@@ -65,13 +66,14 @@ export function PersonDetailPage() {
 
   const [person, setPerson] = useState<Person | null>(null)
   const [groups, setGroups] = useState<Group[]>([])
+  const [admins, setAdmins] = useState<Admin[]>([])
   const [loading, setLoading] = useState(true)
   const [addFieldVisible, setAddFieldVisible] = useState(false)
   const [newFieldName, setNewFieldName] = useState('')
 
   const load = () =>
-    Promise.all([peopleApi.getById(personId), groupsApi.getAll()])
-      .then(([p, g]) => { setPerson(p); setGroups(g) })
+    Promise.all([peopleApi.getById(personId), groupsApi.getAll(), adminsApi.getAll()])
+      .then(([p, g, a]) => { setPerson(p); setGroups(g); setAdmins(a) })
       .catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))
 
@@ -96,6 +98,7 @@ export function PersonDetailPage() {
       notes: person.notes,
       status: person.status,
       oversightInfo: person.oversightInfo,
+      oversightUserId: person.oversightUserId,
       dateOfBirth: person.dateOfBirth,
       primaryGroupId: person.primaryGroupId,
       ...patch,
@@ -222,11 +225,26 @@ export function PersonDetailPage() {
           />
           <EditableField
             label="Опіка"
-            display={person.oversightInfo ?? ''}
-            onSave={(v) => save({ oversightInfo: v || undefined })}
-            renderEditor={(v, onChange) => (
-              <select value={v} onChange={(e) => onChange(e.target.value)} style={nativeSelect}>
+            display={person.oversightUserName ?? ''}
+            onSave={async (v) => {
+              const admin = admins.find((a) => [a.name, a.lastName].filter(Boolean).join(' ') === v)
+              await save({ oversightUserId: admin?.id ?? undefined })
+            }}
+            renderEditor={(_, onChange) => (
+              <select
+                defaultValue={person.oversightUserId ?? ''}
+                onChange={(e) => {
+                  const a = admins.find((a) => a.id === Number(e.target.value))
+                  onChange(a ? [a.name, a.lastName].filter(Boolean).join(' ') : '')
+                }}
+                style={nativeSelect}
+              >
                 <option value="">— не вибрано —</option>
+                {admins.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {[a.name, a.lastName].filter(Boolean).join(' ')}
+                  </option>
+                ))}
               </select>
             )}
           />
