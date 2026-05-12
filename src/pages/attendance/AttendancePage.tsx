@@ -20,7 +20,7 @@ export function AttendancePage() {
 
   useEffect(() => {
     groupsApi.getMembers(Number(id))
-      .then((m) => { setMembers(m); setPresent(new Set(m.map((p) => p.id))) })
+      .then((m) => { setMembers(m); setPresent(new Set()) })
       .finally(() => setLoading(false))
   }, [id])
 
@@ -127,9 +127,8 @@ export function AttendancePage() {
 
       {/* Fixed save button */}
       <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
+        position: 'fixed', bottom: 'calc(58px + env(safe-area-inset-bottom))', left: 0, right: 0,
         padding: '12px 16px',
-        paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
         background: '#fff',
         boxShadow: '0 -1px 0 var(--color-border-light), 0 -4px 12px rgba(0,0,0,0.06)',
       }}>
