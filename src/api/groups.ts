@@ -17,6 +17,11 @@ export const groupsApi = {
   addMember: (groupId: number, personId: number, role = 'Member') =>
     api.post(`/groups/${groupId}/members`, { personId, role }),
 
+  syncMembers: (groupId: number, personIds: number[]) =>
+    api.put(`/groups/${groupId}/members/sync`, { personIds }),
+
   removeMember: (groupId: number, personId: number) =>
     api.delete(`/groups/${groupId}/members/${personId}`),
+
+  delete: (groupId: number) => api.delete(`/groups/${groupId}`),
 }

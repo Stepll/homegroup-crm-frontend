@@ -14,6 +14,7 @@ import { AdminsPage } from '@/pages/admins/AdminsPage'
 import { RolesSettingsPage } from '@/pages/settings/RolesSettingsPage'
 import { RoleFormPage } from '@/pages/settings/RoleFormPage'
 import { HomeGroupsSettingsPage } from '@/pages/settings/HomeGroupsSettingsPage'
+import { HomeGroupFormPage } from '@/pages/settings/HomeGroupFormPage'
 
 export function App() {
   return (
@@ -39,6 +40,7 @@ export function App() {
             <Route path="settings/roles" element={<RolesSettingsPage />} />
             <Route path="settings/roles/:id" element={<RoleFormPage />} />
             <Route path="settings/home-groups" element={<HomeGroupsSettingsPage />} />
+            <Route path="settings/home-groups/:id" element={<HomeGroupFormPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

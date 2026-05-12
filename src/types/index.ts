@@ -19,6 +19,7 @@ export interface Group {
   id: number
   name: string
   description?: string
+  color: string
   meetingDay?: string
   meetingTime?: string
   location?: string
