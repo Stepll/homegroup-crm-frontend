@@ -17,12 +17,26 @@ export function AttendancePage() {
   const [date, setDate] = useState(
     searchParams.get('date') ?? new Date().toISOString().split('T')[0]
   )
+  const [guestCount, setGuestCount] = useState(0)
+  const [guestInfo, setGuestInfo] = useState('')
+  const [showGuestInfo, setShowGuestInfo] = useState(false)
 
   useEffect(() => {
     groupsApi.getMembers(Number(id))
       .then((m) => { setMembers(m); setPresent(new Set()) })
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    attendanceApi.getMeta(Number(id), date).then((meta) => {
+      setGuestCount(meta.guestCount)
+      setGuestInfo(meta.guestInfo ?? '')
+      setShowGuestInfo(!!meta.guestInfo)
+    }).catch(() => {
+      setGuestCount(0)
+      setGuestInfo('')
+    })
+  }, [id, date])
 
   const toggle = (personId: number) => {
     setPresent((prev) => {
@@ -39,11 +53,19 @@ export function AttendancePage() {
   const save = async () => {
     setSaving(true)
     try {
-      await attendanceApi.record({
-        homeGroupId: Number(id),
-        meetingDate: date,
-        entries: members.map((m) => ({ personId: m.id, wasPresent: present.has(m.id) })),
-      })
+      await Promise.all([
+        attendanceApi.record({
+          homeGroupId: Number(id),
+          meetingDate: date,
+          entries: members.map((m) => ({ personId: m.id, wasPresent: present.has(m.id) })),
+        }),
+        attendanceApi.saveMeta({
+          homeGroupId: Number(id),
+          meetingDate: date,
+          guestCount,
+          guestInfo: guestInfo.trim() || undefined,
+        }),
+      ])
       Toast.show({ content: 'Збережено!', icon: 'success' })
       navigate(`/cabinet/${id}`)
     } catch {
@@ -92,6 +114,45 @@ export function AttendancePage() {
           <button onClick={() => markAll(true)} style={quickBtn}>Всі присутні</button>
           <button onClick={() => markAll(false)} style={quickBtn}>Всі відсутні</button>
         </div>
+      </div>
+
+      {/* Guests */}
+      <div style={{ padding: '12px 16px', background: '#fff', borderBottom: '1px solid var(--color-border-light)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 14, color: 'var(--color-text-secondary)', fontWeight: 500 }}>Гості</span>
+          <input
+            type="number"
+            min={0}
+            value={guestCount === 0 ? '' : guestCount}
+            placeholder="0"
+            onChange={(e) => setGuestCount(Math.max(0, Number(e.target.value) || 0))}
+            style={{
+              width: 64, border: '1.5px solid var(--color-border)', borderRadius: 8,
+              padding: '6px 10px', fontSize: 15, background: 'var(--color-bg)',
+              color: 'var(--color-text)', outline: 'none', textAlign: 'center',
+            }}
+          />
+        </div>
+        <button
+          onClick={() => setShowGuestInfo((v) => !v)}
+          style={{ marginTop: 6, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 12, color: 'var(--color-text-tertiary)' }}>
+          {showGuestInfo ? 'Приховати' : 'Вказати інформацію про гостей'}
+        </button>
+        {showGuestInfo && (
+          <textarea
+            value={guestInfo}
+            onChange={(e) => setGuestInfo(e.target.value)}
+            placeholder="Імена, контакти або нотатки про гостей..."
+            rows={3}
+            style={{
+              display: 'block', width: '100%', marginTop: 8,
+              border: '1.5px solid var(--color-border)', borderRadius: 8,
+              padding: '8px 10px', fontSize: 14, background: 'var(--color-bg)',
+              color: 'var(--color-text)', outline: 'none', resize: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        )}
       </div>
 
       {/* Person list */}

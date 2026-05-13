@@ -45,4 +45,7 @@ export const groupsApi = {
 
   deleteEvent: (groupId: number, eventId: number) =>
     api.delete(`/groups/${groupId}/events/${eventId}`),
+
+  setNextMeetingDate: (groupId: number, date: string | null) =>
+    api.put(`/groups/${groupId}/next-meeting`, { date }),
 }

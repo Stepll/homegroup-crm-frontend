@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button } from 'antd-mobile'
+import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button, Dialog } from 'antd-mobile'
 import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
 import { churchEventsApi } from '@/api/churchEvents'
@@ -78,6 +78,9 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const [newEventName, setNewEventName] = useState('')
   const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0])
   const [addingEvent, setAddingEvent] = useState(false)
+  const [rescheduleVisible, setRescheduleVisible] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduling, setRescheduling] = useState(false)
 
   const load = () =>
     Promise.all([groupsApi.getCabinet(groupId), groupsApi.getEvents(groupId), churchEventsApi.getAll()])
@@ -98,6 +101,40 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
       Toast.show({ content: 'Помилка', icon: 'fail' })
     }
     setAddingEvent(false)
+  }
+
+  const handleReschedule = async () => {
+    if (!rescheduleDate) return
+    setRescheduling(true)
+    try {
+      await groupsApi.setNextMeetingDate(groupId, rescheduleDate)
+      setRescheduleVisible(false)
+      await load()
+    } catch {
+      Toast.show({ content: 'Помилка', icon: 'fail' })
+    }
+    setRescheduling(false)
+  }
+
+  const handleCancelMeeting = async () => {
+    const ok = await Dialog.confirm({
+      title: 'Скасувати наступну домашку?',
+      content: 'Наступна зустріч зміститься на тиждень пізніше.',
+      confirmText: 'Скасувати зустріч',
+      cancelText: 'Назад',
+    })
+    if (!ok) return
+    const nextDate = nextMeetingDate
+      ? new Date(new Date(nextMeetingDate + 'T00:00:00').getTime() + 7 * 86400000)
+          .toISOString().split('T')[0]
+      : null
+    if (!nextDate) return
+    try {
+      await groupsApi.setNextMeetingDate(groupId, nextDate)
+      await load()
+    } catch {
+      Toast.show({ content: 'Помилка', icon: 'fail' })
+    }
   }
 
   const handleDeleteEvent = async (eventId: number) => {
@@ -177,12 +214,13 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Button size="mini" fill="outline"
                 style={{ '--border-color': 'var(--color-border)', '--text-color': 'var(--color-text-secondary)' } as React.CSSProperties}
-                onClick={() => { Toast.show({ content: 'Незабаром' }) }}>
+                onClick={() => { setRescheduleDate(nextMeetingDate ?? ''); setRescheduleVisible(true) }}>
                 Перенести
               </Button>
               <Button size="mini" fill="outline"
+                disabled={!nextMeetingDate}
                 style={{ '--border-color': 'var(--adm-color-danger)', '--text-color': 'var(--adm-color-danger)' } as React.CSSProperties}
-                onClick={() => { Toast.show({ content: 'Незабаром' }) }}>
+                onClick={() => { handleCancelMeeting() }}>
                 Скасувати
               </Button>
               <Button size="mini" fill="solid"
@@ -346,6 +384,27 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
         </div>
 
       </div>
+
+      {/* Reschedule popup */}
+      <Popup visible={rescheduleVisible} onMaskClick={() => setRescheduleVisible(false)}
+        bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Перенести домашку</div>
+        <FormField label="Нова дата">
+          <input
+            type="date"
+            value={rescheduleDate}
+            onChange={(e) => setRescheduleDate(e.target.value)}
+            style={{ ...nativeSelect, padding: 0 }}
+          />
+        </FormField>
+        <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+          <Button block loading={rescheduling} onClick={handleReschedule}
+            style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>
+            Перенести
+          </Button>
+          <Button block fill="outline" onClick={() => setRescheduleVisible(false)}>Назад</Button>
+        </div>
+      </Popup>
 
       {/* Edit group info popup */}
       <EditGroupPopup
