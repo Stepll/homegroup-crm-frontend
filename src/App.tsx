@@ -18,6 +18,7 @@ import { HomeGroupFormPage } from '@/pages/settings/HomeGroupFormPage'
 import { PersonCreatePage } from '@/pages/people/PersonCreatePage'
 import { PersonDetailPage } from '@/pages/people/PersonDetailPage'
 import { GroupCabinetPage } from '@/pages/cabinet/GroupCabinetPage'
+import { PlanningPage } from '@/pages/cabinet/PlanningPage'
 
 export function App() {
   return (
@@ -37,6 +38,7 @@ export function App() {
             <Route path="cabinet" element={<GroupCabinetPage />} />
             <Route path="cabinet/:id" element={<GroupCabinetPage />} />
             <Route path="cabinet/:id/attendance" element={<AttendancePage />} />
+            <Route path="cabinet/:id/plan" element={<PlanningPage />} />
             <Route path="people" element={<PeoplePage />} />
             <Route path="people/new" element={<PersonCreatePage />} />
             <Route path="people/:id" element={<PersonDetailPage />} />

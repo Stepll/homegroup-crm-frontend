@@ -116,6 +116,38 @@ export interface ChurchEvent {
   daysUntil: number
 }
 
+export interface PlanBlock {
+  id?: number
+  order: number
+  time: string
+  title: string
+  info: string
+  responsible: string
+}
+
+export interface MeetingPlan {
+  id: number
+  homeGroupId: number
+  meetingDate: string
+  appliedTemplateName?: string
+  blocks: PlanBlock[]
+  updatedAt: string
+}
+
+export interface MeetingPlanSummary {
+  id: number
+  meetingDate: string
+  blockCount: number
+  appliedTemplateName?: string
+}
+
+export interface PlanTemplate {
+  id: number
+  name: string
+  blocks: Omit<PlanBlock, 'id'>[]
+  createdAt: string
+}
+
 export interface AttendanceRecord {
   id: number
   personId: number

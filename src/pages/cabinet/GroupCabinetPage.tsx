@@ -170,7 +170,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
               </span>
               <Button size="small" fill="outline"
                 style={{ '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}
-                disabled>
+                onClick={() => navigate(`/cabinet/${groupId}/plan${nextMeetingDate ? `?date=${nextMeetingDate}` : ''}`)}>
                 Планування
               </Button>
             </div>
@@ -198,7 +198,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
               {lastMeetingDate && (
                 <Button size="small" fill="solid"
                   style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
-                  onClick={() => navigate(`/cabinet/${groupId}/attendance`)}>
+                  onClick={() => navigate(`/cabinet/${groupId}/attendance${lastMeetingDate ? `?date=${lastMeetingDate}` : ''}`)}>
                   Відмітити
                 </Button>
               )}
