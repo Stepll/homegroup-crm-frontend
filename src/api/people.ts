@@ -13,8 +13,10 @@ export const peopleApi = {
 
   update: (id: number, data: {
     name: string; lastName?: string; phone?: string; email?: string
-    notes?: string; personStatusId?: number | null; oversightInfo?: string; oversightUserId?: number | null
-    dateOfBirth?: string; primaryGroupId?: number
+    notes?: string; telegram?: string; gender?: string; maritalStatus?: string; address?: string
+    dateOfBirth?: string; isBaptized?: boolean; church?: string; ministry?: string; isBaptizedWithSpirit?: boolean
+    personStatusId?: number | null; oversightInfo?: string; oversightUserId?: number | null
+    primaryGroupId?: number
   }) => api.put<Person>(`/people/${id}`, data).then((r) => r.data),
 
   remove: (id: number) => api.delete(`/people/${id}`),

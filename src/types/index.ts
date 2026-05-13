@@ -13,12 +13,20 @@ export interface Person {
   lastName?: string
   phone?: string
   email?: string
+  telegram?: string
   notes?: string
+  gender?: string
+  maritalStatus?: string
+  address?: string
+  dateOfBirth?: string
+  isBaptized: boolean
+  church?: string
+  ministry?: string
+  isBaptizedWithSpirit: boolean
   status?: { id: number; name: string; color: string } | null
   oversightInfo?: string
   oversightUserId?: number
   oversightUserName?: string
-  dateOfBirth?: string
   primaryGroupId?: number
   primaryGroupName?: string
   primaryGroupColor?: string
