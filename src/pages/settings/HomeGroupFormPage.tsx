@@ -4,7 +4,7 @@ import { NavBar, Input, TextArea, Button, Toast, SpinLoading, Dialog, Popup } fr
 import { DeleteOutline, CloseOutline, AddOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
 import { peopleApi } from '@/api/people'
-import type { Group, GroupCustomField, Person } from '@/types'
+import type { Group, GroupCustomField, GroupMember, Person } from '@/types'
 
 const COLORS = [
   '#2AAFCA', '#10B981', '#6366F1', '#F59E0B',
@@ -20,7 +20,7 @@ export function HomeGroupFormPage() {
   const navigate = useNavigate()
 
   const [form, setForm] = useState<FormState>(EMPTY)
-  const [members, setMembers] = useState<Person[]>([])
+  const [members, setMembers] = useState<GroupMember[]>([])
   const [customFields, setCustomFields] = useState<GroupCustomField[]>([])
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
@@ -42,7 +42,7 @@ export function HomeGroupFormPage() {
     ]).then(([g, m, cf]) => {
       const group = g as Group
       setForm({ name: group.name, description: group.description ?? '', color: group.color })
-      setMembers(m as Person[])
+      setMembers((m as GroupMember[]).filter((x) => !x.isAdmin))
       setCustomFields(cf as GroupCustomField[])
     }).catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))

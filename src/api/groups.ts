@@ -1,12 +1,12 @@
 import { api } from './client'
-import type { Group, GroupCabinet, GroupCustomField, GroupEvent, GroupStats, Person } from '@/types'
+import type { Group, GroupCabinet, GroupCustomField, GroupEvent, GroupStats, GroupMember } from '@/types'
 
 export const groupsApi = {
   getAll: () => api.get<Group[]>('/groups').then((r) => r.data),
 
   getById: (id: number) => api.get<Group>(`/groups/${id}`).then((r) => r.data),
 
-  getMembers: (id: number) => api.get<Person[]>(`/groups/${id}/members`).then((r) => r.data),
+  getMembers: (id: number) => api.get<GroupMember[]>(`/groups/${id}/members`).then((r) => r.data),
 
   create: (data: Omit<Group, 'id' | 'leaderName' | 'memberCount'>) =>
     api.post<Group>('/groups', data).then((r) => r.data),

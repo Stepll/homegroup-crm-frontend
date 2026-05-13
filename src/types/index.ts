@@ -83,6 +83,36 @@ export interface Admin {
   primaryGroupColor?: string
   visibleGroups: GroupTag[]
   createdAt: string
+  // Profile fields
+  phone?: string
+  telegram?: string
+  notes?: string
+  gender?: string
+  maritalStatus?: string
+  address?: string
+  dateOfBirth?: string
+  isBaptized: boolean
+  church?: string
+  ministry?: string
+  isBaptizedWithSpirit: boolean
+  status?: { id: number; name: string; color: string } | null
+}
+
+export interface GroupMember {
+  id: number
+  name: string
+  lastName?: string
+  phone?: string
+  email?: string
+  notes?: string
+  status?: { id: number; name: string; color: string } | null
+  primaryGroupId?: number
+  primaryGroupName?: string
+  primaryGroupColor?: string
+  createdAt: string
+  isAdmin: boolean
+  userId?: number
+  roleTag?: { name: string; color: string } | null
 }
 
 export interface GroupCabinet {
@@ -176,7 +206,8 @@ export interface GroupStats {
     absentees: string[]
   }[]
   personStats: {
-    personId: number
+    personId?: number
+    userId?: number
     fullName: string
     presentCount: number
     totalMeetings: number
@@ -186,8 +217,9 @@ export interface GroupStats {
 
 export interface AttendanceRecord {
   id: number
-  personId: number
-  personName: string
+  personId?: number
+  userId?: number
+  memberName: string
   homeGroupId: number
   meetingDate: string
   wasPresent: boolean

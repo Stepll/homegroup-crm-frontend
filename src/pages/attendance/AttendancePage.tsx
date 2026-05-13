@@ -4,14 +4,18 @@ import { NavBar, Button, Toast, SpinLoading } from 'antd-mobile'
 import { CheckCircleOutline, CloseCircleOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
 import { attendanceApi } from '@/api/attendance'
-import type { Person } from '@/types'
+import type { GroupMember } from '@/types'
+
+function memberKey(m: GroupMember) {
+  return m.isAdmin ? `u_${m.userId}` : `p_${m.id}`
+}
 
 export function AttendancePage() {
   const { id } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [members, setMembers] = useState<Person[]>([])
-  const [present, setPresent] = useState<Set<number>>(new Set())
+  const [members, setMembers] = useState<GroupMember[]>([])
+  const [present, setPresent] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [date, setDate] = useState(
@@ -38,16 +42,17 @@ export function AttendancePage() {
     })
   }, [id, date])
 
-  const toggle = (personId: number) => {
+  const toggle = (m: GroupMember) => {
+    const key = memberKey(m)
     setPresent((prev) => {
       const next = new Set(prev)
-      next.has(personId) ? next.delete(personId) : next.add(personId)
+      next.has(key) ? next.delete(key) : next.add(key)
       return next
     })
   }
 
   const markAll = (value: boolean) => {
-    setPresent(value ? new Set(members.map((m) => m.id)) : new Set())
+    setPresent(value ? new Set(members.map(memberKey)) : new Set())
   }
 
   const save = async () => {
@@ -57,7 +62,11 @@ export function AttendancePage() {
         attendanceApi.record({
           homeGroupId: Number(id),
           meetingDate: date,
-          entries: members.map((m) => ({ personId: m.id, wasPresent: present.has(m.id) })),
+          entries: members.map((m) => ({
+            personId: m.isAdmin ? undefined : m.id,
+            userId: m.isAdmin ? m.userId : undefined,
+            wasPresent: present.has(memberKey(m)),
+          })),
         }),
         attendanceApi.saveMeta({
           homeGroupId: Number(id),
@@ -155,15 +164,16 @@ export function AttendancePage() {
         )}
       </div>
 
-      {/* Person list */}
+      {/* Member list */}
       <div style={{ padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {members.map((m) => {
-          const isPresent = present.has(m.id)
+          const key = memberKey(m)
+          const isPresent = present.has(key)
           const fullName = [m.name, m.lastName].filter(Boolean).join(' ')
           return (
             <button
-              key={m.id}
-              onClick={() => toggle(m.id)}
+              key={key}
+              onClick={() => toggle(m)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '14px 16px',
@@ -175,9 +185,19 @@ export function AttendancePage() {
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <span style={{ fontSize: 15, fontWeight: 500, color: isPresent ? '#16a34a' : 'var(--color-text)' }}>
-                {fullName}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 15, fontWeight: 500, color: isPresent ? '#16a34a' : 'var(--color-text)' }}>
+                  {fullName}
+                </span>
+                {m.isAdmin && m.roleTag && (
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '2px 6px',
+                    color: m.roleTag.color, background: `${m.roleTag.color}18`,
+                  }}>
+                    {m.roleTag.name}
+                  </span>
+                )}
+              </div>
               <span style={{ fontSize: 22, color: isPresent ? '#22c55e' : 'var(--color-border)', display: 'flex' }}>
                 {isPresent ? <CheckCircleOutline /> : <CloseCircleOutline />}
               </span>

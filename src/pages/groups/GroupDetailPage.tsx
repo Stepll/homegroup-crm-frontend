@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { NavBar, List, Button, SpinLoading, Empty } from 'antd-mobile'
 import { groupsApi } from '@/api/groups'
-import type { Group, Person } from '@/types'
+import type { Group, GroupMember } from '@/types'
 
 export function GroupDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [group, setGroup] = useState<Group | null>(null)
-  const [members, setMembers] = useState<Person[]>([])
+  const [members, setMembers] = useState<GroupMember[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -42,8 +42,17 @@ export function GroupDetailPage() {
         {members.length === 0
           ? <Empty description="Учасників ще немає" />
           : members.map((m) => (
-            <List.Item key={m.id} onClick={() => navigate(`/people/${m.id}`)} arrow>
-              {m.name}
+            <List.Item
+              key={m.isAdmin ? `u_${m.userId}` : `p_${m.id}`}
+              onClick={() => !m.isAdmin && navigate(`/people/${m.id}`)}
+              arrow={!m.isAdmin}
+              extra={m.isAdmin && m.roleTag ? (
+                <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '2px 6px', color: m.roleTag.color, background: `${m.roleTag.color}18` }}>
+                  {m.roleTag.name}
+                </span>
+              ) : undefined}
+            >
+              {[m.name, m.lastName].filter(Boolean).join(' ')}
             </List.Item>
           ))
         }
