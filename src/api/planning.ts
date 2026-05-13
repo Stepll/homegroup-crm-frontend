@@ -26,4 +26,7 @@ export const planningApi = {
 
   deleteTemplate: (id: number) =>
     api.delete(`/plan-templates/${id}`),
+
+  deletePlanByDate: (groupId: number, date: string) =>
+    api.delete(`/groups/${groupId}/plans/date/${date}`),
 }

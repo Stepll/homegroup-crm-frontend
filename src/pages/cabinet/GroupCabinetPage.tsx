@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button, Dialog } from 'antd-mobile'
 import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
+import { planningApi } from '@/api/planning'
 import { churchEventsApi } from '@/api/churchEvents'
 import { useAuth } from '@/store/auth'
 import type { Group, GroupCabinet, GroupEvent, ChurchEvent } from '@/types'
@@ -107,7 +108,8 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     if (!rescheduleDate) return
     setRescheduling(true)
     try {
-      await groupsApi.setNextMeetingDate(groupId, rescheduleDate)
+      // Pass old date so backend migrates the plan to the new date
+      await groupsApi.setNextMeetingDate(groupId, rescheduleDate, nextMeetingDate ?? undefined)
       setRescheduleVisible(false)
       await load()
     } catch {
@@ -124,11 +126,28 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
       cancelText: 'Назад',
     })
     if (!ok) return
+
     const nextDate = nextMeetingDate
       ? new Date(new Date(nextMeetingDate + 'T00:00:00').getTime() + 7 * 86400000)
           .toISOString().split('T')[0]
       : null
     if (!nextDate) return
+
+    // If a plan exists for the cancelled meeting, ask whether to delete it
+    if (hasPlanForNextMeeting && nextMeetingDate) {
+      const deletePlan = await Dialog.confirm({
+        title: 'Видалити план зустрічі?',
+        content: 'У цієї зустрічі є збережений план. Видалити його?',
+        confirmText: 'Видалити план',
+        cancelText: 'Залишити',
+      })
+      if (deletePlan) {
+        try {
+          await planningApi.deletePlanByDate(groupId, nextMeetingDate)
+        } catch { /* ignore if plan was already gone */ }
+      }
+    }
+
     try {
       await groupsApi.setNextMeetingDate(groupId, nextDate)
       await load()
