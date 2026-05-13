@@ -76,7 +76,7 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 
 export function ProfilePage() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
 
   const [admin, setAdmin] = useState<Admin | null>(null)
   const [statuses, setStatuses] = useState<PersonStatus[]>([])

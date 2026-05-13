@@ -76,7 +76,8 @@ export function HomeGroupFormPage() {
 
   const handleAdd = () => {
     if (!selected) return
-    setMembers((prev) => [...prev, selected])
+    const asMember: import('@/types').GroupMember = { ...selected, isAdmin: false }
+    setMembers((prev) => [...prev, asMember])
     setSelected(null)
     setSearch('')
     setSearchResults([])
