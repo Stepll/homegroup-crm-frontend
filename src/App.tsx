@@ -15,6 +15,8 @@ import { RolesSettingsPage } from '@/pages/settings/RolesSettingsPage'
 import { RoleFormPage } from '@/pages/settings/RoleFormPage'
 import { HomeGroupsSettingsPage } from '@/pages/settings/HomeGroupsSettingsPage'
 import { HomeGroupFormPage } from '@/pages/settings/HomeGroupFormPage'
+import { PersonStatusesPage } from '@/pages/settings/PersonStatusesPage'
+import { PersonStatusFormPage } from '@/pages/settings/PersonStatusFormPage'
 import { PersonCreatePage } from '@/pages/people/PersonCreatePage'
 import { PersonDetailPage } from '@/pages/people/PersonDetailPage'
 import { GroupCabinetPage } from '@/pages/cabinet/GroupCabinetPage'
@@ -52,6 +54,8 @@ export function App() {
             <Route path="settings/roles/:id" element={<RoleFormPage />} />
             <Route path="settings/home-groups" element={<HomeGroupsSettingsPage />} />
             <Route path="settings/home-groups/:id" element={<HomeGroupFormPage />} />
+            <Route path="settings/person-statuses" element={<PersonStatusesPage />} />
+            <Route path="settings/person-statuses/:id" element={<PersonStatusFormPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -6,6 +6,7 @@ const items = [
   { label: 'Адміни', path: '/settings/admins' },
   { label: 'Ролі', path: '/settings/roles' },
   { label: 'Домашні групи', path: '/settings/home-groups' },
+  { label: 'Статуси людей', path: '/settings/person-statuses' },
 ]
 
 export function SettingsPage() {
