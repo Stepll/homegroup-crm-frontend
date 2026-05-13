@@ -8,6 +8,7 @@ React SPA з мобайл-фьорст дизайном для CRM церков�
 - **Framework**: React 18 + TypeScript
 - **Routing**: React Router v6
 - **UI Library**: antd-mobile v5 (NavBar, List, Button, Input, Dialog, Popup, Toast, SpinLoading, etc.)
+- **Icons**: antd-mobile-icons (EditSOutline, CheckOutline, DeleteOutline, AddOutline, RightOutline, UpOutline, DownOutline, CheckCircleOutline, CloseCircleOutline)
 - **HTTP**: Axios (через `src/api/client.ts`, автоматично додає JWT)
 - **State**: React Context (AuthContext) + useState/useEffect per page
 - **Auth**: JWT в localStorage
@@ -18,10 +19,14 @@ React SPA з мобайл-фьорст дизайном для CRM церков�
 src/
   api/
     client.ts             — Axios instance з baseURL + JWT interceptor
-    people.ts             — peopleApi (getAll, getById, create, update, remove, custom fields)
-    groups.ts             — groupsApi (CRUD, members, syncMembers, custom fields)
-    roles.ts              — rolesApi (CRUD)
-    attendance.ts         — attendanceApi
+    people.ts             — peopleApi
+    groups.ts             — groupsApi (CRUD, members, custom fields, cabinet,
+                            events, setNextMeetingDate, skipMeeting, getStats)
+    roles.ts              — rolesApi
+    attendance.ts         — attendanceApi (record, getMeta, saveMeta)
+    churchEvents.ts       — churchEventsApi (getAll, add, delete)
+    planning.ts           — planningApi (getPlans, getPlan, savePlan,
+                            deletePlanByDate, getTemplates, createTemplate, deleteTemplate)
   components/
     AppLayout.tsx         — bottom tab bar (5 tabs) + <Outlet />
     ProtectedRoute.tsx    — redirect to /login if not authed
@@ -30,162 +35,167 @@ src/
       LoginPage.tsx
     DashboardPage.tsx
     profile/
-      ProfilePage.tsx     — аватар з ініціалами, роль, logout
+      ProfilePage.tsx
     people/
-      PeoplePage.tsx      — список з пошуком + colored group tag
-      PersonCreatePage.tsx — форма: Name*, LastName, Group
-      PersonDetailPage.tsx — inline editing per-field, custom fields block
-    groups/
-      GroupsPage.tsx
-      GroupDetailPage.tsx
+      PeoplePage.tsx             — список з пошуком + colored group tag
+      PersonCreatePage.tsx
+      PersonDetailPage.tsx       — inline editing, custom fields
     attendance/
-      AttendancePage.tsx
+      AttendancePage.tsx         — card-based toggle, guest count + info, date picker
+    cabinet/
+      GroupCabinetPage.tsx       — кабінет домашки: наступна зустріч, відвідуваність,
+                                   події, орг команда, церковний календар, статистика
+      PlanningPage.tsx           — планування зустрічі: блоки (view/edit mode),
+                                   шаблони, минулі плани
+      StatsPage.tsx              — статистика: summary, chart, person ranking, meetings
     settings/
-      SettingsPage.tsx           — меню: Адміни, Ролі, Домашні групи
+      SettingsPage.tsx
       AdminsPage.tsx
-      RolesSettingsPage.tsx      — список ролей
-      RoleFormPage.tsx           — форма ролі (назва, колір, permissions, isDefault)
-      HomeGroupsSettingsPage.tsx — список груп
-      HomeGroupFormPage.tsx      — форма групи (назва, колір, учасники, кастомні поля)
+      AdminDetailPage.tsx
+      AdminCreatePage.tsx
+      RolesSettingsPage.tsx
+      RoleFormPage.tsx
+      HomeGroupsSettingsPage.tsx
+      HomeGroupFormPage.tsx
   store/
     auth.tsx              — AuthContext, useAuth hook, login/logout
   types/
-    index.ts              — Person, Group, CustomField, GroupCustomField, AuthResponse, etc.
-  App.tsx                 — BrowserRouter + Routes
+    index.ts              — всі типи
+  App.tsx
   main.tsx
-public/
-  logo.svg               — SVG логотип, viewBox="320 320 640 640" (обрізаний до кола)
 ```
 
 ## Routing
 
 ```
 /login
-/                          — Dashboard
+/                              — Dashboard
 /profile
-/people                    — список людей
-/people/new                — створення людини
-/people/:id                — деталі / редагування людини
-/groups                    — список груп (перегляд)
-/groups/:id                — деталі групи
-/groups/:id/attendance     — відвідуваність
-/settings                  — меню налаштувань
+/cabinet                       — вибір групи (для адмінів) або одразу кабінет
+/cabinet/:id                   — кабінет домашки
+/cabinet/:id/attendance        — відмічання присутніх
+/cabinet/:id/plan              — планування зустрічі (?date=yyyy-MM-dd)
+/cabinet/:id/stats             — статистика групи
+/people
+/people/new
+/people/:id
+/settings
 /settings/admins
-/settings/roles            — список ролей
-/settings/roles/:id        — форма ролі (id="new" для створення)
-/settings/home-groups      — список домашніх груп (налаштування)
-/settings/home-groups/:id  — форма групи (id="new" для створення)
+/settings/admins/new
+/settings/admins/:id
+/settings/roles
+/settings/roles/:id
+/settings/home-groups
+/settings/home-groups/:id
 ```
 
-## Bottom Tab Bar
+## Bottom Tab Bar (AppLayout.tsx)
 
-5 tabs у `AppLayout.tsx`, активна вкладка визначається по `pathname`:
-```
-/ → Дашборд
-/people → Люди
-/groups → Група
-/profile → Профіль
-/settings → Налаштування
-```
-Активна вкладка: teal top-border (3px pill). Реалізовано як кастомні кнопки (не antd-mobile TabBar).
+5 tabs: Дашборд / Люди / Домашка / Профіль / Налаштування. Активна вкладка — teal top-border (3px pill). Кастомні кнопки (не antd-mobile TabBar).
 
-## Key Patterns
+## Key Pages & Patterns
+
+### GroupCabinetPage
+- **GroupSelector** — показується адміну без `:id` в URL
+- **CabinetView** — основний вміст:
+  - Блок 1: інфо групи (EditGroupPopup — назва, день, час, адреса, TelegramGroupId)
+  - Блок 2: наступна домашка + 3 кнопки (Перенести, Скасувати, Повідомити про план)
+    - "Перенести" → popup з date picker → `groupsApi.setNextMeetingDate(id, date, oldDate)` (переміщає план)
+    - "Скасувати" → Dialog confirm → опційно Dialog для видалення плану → `groupsApi.skipMeeting(id)`
+    - "Повідомити" → disabled якщо !hasPlanForNextMeeting || !telegramGroupId
+  - Блок 3: присутність + кнопка відмітити
+  - Блок 4: birthday events (якщо є)
+  - Блок 5: орг команда (OrgMemberRow: ім'я + тег ролі + кількість під опікою, collapse з navigate до /people/:id)
+  - Блок 6: найближчі події (зелений фон якщо ≤7 днів)
+  - Блок 7: церковний календар (зелений фон якщо ≤7 днів)
+  - Блок 8: статистика + "Деталі →" → `/cabinet/:id/stats`
+
+### AttendancePage
+- Card-based toggle (зелений = присутній, сірий = відсутній)
+- Date picker вгорі (читає `?date=` query param)
+- Гості block: числовий інпут + "Вказати інформацію про гостей" link → textarea
+- Save: `attendanceApi.record(...)` + `attendanceApi.saveMeta(...)` паралельно
+- Зберігає назад до `/cabinet/:id`
+
+### PlanningPage
+- `BlockCard` компонент: два режими — **view** (текст + олівець/урна) та **edit** (blue border, checkmark кнопка)
+  - `defaultEditing` prop → нові блоки одразу в edit mode (`newBlockKeys` state)
+  - Відповідальний з орг команди — підкреслене посилання, клік → `/settings/admins/:id`
+- Шаблони: застосувати існуючий (popup) або зберегти поточний план як шаблон
+- PastPlansDrawer — список минулих планів з expandable деталями
+- Зберігає plan до бекенду, перевизначає блоки при upsert
+
+### StatsPage
+- Period selector: 1 міс / 3 міс / 6 міс
+- **Summary card**: avg відвідуваність, кількість зустрічей, гостей, нових учасників
+- **AttendanceChart**: custom CSS stacked bar chart без залежностей
+  - Синій = члени, помаранчевий (#F97316) = гості
+  - Горизонтальний скрол якщо багато зустрічей
+- **PersonRow**: ім'я + % + "present/total" + progress bar (зелений ≥80%, помаранчевий ≥50%, червоний <50%)
+- **MeetingRow**: дата + stat, expandable → список відсутніх
 
 ### Inline Editing (PersonDetailPage)
-`EditableField` компонент: показує `label + value + іконка олівця`. По кліку на олівець — інпут + Зберегти/Скасувати. `onSave` отримує рядок і робить API call.
+`EditableField` компонент: label + value + pencil icon. По кліку — input + Зберегти/Скасувати.
 
-```tsx
-<EditableField
-  label="Ім'я"
-  display={person.name}
-  onSave={(v) => save({ name: v })}
-  renderEditor={(v, onChange) => <Input value={v} onChange={onChange} />}
-/>
-```
-
-### Custom Fields (Group-Scoped)
-Поля визначаються на рівні `HomeGroup`, люди мають лише значення:
-- Додати поле через сторінку людини → `POST /people/:id/custom-fields` → створює поле для всієї групи
-- Видалити поле → видаляється для всіх учасників групи
-- Редагувати значення → `PUT /people/:id/custom-fields/:fieldId` (upsert)
-- Якщо людина не має групи — блок кастомних полів показує повідомлення
-
-### Group Member Search (HomeGroupFormPage)
-- При першому фокусі на інпуті — одразу завантажує всіх людей без групи (`?noGroup=true`)
-- При наборі тексту — debounce 300ms, пошук тільки серед людей без групи
-- В dropdown кожна людина має чорний тег "без групи"
-
-### Bidirectional Group Sync
-- Зміна "Домашня група" на сторінці людини → бекенд автоматично оновлює `HomeGroupMembers`
-- Збереження учасників на сторінці групи → бекенд автоматично оновлює `PrimaryGroupId` кожної людини
-
-### Popup замість Dialog.prompt
-`antd-mobile v5` не має `Dialog.prompt`. Використовуємо `<Popup>` з `<Input>` всередині для введення тексту.
-
-### Group Color Tag (PeoplePage)
-```tsx
-<span style={{ color: p.primaryGroupColor, background: `${p.primaryGroupColor}18` }}>
-  {p.primaryGroupName}
-</span>
-```
-`18` в кінці hex — 10% opacity для фону.
+### OrgMemberRow
+- Кнопка-акордеон: ім'я | тег ролі (колір ролі з бекенду) | кількість під опікою
+- Collapse: список людей під опікою, кожна людина з `RightOutline` → navigate до `/people/:id`
 
 ## CSS Design Tokens
 
-Всі кольори та розміри через CSS змінні (визначені в `index.css`):
 ```css
---color-primary       /* teal */
+--color-primary       /* teal #2AAFCA */
 --color-error
---color-text
---color-text-secondary
---color-text-tertiary
---color-border
---color-border-light
---radius-md
---radius-lg
---shadow-sm
---shadow-lg
---font-base
+--color-text / --color-text-secondary / --color-text-tertiary
+--color-border / --color-border-light
+--color-bg
+--radius-md / --radius-lg
+--shadow-sm / --shadow-lg
 ```
 
-## Input Style (стандарт для всіх форм)
-
-```tsx
-const inputWrap: React.CSSProperties = {
-  background: '#fff',
-  borderRadius: 'var(--radius-md)',
-  border: '1.5px solid var(--color-border)',
-  padding: '10px 14px',
-}
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 13, fontWeight: 600,
-  color: 'var(--color-text-secondary)', marginBottom: 8,
-  textTransform: 'uppercase', letterSpacing: '0.04em',
-}
-```
+Opacity для фонів тегів: `${color}18` = ~10%, `${color}20` = ~12%.
 
 ## Types (src/types/index.ts)
 
 ```typescript
 Person: { id, name, lastName?, phone?, email?, notes?, status, oversightInfo?,
-          dateOfBirth?, primaryGroupId?, primaryGroupName?, primaryGroupColor?,
-          createdAt, customFields?: CustomField[] }
-
-CustomField: { id, name, value? }   // id = HomeGroupCustomField.Id
+          oversightUserId?, oversightUserName?, dateOfBirth?, primaryGroupId?,
+          primaryGroupName?, primaryGroupColor?, createdAt, customFields? }
 
 Group: { id, name, description?, color, meetingDay?, meetingTime?,
-         location?, leaderId?, leaderName?, isActive, memberCount }
+         location?, leaderId?, leaderName?, isActive, memberCount, telegramGroupId? }
 
-GroupCustomField: { id, name }
+GroupCabinet: {
+  group: { id, name, color, meetingDay?, meetingTime?, location?, telegramGroupId? }
+  nextMeetingDate?, lastMeetingDate?
+  lastAttendance?: { present, total }
+  upcomingEvents: [{ personId, fullName, dateOfBirth, daysUntil }]
+  orgTeam: [{ id, name, lastName?, email, overseeCount, oversees: [{id, fullName}],
+              role?: { name, color } }]
+  stats: { avgAttendanceRate, newMembersThisMonth, totalMembers }
+  hasPlanForNextMeeting: boolean
+}
 
-AuthResponse: { token, name, email, role }
-AttendanceRecord: { id, personId, personName, homeGroupId, meetingDate, wasPresent, notes? }
-AttendanceSummary: { meetingDate, totalMembers, presentCount, attendanceRate }
+GroupEvent: { id, name, month, day, daysUntil }
+ChurchEvent: { id, name, month, day, daysUntil }
+
+PlanBlock: { id?, order, time, title, info, responsible }
+MeetingPlan: { id, homeGroupId, meetingDate, appliedTemplateName?, blocks[], updatedAt }
+MeetingPlanSummary: { id, meetingDate, blockCount, appliedTemplateName? }
+PlanTemplate: { id, name, blocks[], createdAt }
+
+GroupStats: {
+  summary: { avgAttendanceRate, meetingCount, totalGuests, newMembers }
+  meetings: [{ date, presentCount, totalMembers, attendanceRate, guestCount, absentees[] }]
+  personStats: [{ personId, fullName, presentCount, totalMeetings, attendanceRate }]
+}
+
+AttendanceRecord, AttendanceSummary
 ```
 
-## API Client (src/api/client.ts)
+## API Client
 
-Axios instance з `baseURL = import.meta.env.VITE_API_URL`. Request interceptor додає `Authorization: Bearer <token>` з localStorage. Response interceptor: 401 → redirect до `/login`.
+Axios з `baseURL = import.meta.env.VITE_API_URL`. JWT з localStorage. 401 → redirect `/login`.
 
 ## Development Commands
 
@@ -193,7 +203,7 @@ Axios instance з `baseURL = import.meta.env.VITE_API_URL`. Request interceptor 
 npm install
 npm run dev          # dev server
 npm run build        # tsc -b && vite build
-npm run preview
+npm run type-check   # tsc --noEmit
 ```
 
 ## Environment Variables
@@ -202,28 +212,33 @@ npm run preview
 VITE_API_URL=https://your-api.domain.com/api/v1
 ```
 
+Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html"` для SPA routing.
+
 ## What's Done
 
 - [x] Auth (login, JWT, ProtectedRoute, logout)
 - [x] Bottom tab bar (5 tabs, active state)
-- [x] Profile page (avatar з ініціалами, роль)
+- [x] Profile page
 - [x] Settings menu (Адміни, Ролі, Домашні групи)
-- [x] Roles CRUD (список, форма з color palette + permissions + isDefault)
-- [x] HomeGroups CRUD (список, форма з member search + custom fields)
-- [x] People CRUD (список з group tag, create form, detail з inline editing)
-- [x] Group-scoped custom fields (add/edit/delete від людини і від групи)
-- [x] Bidirectional group sync (person ↔ group members)
-- [x] Group tag в списку людей (кольором групи)
-- [x] No-group search у формі групи (відкривається одразу, тільки без групи)
+- [x] Roles CRUD
+- [x] HomeGroups CRUD (members, custom fields)
+- [x] People CRUD (inline editing, custom fields, group tag)
+- [x] Bidirectional group sync
+- [x] AttendancePage (card toggle, date picker, guest count + info, saves meta)
+- [x] GroupCabinetPage (інфо групи, наступна/остання зустріч, події, орг команда, статистика)
+- [x] Reschedule/cancel next meeting (override date + skip-meeting, переміщення плану)
+- [x] Group Events (custom events per group, green highlight ≤7 days)
+- [x] Church Calendar (read-only global events, green highlight ≤7 days)
+- [x] PlanningPage (block builder, view/edit mode, templates, past plans)
+- [x] StatsPage (stacked bar chart, person ranking, meeting history, period filter)
 
 ## TODO
 
 - [ ] Dashboard (реальна статистика)
-- [ ] Groups page (перегляд, не налаштування)
-- [ ] Attendance page (відмітка відвідуваності)
 - [ ] Admins page (CRUD користувачів системи)
 - [ ] Статуси людини — configurable список
 - [ ] Опіка (Oversight) — configurable список
 - [ ] Enforcement прав доступу (показувати/ховати секції по ролі)
+- [ ] Telegram notify (кнопка "Повідомити про план" — поки заглушка)
 - [ ] Pull-to-refresh
 - [ ] Pagination для великих списків
