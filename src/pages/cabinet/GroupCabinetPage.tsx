@@ -385,7 +385,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
               <SectionLabel>Статистика</SectionLabel>
               <Button size="mini" fill="none"
                 style={{ '--text-color': 'var(--color-primary)' } as React.CSSProperties}
-                disabled>
+                onClick={() => navigate(`/cabinet/${groupId}/stats`)}>
                 Деталі →
               </Button>
             </div>

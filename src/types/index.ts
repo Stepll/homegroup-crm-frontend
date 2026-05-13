@@ -152,6 +152,30 @@ export interface PlanTemplate {
   createdAt: string
 }
 
+export interface GroupStats {
+  summary: {
+    avgAttendanceRate: number
+    meetingCount: number
+    totalGuests: number
+    newMembers: number
+  }
+  meetings: {
+    date: string
+    presentCount: number
+    totalMembers: number
+    attendanceRate: number
+    guestCount: number
+    absentees: string[]
+  }[]
+  personStats: {
+    personId: number
+    fullName: string
+    presentCount: number
+    totalMeetings: number
+    attendanceRate: number
+  }[]
+}
+
 export interface AttendanceRecord {
   id: number
   personId: number

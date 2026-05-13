@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Group, GroupCabinet, GroupCustomField, GroupEvent, Person } from '@/types'
+import type { Group, GroupCabinet, GroupCustomField, GroupEvent, GroupStats, Person } from '@/types'
 
 export const groupsApi = {
   getAll: () => api.get<Group[]>('/groups').then((r) => r.data),
@@ -51,4 +51,7 @@ export const groupsApi = {
 
   skipMeeting: (groupId: number) =>
     api.put<{ date: string }>(`/groups/${groupId}/skip-meeting`).then((r) => r.data),
+
+  getStats: (groupId: number, period: '1m' | '3m' | '6m') =>
+    api.get<GroupStats>(`/groups/${groupId}/stats`, { params: { period } }).then((r) => r.data),
 }
