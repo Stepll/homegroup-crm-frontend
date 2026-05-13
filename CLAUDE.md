@@ -19,12 +19,14 @@ React SPA з мобайл-фьорст дизайном для CRM церков�
 src/
   api/
     client.ts             — Axios instance з baseURL + JWT interceptor
-    people.ts             — peopleApi
+    people.ts             — peopleApi (update приймає всі розширені поля Person)
     groups.ts             — groupsApi (CRUD, members, custom fields, cabinet,
                             events, setNextMeetingDate, skipMeeting, getStats)
     roles.ts              — rolesApi
-    attendance.ts         — attendanceApi (record, getMeta, saveMeta)
+    attendance.ts         — attendanceApi (getByGroup, getSummary, record, getMeta, saveMeta)
+    personStatuses.ts     — personStatusesApi (getAll, create, update, delete)
     churchEvents.ts       — churchEventsApi (getAll, add, delete)
+    admins.ts             — adminsApi (getAll, getById, create, update, setPassword, remove)
     planning.ts           — planningApi (getPlans, getPlan, savePlan,
                             deletePlanByDate, getTemplates, createTemplate, deleteTemplate)
   components/
@@ -39,7 +41,7 @@ src/
     people/
       PeoplePage.tsx             — список з пошуком + colored group tag
       PersonCreatePage.tsx
-      PersonDetailPage.tsx       — inline editing, custom fields
+      PersonDetailPage.tsx       — 4 блоки з popup-редагуванням + блок відвідуваності
     attendance/
       AttendancePage.tsx         — card-based toggle, guest count + info, date picker
     cabinet/
@@ -49,7 +51,7 @@ src/
                                    шаблони, минулі плани
       StatsPage.tsx              — статистика: summary, chart, person ranking, meetings
     settings/
-      SettingsPage.tsx
+      SettingsPage.tsx           — меню: Адміни, Ролі, Домашні групи, Статуси людей
       AdminsPage.tsx
       AdminDetailPage.tsx
       AdminCreatePage.tsx
@@ -57,6 +59,8 @@ src/
       RoleFormPage.tsx
       HomeGroupsSettingsPage.tsx
       HomeGroupFormPage.tsx
+      PersonStatusesPage.tsx     — список статусів з кольоровими тегами
+      PersonStatusFormPage.tsx   — форма: назва + color swatches + preview
   store/
     auth.tsx              — AuthContext, useAuth hook, login/logout
   types/
@@ -87,6 +91,8 @@ src/
 /settings/roles/:id
 /settings/home-groups
 /settings/home-groups/:id
+/settings/person-statuses
+/settings/person-statuses/:id
 ```
 
 ## Bottom Tab Bar (AppLayout.tsx)
@@ -134,8 +140,26 @@ src/
 - **PersonRow**: ім'я + % + "present/total" + progress bar (зелений ≥80%, помаранчевий ≥50%, червоний <50%)
 - **MeetingRow**: дата + stat, expandable → список відсутніх
 
-### Inline Editing (PersonDetailPage)
-`EditableField` компонент: label + value + pencil icon. По кліку — input + Зберегти/Скасувати.
+### PersonDetailPage
+Сторінка людини побудована з 5 блоків-карток. Кожен блок має заголовок + один олівець який відкриває `Popup` з формою.
+
+**Блоки:**
+- **Особиста інформація** — Ім'я, Прізвище, Дата народження, Стать (Male/Female), Сімейний стан (Single/Married), Адреса, Домашня група
+- **Комунікація** — Телефон (кнопка `tel:` дзвінок), Email, Telegram (кнопка `t.me/` + `autoComplete="off"`)
+- **Церква** — IsBaptized (Switch), Church, Ministry, IsBaptizedWithSpirit (Switch)
+- **Опіка** — Опікун (select з admins), Статус (select з personStatuses, відображається кольоровим тегом)
+- **Додаткова інформація** — group-scoped custom fields (+ Додати)
+
+**Блок відвідуваності** (`AttendanceGrid`):
+- 12 стовбців = 12 місяців (oldest→newest)
+- Є записи → кольор по wasPresent (зелений/сірий)
+- Немає записів → розраховує очікувані зустрічі з `group.meetingDay` (укр назви днів: Понеділок..Неділя)
+- Жирна лінія над стовбцями поточного року (flex: currentYearStartIdx / flex: 12-currentYearStartIdx)
+- "Сьогодні" правий підпис, легенда знизу
+- Завантажується окремим `useEffect` після person (non-blocking)
+
+**Popup форми** (`PopupForm` компонент): `maxHeight: 85vh; overflowY: auto`
+**Збереження**: `basePayload()` → spread з patch → `peopleApi.update()`
 
 ### OrgMemberRow
 - Кнопка-акордеон: ім'я | тег ролі (колір ролі з бекенду) | кількість під опікою
@@ -158,9 +182,20 @@ Opacity для фонів тегів: `${color}18` = ~10%, `${color}20` = ~12%.
 ## Types (src/types/index.ts)
 
 ```typescript
-Person: { id, name, lastName?, phone?, email?, notes?, status, oversightInfo?,
-          oversightUserId?, oversightUserName?, dateOfBirth?, primaryGroupId?,
-          primaryGroupName?, primaryGroupColor?, createdAt, customFields? }
+Person: {
+  id, name, lastName?, phone?, email?, telegram?, notes?,
+  gender?,           // "Male" | "Female"
+  maritalStatus?,    // "Single" | "Married"
+  address?,
+  dateOfBirth?,
+  isBaptized,        // bool
+  church?, ministry?,
+  isBaptizedWithSpirit,  // bool
+  status?: { id, name, color } | null,   // PersonStatusDto
+  oversightInfo?, oversightUserId?, oversightUserName?,
+  primaryGroupId?, primaryGroupName?, primaryGroupColor?,
+  createdAt, customFields?
+}
 
 Group: { id, name, description?, color, meetingDay?, meetingTime?,
          location?, leaderId?, leaderName?, isActive, memberCount, telegramGroupId? }
@@ -231,13 +266,17 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
 - [x] Church Calendar (read-only global events, green highlight ≤7 days)
 - [x] PlanningPage (block builder, view/edit mode, templates, past plans)
 - [x] StatsPage (stacked bar chart, person ranking, meeting history, period filter)
+- [x] Person Statuses CRUD (налаштування: назва + color swatches + preview тегу)
+- [x] PersonDetailPage — popup-блоки (Особиста, Комунікація, Церква, Опіка)
+- [x] PersonDetailPage — розширені поля (Gender, MaritalStatus, Address, Telegram,
+      IsBaptized, Church, Ministry, IsBaptizedWithSpirit)
+- [x] PersonDetailPage — блок відвідуваності (12-column activity grid)
+- [x] Комунікація — кнопки tel: дзвінок і t.me/ Telegram чат
 
 ## TODO
 
 - [ ] Dashboard (реальна статистика)
 - [ ] Admins page (CRUD користувачів системи)
-- [ ] Статуси людини — configurable список
-- [ ] Опіка (Oversight) — configurable список
 - [ ] Enforcement прав доступу (показувати/ховати секції по ролі)
 - [ ] Telegram notify (кнопка "Повідомити про план" — поки заглушка)
 - [ ] Pull-to-refresh
