@@ -177,18 +177,18 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Button size="mini" fill="outline"
                 style={{ '--border-color': 'var(--color-border)', '--text-color': 'var(--color-text-secondary)' } as React.CSSProperties}
-                onClick={() => Toast.show({ content: 'Незабаром' })}>
+                onClick={() => { Toast.show({ content: 'Незабаром' }) }}>
                 Перенести
               </Button>
               <Button size="mini" fill="outline"
                 style={{ '--border-color': 'var(--adm-color-danger)', '--text-color': 'var(--adm-color-danger)' } as React.CSSProperties}
-                onClick={() => Toast.show({ content: 'Незабаром' })}>
+                onClick={() => { Toast.show({ content: 'Незабаром' }) }}>
                 Скасувати
               </Button>
               <Button size="mini" fill="solid"
                 disabled={!hasPlanForNextMeeting || !group.telegramGroupId}
                 style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
-                onClick={() => Toast.show({ content: 'Незабаром' })}>
+                onClick={() => { Toast.show({ content: 'Незабаром' }) }}>
                 Повідомити про план
               </Button>
             </div>
