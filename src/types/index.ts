@@ -14,7 +14,7 @@ export interface Person {
   phone?: string
   email?: string
   notes?: string
-  status: string
+  status?: { id: number; name: string; color: string } | null
   oversightInfo?: string
   oversightUserId?: number
   oversightUserName?: string

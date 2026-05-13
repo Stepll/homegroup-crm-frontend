@@ -5,6 +5,7 @@ import { EditSOutline, DeleteOutline, AddOutline } from 'antd-mobile-icons'
 import { peopleApi } from '@/api/people'
 import { groupsApi } from '@/api/groups'
 import { adminsApi } from '@/api/admins'
+import { personStatusesApi, type PersonStatus } from '@/api/personStatuses'
 import type { Person, CustomField, Group, Admin } from '@/types'
 
 // ── Editable field component ──────────────────────────────────────────────────
@@ -67,13 +68,20 @@ export function PersonDetailPage() {
   const [person, setPerson] = useState<Person | null>(null)
   const [groups, setGroups] = useState<Group[]>([])
   const [admins, setAdmins] = useState<Admin[]>([])
+  const [statuses, setStatuses] = useState<PersonStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [addFieldVisible, setAddFieldVisible] = useState(false)
   const [newFieldName, setNewFieldName] = useState('')
 
+  // Oversight block edit state
+  const [oversightEditing, setOversightEditing] = useState(false)
+  const [draftOversightUserId, setDraftOversightUserId] = useState<number | null>(null)
+  const [draftStatusId, setDraftStatusId] = useState<number | null>(null)
+  const [oversightSaving, setOversightSaving] = useState(false)
+
   const load = () =>
-    Promise.all([peopleApi.getById(personId), groupsApi.getAll(), adminsApi.getAll()])
-      .then(([p, g, a]) => { setPerson(p); setGroups(g); setAdmins(a) })
+    Promise.all([peopleApi.getById(personId), groupsApi.getAll(), adminsApi.getAll(), personStatusesApi.getAll()])
+      .then(([p, g, a, s]) => { setPerson(p); setGroups(g); setAdmins(a); setStatuses(s) })
       .catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))
 
@@ -96,14 +104,33 @@ export function PersonDetailPage() {
       phone: person.phone,
       email: person.email,
       notes: person.notes,
-      status: person.status,
+      personStatusId: person.status?.id ?? null,
       oversightInfo: person.oversightInfo,
-      oversightUserId: person.oversightUserId,
+      oversightUserId: person.oversightUserId ?? null,
       dateOfBirth: person.dateOfBirth,
       primaryGroupId: person.primaryGroupId,
       ...patch,
     })
     setPerson(updated)
+  }
+
+  const startOversightEdit = () => {
+    setDraftOversightUserId(person.oversightUserId ?? null)
+    setDraftStatusId(person.status?.id ?? null)
+    setOversightEditing(true)
+  }
+
+  const cancelOversightEdit = () => setOversightEditing(false)
+
+  const saveOversight = async () => {
+    setOversightSaving(true)
+    try {
+      await save({ oversightUserId: draftOversightUserId ?? undefined, personStatusId: draftStatusId ?? null })
+      setOversightEditing(false)
+    } catch {
+      Toast.show({ content: 'Помилка збереження', icon: 'fail' })
+    }
+    setOversightSaving(false)
   }
 
   const fullName = [person.name, person.lastName].filter(Boolean).join(' ')
@@ -156,6 +183,10 @@ export function PersonDetailPage() {
       ...p, customFields: p.customFields?.map((f) => f.id === updated.id ? updated : f),
     } : p)
   }
+
+  const oversightUserName = admins.find((a) => a.id === person.oversightUserId)
+    ? [admins.find((a) => a.id === person.oversightUserId)!.name, admins.find((a) => a.id === person.oversightUserId)!.lastName].filter(Boolean).join(' ')
+    : person.oversightUserName
 
   return (
     <div style={{ paddingBottom: 80 }}>
@@ -211,51 +242,94 @@ export function PersonDetailPage() {
           />
         </div>
 
-        {/* Block 2: Status / Oversight */}
-        <div style={block}>
-          <EditableField
-            label="Статус"
-            display={person.status}
-            onSave={(v) => save({ status: v || 'Active' })}
-            renderEditor={(v, onChange) => (
-              <select value={v} onChange={(e) => onChange(e.target.value)} style={nativeSelect}>
-                <option value="Active">Active</option>
-              </select>
+        {/* Block 2: Oversight */}
+        <div style={{ ...block, padding: '12px 16px' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: oversightEditing ? 12 : 4 }}>
+            <span style={blockLabel}>Опіка</span>
+            {!oversightEditing && (
+              <button onClick={startOversightEdit} style={iconBtn}><EditSOutline /></button>
             )}
-          />
-          <EditableField
-            label="Опіка"
-            display={person.oversightUserName ?? ''}
-            onSave={async (v) => {
-              const admin = admins.find((a) => [a.name, a.lastName].filter(Boolean).join(' ') === v)
-              await save({ oversightUserId: admin?.id ?? undefined })
-            }}
-            renderEditor={(_, onChange) => (
-              <select
-                defaultValue={person.oversightUserId ?? ''}
-                onChange={(e) => {
-                  const a = admins.find((a) => a.id === Number(e.target.value))
-                  onChange(a ? [a.name, a.lastName].filter(Boolean).join(' ') : '')
-                }}
-                style={nativeSelect}
-              >
-                <option value="">— не вибрано —</option>
-                {admins.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {[a.name, a.lastName].filter(Boolean).join(' ')}
-                  </option>
-                ))}
-              </select>
-            )}
-          />
+          </div>
+
+          {oversightEditing ? (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <div style={fieldLabel}>Опікун</div>
+                <div style={inputWrap}>
+                  <select
+                    value={draftOversightUserId ?? ''}
+                    onChange={(e) => setDraftOversightUserId(e.target.value ? Number(e.target.value) : null)}
+                    style={nativeSelect}
+                  >
+                    <option value="">— не вибрано —</option>
+                    {admins.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {[a.name, a.lastName].filter(Boolean).join(' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <div style={fieldLabel}>Статус</div>
+                <div style={inputWrap}>
+                  <select
+                    value={draftStatusId ?? ''}
+                    onChange={(e) => setDraftStatusId(e.target.value ? Number(e.target.value) : null)}
+                    style={nativeSelect}
+                  >
+                    <option value="">— не вибрано —</option>
+                    {statuses.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button size="mini" loading={oversightSaving} onClick={saveOversight}
+                  style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>
+                  Зберегти
+                </Button>
+                <Button size="mini" fill="outline" onClick={cancelOversightEdit}>Скасувати</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={labelRow}>
+                <span style={fieldLabel}>Опікун</span>
+                <span style={{ fontSize: 15, color: oversightUserName ? 'var(--color-text)' : 'var(--color-text-tertiary)' }}>
+                  {oversightUserName || '—'}
+                </span>
+              </div>
+              <div style={{ ...labelRow, borderBottom: 'none' }}>
+                <span style={fieldLabel}>Статус</span>
+                {person.status ? (
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '2px 10px',
+                    borderRadius: 20,
+                    background: person.status.color + '22',
+                    color: person.status.color,
+                    fontWeight: 600,
+                    fontSize: 13,
+                  }}>
+                    {person.status.name}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: 15, color: 'var(--color-text-tertiary)' }}>—</span>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Block 3: Custom fields */}
         <div style={{ ...block, padding: '12px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Додаткова інформація
-            </span>
+            <span style={blockLabel}>Додаткова інформація</span>
             {person.primaryGroupId && (
               <button onClick={handleAddField} style={{ ...iconBtn, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
                 <AddOutline /> Додати поле
@@ -380,4 +454,16 @@ const iconBtn: React.CSSProperties = {
 const nativeSelect: React.CSSProperties = {
   width: '100%', border: 'none', outline: 'none',
   background: 'transparent', fontSize: 15, color: 'var(--color-text)',
+}
+const blockLabel: React.CSSProperties = {
+  fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)',
+  textTransform: 'uppercase', letterSpacing: '0.04em',
+}
+const fieldLabel: React.CSSProperties = {
+  fontSize: 12, color: 'var(--color-text-tertiary)', fontWeight: 500, marginBottom: 4,
+}
+const labelRow: React.CSSProperties = {
+  padding: '8px 0',
+  borderBottom: '1px solid var(--color-border-light)',
+  display: 'flex', flexDirection: 'column', gap: 2,
 }
