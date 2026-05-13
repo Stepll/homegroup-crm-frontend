@@ -280,11 +280,36 @@ export function PersonDetailPage() {
 
         {/* ── Комунікація ── */}
         <BlockCard title="Комунікація" onEdit={openContact}>
-          <InfoRow label="Телефон">{person.phone ?? '—'}</InfoRow>
+          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+            <span style={fieldLabel}>Телефон</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 15, color: 'var(--color-text)' }}>{person.phone ?? '—'}</span>
+              {person.phone && (
+                <a href={`tel:${person.phone}`} style={{ ...iconBtn, color: 'var(--color-primary)', textDecoration: 'none' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/>
+                  </svg>
+                </a>
+              )}
+            </div>
+          </div>
           <InfoRow label="Email">{person.email ?? '—'}</InfoRow>
-          <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ padding: '8px 0' }}>
             <span style={fieldLabel}>Telegram</span>
-            <span style={{ fontSize: 15, color: 'var(--color-text)' }}>{person.telegram ?? '—'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 15, color: 'var(--color-text)' }}>{person.telegram ?? '—'}</span>
+              {person.telegram && (
+                <a
+                  href={`https://t.me/${person.telegram.replace(/^@/, '')}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ ...iconBtn, color: '#2AAFCA', textDecoration: 'none' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.11 14.481l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.838.078z"/>
+                  </svg>
+                </a>
+              )}
+            </div>
           </div>
         </BlockCard>
 
@@ -306,7 +331,7 @@ export function PersonDetailPage() {
             <span style={fieldLabel}>Статус</span>
             {person.status ? (
               <span style={{
-                display: 'inline-block', padding: '2px 10px', borderRadius: 20,
+                alignSelf: 'flex-start', padding: '2px 10px', borderRadius: 20,
                 background: person.status.color + '22', color: person.status.color, fontWeight: 600, fontSize: 13,
               }}>{person.status.name}</span>
             ) : <span style={{ fontSize: 15, color: 'var(--color-text-tertiary)' }}>—</span>}
@@ -389,7 +414,7 @@ export function PersonDetailPage() {
           <Input value={draftEmail} onChange={setDraftEmail} placeholder="email@example.com" type="email" />
         </FormField>
         <FormField label="Telegram">
-          <Input value={draftTelegram} onChange={setDraftTelegram} placeholder="@username" />
+          <Input value={draftTelegram} onChange={setDraftTelegram} placeholder="@username" autoComplete="off" />
         </FormField>
       </PopupForm>
 
