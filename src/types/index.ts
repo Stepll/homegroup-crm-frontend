@@ -49,6 +49,7 @@ export interface Group {
   leaderName?: string
   isActive: boolean
   memberCount: number
+  telegramGroupId?: string
 }
 
 export interface RoleTag {
@@ -84,6 +85,7 @@ export interface GroupCabinet {
     meetingDay?: string
     meetingTime?: string
     location?: string
+    telegramGroupId?: string
   }
   nextMeetingDate?: string
   lastMeetingDate?: string
@@ -96,8 +98,10 @@ export interface GroupCabinet {
     email: string
     overseeCount: number
     oversees: { id: number; fullName: string }[]
+    role?: { name: string; color: string }
   }[]
   stats: { avgAttendanceRate: number; newMembersThisMonth: number; totalMembers: number }
+  hasPlanForNextMeeting: boolean
 }
 
 export interface GroupEvent {

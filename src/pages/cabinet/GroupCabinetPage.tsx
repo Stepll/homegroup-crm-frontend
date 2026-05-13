@@ -114,7 +114,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     </div>
   )
 
-  const { group, nextMeetingDate, lastMeetingDate, lastAttendance, upcomingEvents, orgTeam, stats } = cabinet
+  const { group, nextMeetingDate, lastMeetingDate, lastAttendance, upcomingEvents, orgTeam, stats, hasPlanForNextMeeting } = cabinet
 
   const attendancePct = lastAttendance
     ? Math.round(lastAttendance.present * 100 / (lastAttendance.total || 1))
@@ -164,7 +164,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
         <div style={block}>
           <div style={{ padding: '14px 0' }}>
             <SectionLabel>Наступна домашка</SectionLabel>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <span style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>
                 {formatDate(nextMeetingDate) ?? 'Невідомо'}
               </span>
@@ -172,6 +172,24 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                 style={{ '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}
                 onClick={() => navigate(`/cabinet/${groupId}/plan${nextMeetingDate ? `?date=${nextMeetingDate}` : ''}`)}>
                 Планування
+              </Button>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Button size="mini" fill="outline"
+                style={{ '--border-color': 'var(--color-border)', '--text-color': 'var(--color-text-secondary)' } as React.CSSProperties}
+                onClick={() => Toast.show({ content: 'Незабаром' })}>
+                Перенести
+              </Button>
+              <Button size="mini" fill="outline"
+                style={{ '--border-color': 'var(--adm-color-danger)', '--text-color': 'var(--adm-color-danger)' } as React.CSSProperties}
+                onClick={() => Toast.show({ content: 'Незабаром' })}>
+                Скасувати
+              </Button>
+              <Button size="mini" fill="solid"
+                disabled={!hasPlanForNextMeeting || !group.telegramGroupId}
+                style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
+                onClick={() => Toast.show({ content: 'Незабаром' })}>
+                Повідомити про план
               </Button>
             </div>
           </div>
@@ -248,7 +266,11 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           {events.length === 0 ? (
             <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', display: 'block' }}>Немає запланованих подій</span>
           ) : events.map((ev) => (
-            <div key={ev.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+            <div key={ev.id} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '9px 8px', marginBottom: 2, borderRadius: 8,
+              background: ev.daysUntil <= 7 ? 'rgba(52, 199, 89, 0.08)' : 'transparent',
+            }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{ev.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{formatEventDate(ev.month, ev.day)}</div>
@@ -288,7 +310,11 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           {churchEvents.length === 0 ? (
             <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', display: 'block', marginTop: 8 }}>Подій немає</span>
           ) : churchEvents.map((ev) => (
-            <div key={ev.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+            <div key={ev.id} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '9px 8px', marginBottom: 2, borderRadius: 8,
+              background: ev.daysUntil <= 7 ? 'rgba(52, 199, 89, 0.08)' : 'transparent',
+            }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{ev.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{formatEventDate(ev.month, ev.day)}</div>
@@ -335,6 +361,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
 // ── Org member row with collapse ──────────────────────────────────────────────
 
 function OrgMemberRow({ member }: { member: GroupCabinet['orgTeam'][0] }) {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
 
@@ -345,9 +372,17 @@ function OrgMemberRow({ member }: { member: GroupCabinet['orgTeam'][0] }) {
         style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{fullName}</span>
-            <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginLeft: 8 }}>
+            {member.role && (
+              <span style={{
+                fontSize: 11, fontWeight: 600, borderRadius: 6, padding: '1px 6px',
+                color: member.role.color, background: `${member.role.color}20`,
+              }}>
+                {member.role.name}
+              </span>
+            )}
+            <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>
               {member.overseeCount} під опікою
             </span>
           </div>
@@ -359,8 +394,13 @@ function OrgMemberRow({ member }: { member: GroupCabinet['orgTeam'][0] }) {
       {open && member.oversees.length > 0 && (
         <div style={{ marginTop: 6, paddingLeft: 12, borderLeft: '2px solid var(--color-border-light)' }}>
           {member.oversees.map((p) => (
-            <div key={p.id} style={{ fontSize: 13, color: 'var(--color-text-secondary)', padding: '3px 0' }}>
-              {p.fullName}
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+              <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{p.fullName}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); navigate(`/people/${p.id}`) }}
+                style={{ ...iconBtn, padding: 4, color: 'var(--color-primary)' }}>
+                <RightOutline style={{ fontSize: 13 }} />
+              </button>
             </div>
           ))}
         </div>
@@ -388,6 +428,7 @@ function EditGroupPopup({ group, visible, onClose, onSaved }: {
   const [meetingDay, setMeetingDay] = useState(group.meetingDay ?? '')
   const [meetingTime, setMeetingTime] = useState(group.meetingTime ?? '')
   const [location, setLocation] = useState(group.location ?? '')
+  const [telegramGroupId, setTelegramGroupId] = useState(group.telegramGroupId ?? '')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -396,6 +437,7 @@ function EditGroupPopup({ group, visible, onClose, onSaved }: {
       setMeetingDay(group.meetingDay ?? '')
       setMeetingTime(group.meetingTime ?? '')
       setLocation(group.location ?? '')
+      setTelegramGroupId(group.telegramGroupId ?? '')
     }
   }, [visible, group])
 
@@ -410,6 +452,7 @@ function EditGroupPopup({ group, visible, onClose, onSaved }: {
         meetingDay: meetingDay || undefined,
         meetingTime: meetingTime || undefined,
         location: location.trim() || undefined,
+        telegramGroupId: telegramGroupId.trim() || undefined,
       })
       onSaved()
     } catch {
@@ -437,6 +480,9 @@ function EditGroupPopup({ group, visible, onClose, onSaved }: {
       </FormField>
       <FormField label="Адреса">
         <Input value={location} onChange={setLocation} placeholder="Адреса зустрічі" />
+      </FormField>
+      <FormField label="ID групи в Telegram">
+        <Input value={telegramGroupId} onChange={setTelegramGroupId} placeholder="-1001234567890" />
       </FormField>
 
       <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>

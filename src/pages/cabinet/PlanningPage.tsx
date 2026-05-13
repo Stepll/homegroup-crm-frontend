@@ -359,16 +359,6 @@ export function PlanningPage() {
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
             {fmtHeader(date)}
           </span>
-          {appliedTemplateName && (
-            <span style={{
-              fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
-              background: 'rgba(42,175,202,0.12)', color: 'var(--color-primary)',
-              borderRadius: 6, padding: '2px 8px',
-              maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {appliedTemplateName}
-            </span>
-          )}
           <div style={{ flex: 1 }} />
           {blocks.length > 0 && (
             <button
