@@ -105,7 +105,14 @@ export interface GroupEvent {
   name: string
   month: number
   day: number
-  year?: number
+  daysUntil: number
+}
+
+export interface ChurchEvent {
+  id: number
+  name: string
+  month: number
+  day: number
   daysUntil: number
 }
 

@@ -3,8 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button } from 'antd-mobile'
 import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
+import { churchEventsApi } from '@/api/churchEvents'
 import { useAuth } from '@/store/auth'
-import type { Group, GroupCabinet, GroupEvent } from '@/types'
+import type { Group, GroupCabinet, GroupEvent, ChurchEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 
@@ -72,31 +73,27 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const [loading, setLoading] = useState(true)
   const [editVisible, setEditVisible] = useState(false)
   const [events, setEvents] = useState<GroupEvent[]>([])
+  const [churchEvents, setChurchEvents] = useState<ChurchEvent[]>([])
   const [addEventVisible, setAddEventVisible] = useState(false)
   const [newEventName, setNewEventName] = useState('')
   const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0])
-  const [newEventHasYear, setNewEventHasYear] = useState(false)
   const [addingEvent, setAddingEvent] = useState(false)
 
   const load = () =>
-    Promise.all([groupsApi.getCabinet(groupId), groupsApi.getEvents(groupId)])
-      .then(([cab, evts]) => { setCabinet(cab); setEvents(evts) })
+    Promise.all([groupsApi.getCabinet(groupId), groupsApi.getEvents(groupId), churchEventsApi.getAll()])
+      .then(([cab, evts, church]) => { setCabinet(cab); setEvents(evts); setChurchEvents(church) })
       .catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))
 
   const handleAddEvent = async () => {
     if (!newEventName.trim() || !newEventDate) return
-    const [y, m, d] = newEventDate.split('-').map(Number)
+    const [, m, d] = newEventDate.split('-').map(Number)
     setAddingEvent(true)
     try {
-      const evt = await groupsApi.addEvent(groupId, {
-        name: newEventName.trim(), month: m, day: d,
-        year: newEventHasYear ? y : undefined,
-      })
+      const evt = await groupsApi.addEvent(groupId, { name: newEventName.trim(), month: m, day: d })
       setEvents((prev) => [...prev, evt].sort((a, b) => a.daysUntil - b.daysUntil).slice(0, 5))
       setAddEventVisible(false)
       setNewEventName('')
-      setNewEventHasYear(false)
     } catch {
       Toast.show({ content: 'Помилка', icon: 'fail' })
     }
@@ -254,7 +251,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             <div key={ev.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--color-border-light)' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{ev.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{formatEventDate(ev.month, ev.day, ev.year)}</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{formatEventDate(ev.month, ev.day)}</div>
               </div>
               <span style={{ fontSize: 12, fontWeight: 600, color: ev.daysUntil === 0 ? 'var(--color-error)' : 'var(--color-text-secondary)', marginRight: 10 }}>
                 {ev.daysUntil === 0 ? 'Сьогодні!' : ev.daysUntil === 1 ? 'Завтра' : `за ${ev.daysUntil} дн.`}
@@ -276,11 +273,6 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             <input type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)}
               style={{ ...nativeSelect, padding: 0 }} />
           </FormField>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, cursor: 'pointer' }}>
-            <input type="checkbox" checked={newEventHasYear} onChange={(e) => setNewEventHasYear(e.target.checked)}
-              style={{ width: 18, height: 18, accentColor: 'var(--color-primary)', cursor: 'pointer' }} />
-            <span style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>З роком (одноразова подія)</span>
-          </label>
           <div style={{ display: 'flex', gap: 8 }}>
             <Button block loading={addingEvent} onClick={handleAddEvent}
               style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>
@@ -289,6 +281,24 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             <Button block fill="outline" onClick={() => setAddEventVisible(false)}>Скасувати</Button>
           </div>
         </Popup>
+
+        {/* Church calendar */}
+        <div style={{ ...block, padding: '14px 16px' }}>
+          <SectionLabel>Церковний календар</SectionLabel>
+          {churchEvents.length === 0 ? (
+            <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', display: 'block', marginTop: 8 }}>Подій немає</span>
+          ) : churchEvents.map((ev) => (
+            <div key={ev.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{ev.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{formatEventDate(ev.month, ev.day)}</div>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: ev.daysUntil === 0 ? 'var(--color-error)' : 'var(--color-text-secondary)' }}>
+                {ev.daysUntil === 0 ? 'Сьогодні!' : ev.daysUntil === 1 ? 'Завтра' : `за ${ev.daysUntil} дн.`}
+              </span>
+            </div>
+          ))}
+        </div>
 
         {/* Stats */}
         <div style={block}>
@@ -482,10 +492,8 @@ function formatBirthday(iso: string) {
   return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })
 }
 
-function formatEventDate(month: number, day: number, year?: number) {
-  const d = new Date(year ?? 2000, month - 1, day)
-  if (year) return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
-  return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })
+function formatEventDate(month: number, day: number) {
+  return new Date(2000, month - 1, day).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
