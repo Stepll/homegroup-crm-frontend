@@ -121,17 +121,11 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const handleCancelMeeting = async () => {
     const ok = await Dialog.confirm({
       title: 'Скасувати наступну домашку?',
-      content: 'Наступна зустріч зміститься на тиждень пізніше.',
+      content: 'Наступна зустріч зміститься на наступний день тижня.',
       confirmText: 'Скасувати зустріч',
       cancelText: 'Назад',
     })
     if (!ok) return
-
-    const nextDate = nextMeetingDate
-      ? new Date(new Date(nextMeetingDate + 'T00:00:00').getTime() + 7 * 86400000)
-          .toISOString().split('T')[0]
-      : null
-    if (!nextDate) return
 
     // If a plan exists for the cancelled meeting, ask whether to delete it
     if (hasPlanForNextMeeting && nextMeetingDate) {
@@ -144,12 +138,13 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
       if (deletePlan) {
         try {
           await planningApi.deletePlanByDate(groupId, nextMeetingDate)
-        } catch { /* ignore if plan was already gone */ }
+        } catch { /* ignore if already gone */ }
       }
     }
 
     try {
-      await groupsApi.setNextMeetingDate(groupId, nextDate)
+      // Backend computes exact next occurrence of meeting day
+      await groupsApi.skipMeeting(groupId)
       await load()
     } catch {
       Toast.show({ content: 'Помилка', icon: 'fail' })
