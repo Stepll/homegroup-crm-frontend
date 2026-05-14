@@ -181,6 +181,13 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     setBookingLoading(false)
   }
 
+  // Must be before the early return — hooks cannot be called after conditional returns
+  const busyRoomIds = useMemo(() => {
+    const ids = new Set<number>()
+    ;(cabinet?.nextMeetingEvents ?? []).forEach((e) => { if (e.roomId) ids.add(e.roomId) })
+    return ids
+  }, [cabinet?.nextMeetingEvents])
+
   useEffect(() => { load() }, [groupId])
 
   if (loading || !cabinet) return (
@@ -205,13 +212,6 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
 
   const bookedRoom = rooms.find((r) => r.id === nextMeetingRoomId)
   const hasConflicts = (nextMeetingConflicts?.length ?? 0) > 0
-
-  // Per-room busy map from events that day
-  const busyRoomIds = useMemo(() => {
-    const ids = new Set<number>()
-    ;(nextMeetingEvents ?? []).forEach((e) => { if (e.roomId) ids.add(e.roomId) })
-    return ids
-  }, [nextMeetingEvents])
 
   return (
     <div style={{ paddingBottom: 80 }}>
