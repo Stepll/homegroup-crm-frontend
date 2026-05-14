@@ -471,9 +471,6 @@ export function CalendarPage() {
                     background: 'none', WebkitTapHighlightColor: 'transparent',
                   }}
                 >
-                  <span style={{ fontSize: 10, fontWeight: 500, lineHeight: 1, color: 'var(--color-text-secondary)' }}>
-                    {DAY_ABBR[day.getDay()]}
-                  </span>
                   <span style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     width: 32, height: 32, borderRadius: 9999,
@@ -501,9 +498,6 @@ export function CalendarPage() {
                   background: 'none', WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                <span style={{ fontSize: 10, fontWeight: 400, lineHeight: 1, color: 'var(--color-text-tertiary)' }}>
-                  {DAY_ABBR[day.getDay()]}
-                </span>
                 <span style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: 30, height: 30, borderRadius: 9999,
