@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavBar, Popup, Toast, Dialog, Switch, Button, Checkbox } from 'antd-mobile'
+import { NavBar, Popup, Toast, Dialog, Button, Checkbox } from 'antd-mobile'
 import { AddOutline, LeftOutline, RightOutline } from 'antd-mobile-icons'
 import { calendarApi, roomsApi, type CalendarEventPayload } from '@/api/calendar'
 import { groupsApi } from '@/api/groups'
@@ -7,7 +7,7 @@ import type { CalendarOccurrence, CalendarEvent, Room, Group } from '@/types'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const HOUR_HEIGHT = 64
+const HOUR_HEIGHT = 48
 const PX_PER_MIN = HOUR_HEIGHT / 60
 const TIME_AXIS_WIDTH = 44
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -32,13 +32,6 @@ const TYPE_LABELS: Record<string, string> = {
 function addDays(date: Date, n: number): Date {
   const d = new Date(date)
   d.setDate(d.getDate() + n)
-  return d
-}
-
-function weekStart(date: Date): Date {
-  const d = new Date(date)
-  const day = d.getDay()
-  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
   return d
 }
 
@@ -93,18 +86,21 @@ function layoutEvents(events: CalendarOccurrence[]): Laid[] {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function FilterPill({
-  label, active, onToggle, disabled = false, arrow = false,
+  label, active, onToggle, disabled = false, arrow = false, color,
 }: {
-  label: string; active: boolean; onToggle: () => void; disabled?: boolean; arrow?: boolean
+  label: string; active: boolean; onToggle: () => void
+  disabled?: boolean; arrow?: boolean; color?: string
 }) {
+  const c = color ?? 'var(--color-primary)'
+  const activeBg = color ? `${color}18` : 'var(--color-primary-bg)'
   return (
     <button
       onClick={disabled ? undefined : onToggle}
       style={{
         padding: '5px 11px', borderRadius: 9999, border: '1.5px solid', flexShrink: 0,
-        borderColor: disabled ? 'var(--color-border)' : active ? 'var(--color-primary)' : 'var(--color-border)',
-        background: disabled ? 'var(--color-border-light)' : active ? 'var(--color-primary-bg)' : 'transparent',
-        color: disabled ? 'var(--color-text-tertiary)' : active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+        borderColor: disabled ? 'var(--color-border)' : active ? c : 'var(--color-border)',
+        background: disabled ? 'var(--color-border-light)' : active ? activeBg : 'transparent',
+        color: disabled ? 'var(--color-text-tertiary)' : active ? c : 'var(--color-text-secondary)',
         fontSize: 13, fontWeight: active ? 600 : 400,
         cursor: disabled ? 'not-allowed' : 'pointer',
         display: 'flex', alignItems: 'center', gap: 3,
@@ -146,16 +142,16 @@ function EventBlock({ ev, onClick }: { ev: Laid; onClick: () => void }) {
     <button
       onClick={onClick}
       style={{
-        position: 'absolute',
-        top, height,
+        position: 'absolute', top, height,
         left: `${leftPct}%`, width: `${widthPct}%`,
-        background: `${color}1A`,
+        background: `${color}18`,
+        border: 'none',
         borderLeft: `3px solid ${color}`,
         borderRadius: '0 4px 4px 0',
-        padding: '2px 5px',
-        outline: 'none',
-        overflow: 'hidden', textAlign: 'left', cursor: 'pointer',
+        padding: '2px 5px', overflow: 'hidden',
+        textAlign: 'left', cursor: 'pointer',
         zIndex: 2, WebkitTapHighlightColor: 'transparent',
+        outline: 'none',
       }}
     >
       <div style={{ fontSize: 11, fontWeight: 700, color, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -174,7 +170,7 @@ function EventBlock({ ev, onClick }: { ev: Laid; onClick: () => void }) {
 
 type FormState = {
   title: string; description: string; location: string; roomId: string
-  type: string; homeGroupId: string; isRecurring: boolean
+  type: string; homeGroupId: string
   recurringDayOfWeek: string; startTime: string; endTime: string; date: string
 }
 
@@ -195,7 +191,6 @@ function EventForm({
     roomId: event?.roomId?.toString() ?? '',
     type: event?.type ?? 'Global',
     homeGroupId: event?.homeGroupId?.toString() ?? '',
-    isRecurring: event?.isRecurring ?? false,
     recurringDayOfWeek: event?.recurringDayOfWeek?.toString() ?? '1',
     startTime: event?.startTime ?? '19:00',
     endTime: event?.endTime ?? '21:00',
@@ -206,6 +201,8 @@ function EventForm({
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((p) => ({ ...p, [k]: v }))
 
+  const isRecurring = event ? event.isRecurring : form.type === 'Recurring'
+
   const buildPayload = (): CalendarEventPayload => ({
     title: form.title.trim(),
     description: form.description.trim() || null,
@@ -213,11 +210,11 @@ function EventForm({
     roomId: form.roomId ? Number(form.roomId) : null,
     type: form.type,
     homeGroupId: form.type === 'HomeGroup' && form.homeGroupId ? Number(form.homeGroupId) : null,
-    isRecurring: form.isRecurring,
-    recurringDayOfWeek: form.isRecurring ? Number(form.recurringDayOfWeek) : null,
+    isRecurring,
+    recurringDayOfWeek: isRecurring ? Number(form.recurringDayOfWeek) : null,
     startTime: form.startTime || null,
     endTime: form.endTime || null,
-    date: !form.isRecurring ? form.date : null,
+    date: !isRecurring ? form.date : null,
   })
 
   const handleSave = async () => {
@@ -251,7 +248,7 @@ function EventForm({
     })
   }
 
-  const isHomeGroupAutoEvent = event?.type === 'HomeGroup' && event?.isRecurring
+  const isAutoHomeGroup = event?.type === 'HomeGroup' && event?.isRecurring
 
   return (
     <div style={{ padding: 16, paddingBottom: 32 }}>
@@ -266,13 +263,12 @@ function EventForm({
         )}
       </div>
 
-      {isHomeGroupAutoEvent && (
+      {isAutoHomeGroup && (
         <div style={{ padding: '8px 12px', background: '#F59E0B18', borderRadius: 8, marginBottom: 12, fontSize: 13, color: '#B45309' }}>
-          Це авто-подія домашньої групи. Час зустрічі змінюється в налаштуваннях групи.
+          Авто-подія домашньої групи. Час зустрічі змінюється в налаштуваннях групи.
         </div>
       )}
 
-      {/* Type */}
       <FormField label="Тип">
         <div style={{ display: 'flex', gap: 6 }}>
           {(['Recurring', 'Global', 'HomeGroup'] as const).map((t) => (
@@ -305,8 +301,7 @@ function EventForm({
 
       <FormField label="Опис">
         <textarea value={form.description} onChange={(e) => set('description', e.target.value)}
-          placeholder="Необов'язково" rows={2}
-          style={{ ...inputStyle, resize: 'none' }} />
+          placeholder="Необов'язково" rows={2} style={{ ...inputStyle, resize: 'none' }} />
       </FormField>
 
       <FormField label="Локація">
@@ -323,13 +318,7 @@ function EventForm({
         </FormField>
       )}
 
-      {/* Recurring toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ fontSize: 14, color: 'var(--color-text)' }}>Повторювати щотижня</span>
-        <Switch checked={form.isRecurring} onChange={(v) => set('isRecurring', v)} />
-      </div>
-
-      {form.isRecurring ? (
+      {isRecurring ? (
         <FormField label="День тижня">
           <select value={form.recurringDayOfWeek} onChange={(e) => set('recurringDayOfWeek', e.target.value)} style={inputStyle}>
             {UKR_DAYS_FULL.map((name, i) => (
@@ -369,7 +358,6 @@ export function CalendarPage() {
   today.setHours(0, 0, 0, 0)
 
   const [selectedDate, setSelectedDate] = useState<Date>(today)
-  const [weekAnchor, setWeekAnchor] = useState<Date>(() => weekStart(today))
   const [occurrences, setOccurrences] = useState<CalendarOccurrence[]>([])
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set(['Recurring', 'Global', 'HomeGroup']))
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set())
@@ -380,9 +368,12 @@ export function CalendarPage() {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  // Current time in minutes (for the now-line)
   const now = new Date()
   const nowMin = now.getHours() * 60 + now.getMinutes()
+
+  const col0 = selectedDate
+  const col1 = addDays(selectedDate, 1)
+  const col2 = addDays(selectedDate, 2)
 
   useEffect(() => {
     groupsApi.getAll().then(setGroups)
@@ -393,29 +384,21 @@ export function CalendarPage() {
     if (gridRef.current) gridRef.current.scrollTop = 7 * HOUR_HEIGHT
   }, [])
 
-  useEffect(() => {
-    if (activeTypes.size === 0) { setOccurrences([]); return }
-    const from = formatDate(selectedDate)
-    const to = formatDate(addDays(selectedDate, 2))
+  const loadOccurrences = (date: Date, types: Set<string>, groupIds: Set<number>) => {
+    if (types.size === 0) { setOccurrences([]); return }
     calendarApi.getOccurrences({
-      from, to,
-      types: [...activeTypes].join(','),
-      groupIds: selectedGroupIds.size > 0 ? [...selectedGroupIds].join(',') : undefined,
+      from: formatDate(date),
+      to: formatDate(addDays(date, 2)),
+      types: [...types].join(','),
+      groupIds: groupIds.size > 0 ? [...groupIds].join(',') : undefined,
     }).then(setOccurrences).catch(() => {})
+  }
+
+  useEffect(() => {
+    loadOccurrences(selectedDate, activeTypes, selectedGroupIds)
   }, [selectedDate, activeTypes, selectedGroupIds])
 
-  const col0 = selectedDate
-  const col1 = addDays(selectedDate, 1)
-  const col2 = addDays(selectedDate, 2)
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekAnchor, i))
-
   const eventsFor = (d: Date) => occurrences.filter((o) => o.date === formatDate(d))
-
-  const handleDaySelect = (day: Date) => {
-    setSelectedDate(day)
-    const ws = weekStart(day)
-    if (formatDate(ws) !== formatDate(weekAnchor)) setWeekAnchor(ws)
-  }
 
   const handleEventClick = async (o: CalendarOccurrence) => {
     try {
@@ -430,14 +413,7 @@ export function CalendarPage() {
   const handleFormDone = () => {
     setFormVisible(false)
     setEditingEvent(null)
-    if (activeTypes.size === 0) return
-    const from = formatDate(selectedDate)
-    const to = formatDate(addDays(selectedDate, 2))
-    calendarApi.getOccurrences({
-      from, to,
-      types: [...activeTypes].join(','),
-      groupIds: selectedGroupIds.size > 0 ? [...selectedGroupIds].join(',') : undefined,
-    }).then(setOccurrences).catch(() => {})
+    loadOccurrences(selectedDate, activeTypes, selectedGroupIds)
   }
 
   const toggleType = (t: string) => setActiveTypes((prev) => {
@@ -447,7 +423,7 @@ export function CalendarPage() {
   })
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--color-bg)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: '#fff' }}>
       {/* Header */}
       <NavBar back={null} right={
         <button onClick={() => { setEditingEvent(null); setFormVisible(true) }}
@@ -459,79 +435,74 @@ export function CalendarPage() {
       </NavBar>
 
       {/* Filter bar */}
-      <div style={{ padding: '4px 12px 8px', display: 'flex', gap: 6, overflowX: 'auto', background: '#fff' }}>
+      <div style={{ padding: '4px 12px 8px', display: 'flex', gap: 6, overflowX: 'auto', borderBottom: '1px solid var(--color-border-light)' }}>
         <FilterPill label="Google" active={false} onToggle={() => {}} disabled />
-        {(['Recurring', 'Global', 'HomeGroup'] as const).map((t) => (
-          <FilterPill key={t} label={TYPE_LABELS[t]} active={activeTypes.has(t)} onToggle={() => toggleType(t)} />
-        ))}
+        <FilterPill label="Повторювані" active={activeTypes.has('Recurring')} onToggle={() => toggleType('Recurring')} />
         <FilterPill
-          label={selectedGroupIds.size > 0 ? `Групи (${selectedGroupIds.size})` : 'Групи'}
+          label="Глобальні" active={activeTypes.has('Global')}
+          onToggle={() => toggleType('Global')} color={TYPE_COLORS.Global}
+        />
+        <FilterPill
+          label={selectedGroupIds.size > 0 ? `Домашки (${selectedGroupIds.size})` : 'Домашки'}
           active={selectedGroupIds.size > 0}
           onToggle={() => setGroupsDrawerVisible(true)}
           arrow
         />
       </div>
 
-      {/* Day strip */}
-      <div style={{ background: '#fff', borderBottom: '1px solid var(--color-border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button onClick={() => setWeekAnchor((p) => addDays(p, -7))}
-            style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
+      {/* Day strip — 3 squares */}
+      <div style={{ background: '#fff', borderBottom: '1px solid var(--color-border-light)', padding: '8px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          <button onClick={() => setSelectedDate((p) => addDays(p, -1))}
+            style={{ background: 'none', border: 'none', padding: '6px 14px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             <LeftOutline />
           </button>
-          <div style={{ flex: 1, display: 'flex' }}>
-            {weekDays.map((day, i) => {
-              const isSel = isSameDay(day, selectedDate)
-              const isN1 = isSameDay(day, col1)
-              const isN2 = isSameDay(day, col2)
-              const isToday = isSameDay(day, today)
-              return (
-                <button key={i} onClick={() => handleDaySelect(day)}
-                  style={{
-                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-                    gap: 3, background: 'none', border: 'none', cursor: 'pointer',
-                    padding: '6px 0 8px',
-                    WebkitTapHighlightColor: 'transparent',
-                    ...(isN1 && { background: 'var(--color-primary-bg)', borderTopLeftRadius: 9999, borderBottomLeftRadius: 9999 }),
-                    ...(isN2 && { background: 'var(--color-primary-bg)', borderTopRightRadius: 9999, borderBottomRightRadius: 9999 }),
-                  }}
-                >
-                  <span style={{ fontSize: 10, fontWeight: 500, color: isSel ? 'var(--color-primary)' : 'var(--color-text-tertiary)' }}>
-                    {DAY_ABBR[day.getDay()]}
-                  </span>
-                  <span style={{
-                    width: 30, height: 30, borderRadius: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 15, fontWeight: isSel || isToday ? 700 : 400,
-                    background: isSel ? 'var(--color-primary)' : 'transparent',
-                    color: isSel ? '#fff' : isToday ? 'var(--color-primary)' : 'var(--color-text)',
-                  }}>
-                    {day.getDate()}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          <button onClick={() => setWeekAnchor((p) => addDays(p, 7))}
-            style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
+
+          {[col0, col1, col2].map((day, i) => {
+            const isSel = i === 0
+            const isToday = isSameDay(day, today)
+            return (
+              <button key={i} onClick={() => setSelectedDate(day)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 42, height: 42, borderRadius: 10,
+                  border: 'none', cursor: 'pointer',
+                  background: isSel ? 'var(--color-primary)' : 'var(--color-primary-bg)',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                <span style={{
+                  fontSize: 18, fontWeight: 700,
+                  color: isSel ? '#fff' : isToday ? 'var(--color-primary)' : 'var(--color-primary)',
+                  opacity: isSel ? 1 : i === 1 ? 0.7 : 0.5,
+                }}>
+                  {day.getDate()}
+                </span>
+              </button>
+            )
+          })}
+
+          <button onClick={() => setSelectedDate((p) => addDays(p, 1))}
+            style={{ background: 'none', border: 'none', padding: '6px 14px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             <RightOutline />
           </button>
         </div>
       </div>
 
       {/* Time grid */}
-      <div ref={gridRef} style={{ flex: 1, overflowY: 'auto', position: 'relative', background: '#fff' }}>
+      <div ref={gridRef} style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
         {/* Sticky column headers */}
         <div style={{
           display: 'grid', gridTemplateColumns: `${TIME_AXIS_WIDTH}px 1fr 1fr 1fr`,
           position: 'sticky', top: 0, background: '#fff', zIndex: 10,
-          borderBottom: '1px solid var(--color-border)',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
         }}>
           <div />
           {[col0, col1, col2].map((day, i) => (
             <div key={i} style={{
               textAlign: 'center', padding: '5px 2px', fontSize: 11, fontWeight: 600,
               color: isSameDay(day, today) ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              borderLeft: '1px solid var(--color-border-light)',
+              borderLeft: '1px solid rgba(0,0,0,0.05)',
             }}>
               {DAY_ABBR[day.getDay()]}, {day.getDate()} {UKR_MONTHS_SHORT[day.getMonth()]}
             </div>
@@ -557,17 +528,16 @@ export function CalendarPage() {
             const isToday = isSameDay(day, today)
             return (
               <div key={colIdx} style={{
-                flex: 1, position: 'relative', borderLeft: '1px solid var(--color-border-light)',
-                backgroundImage: `repeating-linear-gradient(to bottom, transparent 0px, transparent ${HOUR_HEIGHT - 1}px, var(--color-border-light) ${HOUR_HEIGHT - 1}px, var(--color-border-light) ${HOUR_HEIGHT}px)`,
+                flex: 1, position: 'relative',
+                borderLeft: '1px solid rgba(0,0,0,0.05)',
+                backgroundImage: `repeating-linear-gradient(to bottom, transparent 0px, transparent ${HOUR_HEIGHT - 1}px, rgba(0,0,0,0.04) ${HOUR_HEIGHT - 1}px, rgba(0,0,0,0.04) ${HOUR_HEIGHT}px)`,
               }}>
-                {/* Now-line */}
                 {isToday && (
                   <div style={{ position: 'absolute', top: nowMin * PX_PER_MIN, left: 0, right: 0, zIndex: 4, pointerEvents: 'none' }}>
                     <div style={{ position: 'absolute', left: -5, top: -4, width: 10, height: 10, borderRadius: 9999, background: 'var(--color-error)' }} />
                     <div style={{ height: 2, background: 'var(--color-error)' }} />
                   </div>
                 )}
-                {/* Events */}
                 {layoutEvents(eventsFor(day)).map((ev, j) => (
                   <EventBlock key={j} ev={ev} onClick={() => handleEventClick(ev)} />
                 ))}
@@ -584,7 +554,7 @@ export function CalendarPage() {
         position="bottom"
         bodyStyle={{ borderRadius: '16px 16px 0 0', padding: 16, maxHeight: '70vh', overflowY: 'auto' }}
       >
-        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Фільтр по домашках</div>
+        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Домашки</div>
         <button
           onClick={() => setSelectedGroupIds(selectedGroupIds.size === groups.length ? new Set() : new Set(groups.map((g) => g.id)))}
           style={{ marginBottom: 12, background: 'none', border: '1px solid var(--color-primary)', color: 'var(--color-primary)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 14 }}
