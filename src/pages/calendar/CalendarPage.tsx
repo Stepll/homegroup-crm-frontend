@@ -450,11 +450,11 @@ export function CalendarPage() {
         />
       </div>
 
-      {/* Day strip — 3 squares */}
-      <div style={{ background: '#fff', borderBottom: '1px solid var(--color-border-light)', padding: '8px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+      {/* Day strip — day abbr + date number, iOS-style */}
+      <div style={{ background: '#fff', borderBottom: '1px solid var(--color-border-light)', padding: '6px 0 8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
           <button onClick={() => setSelectedDate((p) => addDays(p, -1))}
-            style={{ background: 'none', border: 'none', padding: '6px 14px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
+            style={{ background: 'none', border: 'none', padding: '6px 12px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             <LeftOutline />
           </button>
 
@@ -464,17 +464,26 @@ export function CalendarPage() {
             return (
               <button key={i} onClick={() => setSelectedDate(day)}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 42, height: 42, borderRadius: 10,
-                  border: 'none', cursor: 'pointer',
-                  background: isSel ? 'var(--color-primary)' : 'var(--color-primary-bg)',
-                  WebkitTapHighlightColor: 'transparent',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  padding: '4px 10px', border: 'none', cursor: 'pointer',
+                  background: 'none', WebkitTapHighlightColor: 'transparent',
                 }}
               >
                 <span style={{
-                  fontSize: 18, fontWeight: 700,
-                  color: isSel ? '#fff' : isToday ? 'var(--color-primary)' : 'var(--color-primary)',
-                  opacity: isSel ? 1 : i === 1 ? 0.7 : 0.5,
+                  fontSize: 11, fontWeight: 500, lineHeight: 1,
+                  color: isSel && isToday ? 'var(--color-primary)' : 'var(--color-text-tertiary)',
+                }}>
+                  {DAY_ABBR[day.getDay()]}
+                </span>
+                <span style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 34, height: 34,
+                  borderRadius: isSel ? 9999 : 8,
+                  background: isSel
+                    ? 'var(--color-primary)'
+                    : 'rgba(0,0,0,0.06)',
+                  fontSize: 17, fontWeight: 700, lineHeight: 1,
+                  color: isSel ? '#fff' : isToday ? 'var(--color-primary)' : 'var(--color-text)',
                 }}>
                   {day.getDate()}
                 </span>
@@ -483,7 +492,7 @@ export function CalendarPage() {
           })}
 
           <button onClick={() => setSelectedDate((p) => addDays(p, 1))}
-            style={{ background: 'none', border: 'none', padding: '6px 14px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
+            style={{ background: 'none', border: 'none', padding: '6px 12px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             <RightOutline />
           </button>
         </div>
