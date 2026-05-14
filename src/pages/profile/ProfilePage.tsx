@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { NavBar, Button, Toast, SpinLoading, Popup, Input, Switch } from 'antd-mobile'
 import { EditSOutline } from 'antd-mobile-icons'
 import { adminsApi } from '@/api/admins'
+import { attendanceApi } from '@/api/attendance'
+import { groupsApi } from '@/api/groups'
 import { personStatusesApi, type PersonStatus } from '@/api/personStatuses'
+import { AttendanceGrid } from '@/components/AttendanceGrid'
 import { useAuth } from '@/store/auth'
-import type { Admin } from '@/types'
+import type { Admin, Group, AttendanceRecord } from '@/types'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -80,6 +83,9 @@ export function ProfilePage() {
 
   const [admin, setAdmin] = useState<Admin | null>(null)
   const [statuses, setStatuses] = useState<PersonStatus[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
+  const [attendanceLoading, setAttendanceLoading] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const [personalOpen, setPersonalOpen] = useState(false)
@@ -109,12 +115,21 @@ export function ProfilePage() {
   const [pwdSaving, setPwdSaving] = useState(false)
 
   const load = () =>
-    Promise.all([adminsApi.getMe(), personStatusesApi.getAll()])
-      .then(([a, s]) => { setAdmin(a); setStatuses(s) })
+    Promise.all([adminsApi.getMe(), personStatusesApi.getAll(), groupsApi.getAll()])
+      .then(([a, s, g]) => { setAdmin(a); setStatuses(s); setGroups(g) })
       .catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (!admin?.primaryGroupId) return
+    setAttendanceLoading(true)
+    const from = new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1).toISOString().slice(0, 10)
+    attendanceApi.getByGroup(admin.primaryGroupId, from)
+      .then(setAttendance)
+      .finally(() => setAttendanceLoading(false))
+  }, [admin?.primaryGroupId])
 
   if (loading || !admin) {
     return (
@@ -315,6 +330,15 @@ export function ProfilePage() {
           <InfoRow label="Служіння">{admin.ministry ?? '—'}</InfoRow>
           <InfoRow label="Хрещення Духом">{admin.isBaptizedWithSpirit ? 'Так' : 'Ні'}</InfoRow>
         </BlockCard>
+
+        {/* ── Відвідуваність ── */}
+        <AttendanceGrid
+          userId={admin.id}
+          group={groups.find((g) => g.id === admin.primaryGroupId)}
+          attendance={attendance}
+          loading={attendanceLoading}
+          noGroupMessage="Не прив'язаний до групи"
+        />
 
         {/* ── Безпека ── */}
         <div style={block}>
