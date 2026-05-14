@@ -157,7 +157,7 @@ export interface CalendarOccurrence {
   location?: string
   roomId?: number
   room?: { id: number; name: string }
-  type: 'Recurring' | 'Global' | 'HomeGroup'
+  type: 'Recurring' | 'Global' | 'HomeGroup' | 'Google'
   homeGroupId?: number
   homeGroupName?: string
   homeGroupColor?: string
@@ -173,7 +173,7 @@ export interface CalendarEvent {
   location?: string
   roomId?: number
   room?: { id: number; name: string }
-  type: 'Recurring' | 'Global' | 'HomeGroup'
+  type: 'Recurring' | 'Global' | 'HomeGroup' | 'Google'
   homeGroupId?: number
   homeGroupName?: string
   homeGroupColor?: string
