@@ -12,6 +12,10 @@ const PX_PER_MIN = HOUR_HEIGHT / 60
 const TIME_AXIS_WIDTH = 44
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
+const STRIP_CELL_W = 40
+const STRIP_CIRCLE = 32
+const STRIP_CELL_PAD = (STRIP_CELL_W - STRIP_CIRCLE) / 2
+
 const DAY_ABBR = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 const UKR_MONTHS_SHORT = ['Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер', 'Лип', 'Сер', 'Вер', 'Жов', 'Лис', 'Гру']
 const UKR_DAYS_FULL = ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', 'Пʼятниця', 'Субота']
@@ -358,6 +362,7 @@ export function CalendarPage() {
   today.setHours(0, 0, 0, 0)
 
   const [selectedDate, setSelectedDate] = useState<Date>(today)
+  const [weekStart, setWeekStart] = useState<Date>(today)
   const [occurrences, setOccurrences] = useState<CalendarOccurrence[]>([])
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set(['Recurring', 'Global', 'HomeGroup']))
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set())
@@ -374,6 +379,15 @@ export function CalendarPage() {
   const col0 = selectedDate
   const col1 = addDays(selectedDate, 1)
   const col2 = addDays(selectedDate, 2)
+
+  const stripDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const selOffsetRaw = stripDays.findIndex((d) => isSameDay(d, selectedDate))
+  const selOffset = selOffsetRaw < 0 ? 0 : Math.min(4, selOffsetRaw)
+
+  useEffect(() => {
+    if (selOffsetRaw < 0) setWeekStart(selectedDate)
+    else if (selOffsetRaw > 4) setWeekStart(addDays(selectedDate, -4))
+  }, [selOffsetRaw, selectedDate])
 
   useEffect(() => {
     groupsApi.getAll().then(setGroups)
@@ -450,66 +464,70 @@ export function CalendarPage() {
         />
       </div>
 
-      {/* Day strip — 7 days, first 3 in pill, today with circle */}
+      {/* Day strip — 7-day window, labels above, pill behind selected + 2 circles */}
       <div style={{ background: '#fff', borderBottom: '1px solid var(--color-border-light)', padding: '6px 0 8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <button onClick={() => setSelectedDate((p) => addDays(p, -1))}
             style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             <LeftOutline />
           </button>
 
-          {/* Active 3 days — grouped in a pill */}
-          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.07)', borderRadius: 9999, padding: '3px 2px', flexShrink: 0 }}>
-            {[col0, col1, col2].map((day, i) => {
-              const isToday = isSameDay(day, today)
-              return (
-                <button key={i} onClick={() => setSelectedDate(day)}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
-                    width: 44, padding: '2px 0',
-                    border: 'none', cursor: 'pointer',
-                    background: 'none', WebkitTapHighlightColor: 'transparent',
-                  }}
-                >
-                  <span style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 32, height: 32, borderRadius: 9999,
-                    background: isToday ? 'var(--color-primary)' : 'transparent',
-                    fontSize: 17, fontWeight: 700, lineHeight: 1,
-                    color: isToday ? '#fff' : 'var(--color-text)',
+          <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            {/* Day-of-week labels above */}
+            <div style={{ display: 'flex', marginBottom: 3 }}>
+              {stripDays.map((day, i) => {
+                const isToday = isSameDay(day, today)
+                return (
+                  <div key={i} style={{
+                    width: STRIP_CELL_W, textAlign: 'center',
+                    fontSize: 10, fontWeight: 500, lineHeight: 1,
+                    color: isToday ? 'var(--color-primary)' : 'var(--color-text-tertiary)',
                   }}>
-                    {day.getDate()}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+                    {DAY_ABBR[day.getDay()]}
+                  </div>
+                )
+              })}
+            </div>
 
-          {/* Next 4 days — plain */}
-          {[3, 4, 5, 6].map((offset) => {
-            const day = addDays(selectedDate, offset)
-            const isToday = isSameDay(day, today)
-            return (
-              <button key={offset} onClick={() => setSelectedDate(day)}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
-                  flex: 1, padding: '5px 0',
-                  border: 'none', cursor: 'pointer',
-                  background: 'none', WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                <span style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 30, height: 30, borderRadius: 9999,
-                  background: isToday ? 'var(--color-primary)' : 'transparent',
-                  fontSize: 15, fontWeight: 400, lineHeight: 1,
-                  color: isToday ? '#fff' : 'var(--color-text-tertiary)',
-                }}>
-                  {day.getDate()}
-                </span>
-              </button>
-            )
-          })}
+            {/* Circles row with absolute pill background */}
+            <div style={{ display: 'flex', position: 'relative', height: STRIP_CIRCLE }}>
+              <div style={{
+                position: 'absolute', top: 0,
+                left: selOffset * STRIP_CELL_W + STRIP_CELL_PAD,
+                width: 3 * STRIP_CELL_W - 2 * STRIP_CELL_PAD,
+                height: STRIP_CIRCLE,
+                background: 'rgba(0,0,0,0.07)',
+                borderRadius: 9999,
+                pointerEvents: 'none',
+              }} />
+
+              {stripDays.map((day, i) => {
+                const isSelected = isSameDay(day, selectedDate)
+                const isToday = isSameDay(day, today)
+                return (
+                  <button key={i} onClick={() => setSelectedDate(day)}
+                    style={{
+                      width: STRIP_CELL_W, height: STRIP_CIRCLE,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: 'none', background: 'none', cursor: 'pointer', padding: 0,
+                      position: 'relative', zIndex: 1,
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    <div style={{
+                      width: STRIP_CIRCLE, height: STRIP_CIRCLE, borderRadius: 9999,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: isSelected ? 'var(--color-primary)' : 'transparent',
+                      color: isSelected ? '#fff' : isToday ? 'var(--color-primary)' : 'var(--color-text)',
+                      fontSize: 17, fontWeight: 700, lineHeight: 1,
+                    }}>
+                      {day.getDate()}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           <button onClick={() => setSelectedDate((p) => addDays(p, 1))}
             style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
