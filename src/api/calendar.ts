@@ -13,6 +13,7 @@ export interface CalendarEventPayload {
   startTime?: string | null
   endTime?: string | null
   date?: string | null
+  isHomeGroupMeeting?: boolean | null
 }
 
 export const calendarApi = {

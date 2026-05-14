@@ -182,6 +182,7 @@ export interface CalendarOccurrence {
   date: string
   startTime?: string
   endTime?: string
+  isGhost?: boolean
 }
 
 export interface CalendarEvent {
@@ -200,6 +201,7 @@ export interface CalendarEvent {
   startTime?: string
   endTime?: string
   date?: string
+  isHomeGroupMeeting?: boolean | null
 }
 
 export interface Room {

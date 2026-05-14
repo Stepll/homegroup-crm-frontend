@@ -167,14 +167,15 @@ function EventBlock({ ev, onClick }: { ev: Laid; onClick: () => void }) {
       style={{
         position: 'absolute', top, height,
         left: `${leftPct}%`, width: `${widthPct}%`,
-        background: `${color}18`,
+        background: ev.isGhost ? `${color}08` : `${color}18`,
         border: 'none',
-        borderLeft: `3px solid ${color}`,
+        borderLeft: ev.isGhost ? 'none' : `3px solid ${color}`,
         borderRadius: '0 4px 4px 0',
         padding: '2px 5px', overflow: 'hidden',
         textAlign: 'left', cursor: 'pointer',
         zIndex: 2, WebkitTapHighlightColor: 'transparent',
         outline: 'none',
+        opacity: ev.isGhost ? 0.6 : 1,
       }}
     >
       <div style={{ fontSize: 11, fontWeight: 700, color, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -195,6 +196,7 @@ type FormState = {
   title: string; description: string; location: string; roomId: string
   type: string; homeGroupId: string
   recurringDayOfWeek: string; startTime: string; endTime: string; date: string
+  isHomeGroupMeeting: boolean
 }
 
 function EventForm({
@@ -218,6 +220,7 @@ function EventForm({
     startTime: event?.startTime ?? '19:00',
     endTime: event?.endTime ?? '21:00',
     date: event?.date ?? defaultDate,
+    isHomeGroupMeeting: event?.isHomeGroupMeeting ?? true,
   })
   const [saving, setSaving] = useState(false)
   const [roomPickerVisible, setRoomPickerVisible] = useState(false)
@@ -291,6 +294,7 @@ function EventForm({
       startTime: form.startTime || null,
       endTime: form.endTime || null,
       date: !isRecurring ? form.date : null,
+      isHomeGroupMeeting: form.type === 'HomeGroup' && !isRecurring ? form.isHomeGroupMeeting : null,
     }
   }
 
@@ -400,6 +404,21 @@ function EventForm({
                 {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             </FormField>
+          )}
+
+          {form.type === 'HomeGroup' && !isRecurring && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 0' }}>
+              <input
+                type="checkbox"
+                id="isHomeGroupMeeting"
+                checked={form.isHomeGroupMeeting}
+                onChange={(e) => set('isHomeGroupMeeting', e.target.checked)}
+                style={{ width: 18, height: 18, cursor: 'pointer' }}
+              />
+              <label htmlFor="isHomeGroupMeeting" style={{ fontSize: 14, color: 'var(--color-text)', cursor: 'pointer' }}>
+                Це зустріч домашньої групи
+              </label>
+            </div>
           )}
 
           <FormField label="Назва">
