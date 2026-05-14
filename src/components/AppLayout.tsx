@@ -18,9 +18,18 @@ function CabinetIcon() {
   )
 }
 
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor">
+      <path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM5 7V6h14v1H5zm2 4h10v2H7zm0 4h7v2H7z"/>
+    </svg>
+  )
+}
+
 const tabs: { key: string; title: string; icon: FC }[] = [
   { key: '/', title: 'Дашборд', icon: AppOutline },
   { key: '/people', title: 'Люди', icon: UserOutline },
+  { key: '/calendar', title: 'Календар', icon: CalendarIcon },
   { key: '/cabinet', title: 'Домашка', icon: CabinetIcon },
   { key: '/profile', title: 'Профіль', icon: ProfileIcon },
   { key: '/settings', title: 'Налаштування', icon: SetOutline },
@@ -34,7 +43,7 @@ export function AppLayout() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--color-bg)' }}>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         <Outlet />
       </div>
 
@@ -44,7 +53,7 @@ export function AppLayout() {
         paddingBottom: 'env(safe-area-inset-bottom)',
         position: 'relative',
       }}>
-        <div style={{ display: 'flex', height: 58 }}>
+        <div style={{ display: 'flex', height: 54 }}>
           {tabs.map(({ key, title, icon: Icon }) => {
             const active = activeKey === key
             return (
@@ -57,7 +66,7 @@ export function AppLayout() {
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 3,
+                  gap: 2,
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
@@ -74,17 +83,17 @@ export function AppLayout() {
                     top: 0,
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    width: 28,
+                    width: 24,
                     height: 3,
                     background: 'var(--color-primary)',
                     borderRadius: '0 0 4px 4px',
                   }} />
                 )}
-                <span style={{ fontSize: 22, lineHeight: 1, display: 'flex' }}>
+                <span style={{ fontSize: 20, lineHeight: 1, display: 'flex' }}>
                   <Icon />
                 </span>
                 <span style={{
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: active ? 600 : 400,
                   letterSpacing: '0.01em',
                   lineHeight: 1,

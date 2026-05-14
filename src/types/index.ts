@@ -150,12 +150,43 @@ export interface GroupEvent {
   daysUntil: number
 }
 
-export interface ChurchEvent {
+export interface CalendarOccurrence {
+  eventId: number
+  title: string
+  description?: string
+  location?: string
+  roomId?: number
+  room?: { id: number; name: string }
+  type: 'Recurring' | 'Global' | 'HomeGroup'
+  homeGroupId?: number
+  homeGroupName?: string
+  homeGroupColor?: string
+  date: string
+  startTime?: string
+  endTime?: string
+}
+
+export interface CalendarEvent {
+  id: number
+  title: string
+  description?: string
+  location?: string
+  roomId?: number
+  room?: { id: number; name: string }
+  type: 'Recurring' | 'Global' | 'HomeGroup'
+  homeGroupId?: number
+  homeGroupName?: string
+  homeGroupColor?: string
+  isRecurring: boolean
+  recurringDayOfWeek?: number
+  startTime?: string
+  endTime?: string
+  date?: string
+}
+
+export interface Room {
   id: number
   name: string
-  month: number
-  day: number
-  daysUntil: number
 }
 
 export interface PlanBlock {

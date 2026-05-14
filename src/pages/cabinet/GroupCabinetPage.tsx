@@ -4,9 +4,8 @@ import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button, Dialog }
 import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
 import { planningApi } from '@/api/planning'
-import { churchEventsApi } from '@/api/churchEvents'
 import { useAuth } from '@/store/auth'
-import type { Group, GroupCabinet, GroupEvent, ChurchEvent } from '@/types'
+import type { Group, GroupCabinet, GroupEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 
@@ -74,7 +73,6 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const [loading, setLoading] = useState(true)
   const [editVisible, setEditVisible] = useState(false)
   const [events, setEvents] = useState<GroupEvent[]>([])
-  const [churchEvents, setChurchEvents] = useState<ChurchEvent[]>([])
   const [addEventVisible, setAddEventVisible] = useState(false)
   const [newEventName, setNewEventName] = useState('')
   const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0])
@@ -84,8 +82,8 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const [rescheduling, setRescheduling] = useState(false)
 
   const load = () =>
-    Promise.all([groupsApi.getCabinet(groupId), groupsApi.getEvents(groupId), churchEventsApi.getAll()])
-      .then(([cab, evts, church]) => { setCabinet(cab); setEvents(evts); setChurchEvents(church) })
+    Promise.all([groupsApi.getCabinet(groupId), groupsApi.getEvents(groupId)])
+      .then(([cab, evts]) => { setCabinet(cab); setEvents(evts) })
       .catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))
 
@@ -356,27 +354,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           </div>
         </Popup>
 
-        {/* Church calendar */}
-        <div style={{ ...block, padding: '14px 16px' }}>
-          <SectionLabel>Церковний календар</SectionLabel>
-          {churchEvents.length === 0 ? (
-            <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', display: 'block', marginTop: 8 }}>Подій немає</span>
-          ) : churchEvents.map((ev) => (
-            <div key={ev.id} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '9px 8px', marginBottom: 2, borderRadius: 8,
-              background: ev.daysUntil <= 7 ? 'rgba(52, 199, 89, 0.08)' : 'transparent',
-            }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{ev.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{formatEventDate(ev.month, ev.day)}</div>
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: ev.daysUntil === 0 ? 'var(--color-error)' : 'var(--color-text-secondary)' }}>
-                {ev.daysUntil === 0 ? 'Сьогодні!' : ev.daysUntil === 1 ? 'Завтра' : `за ${ev.daysUntil} дн.`}
-              </span>
-            </div>
-          ))}
-        </div>
+        {/* Church calendar — moved to Calendar tab */}
 
         {/* Stats */}
         <div style={block}>

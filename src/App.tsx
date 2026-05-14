@@ -23,6 +23,7 @@ import { PersonDetailPage } from '@/pages/people/PersonDetailPage'
 import { GroupCabinetPage } from '@/pages/cabinet/GroupCabinetPage'
 import { PlanningPage } from '@/pages/cabinet/PlanningPage'
 import { StatsPage } from '@/pages/cabinet/StatsPage'
+import { CalendarPage } from '@/pages/calendar/CalendarPage'
 
 export function App() {
   return (
@@ -44,6 +45,7 @@ export function App() {
             <Route path="cabinet/:id/attendance" element={<AttendancePage />} />
             <Route path="cabinet/:id/plan" element={<PlanningPage />} />
             <Route path="cabinet/:id/stats" element={<StatsPage />} />
+            <Route path="calendar" element={<CalendarPage />} />
             <Route path="people" element={<PeoplePage />} />
             <Route path="people/new" element={<PersonCreatePage />} />
             <Route path="people/:id" element={<PersonDetailPage />} />
