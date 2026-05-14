@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavBar, Popup, Toast, Dialog, Button, Checkbox } from 'antd-mobile'
-import { AddOutline, LeftOutline, RightOutline } from 'antd-mobile-icons'
+import { AddOutline, LeftOutline, RightOutline, RedoOutline } from 'antd-mobile-icons'
 import { calendarApi, roomsApi, type CalendarEventPayload } from '@/api/calendar'
 import { groupsApi } from '@/api/groups'
 import type { CalendarOccurrence, CalendarEvent, Room, Group } from '@/types'
@@ -24,11 +24,13 @@ const TYPE_COLORS: Record<string, string> = {
   Recurring: '#2AAFCA',
   Global: '#F59E0B',
   HomeGroup: '#8B5CF6',
+  Google: '#10B981',
 }
 const TYPE_LABELS: Record<string, string> = {
   Recurring: 'Повторювані',
   Global: 'Глобальні',
   HomeGroup: 'Домашки',
+  Google: 'Google',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -258,22 +260,42 @@ function EventForm({
     return acc
   }, [rooms])
 
-  const buildPayload = (): CalendarEventPayload => ({
-    title: form.title.trim(),
-    description: form.description.trim() || null,
-    location: form.location.trim() || null,
-    roomId: form.roomId ? Number(form.roomId) : null,
-    type: form.type,
-    homeGroupId: form.type === 'HomeGroup' && form.homeGroupId ? Number(form.homeGroupId) : null,
-    isRecurring,
-    recurringDayOfWeek: isRecurring ? Number(form.recurringDayOfWeek) : null,
-    startTime: form.startTime || null,
-    endTime: form.endTime || null,
-    date: !isRecurring ? form.date : null,
-  })
+  const isAutoHomeGroup = event?.type === 'HomeGroup' && event?.isRecurring
+  const isGoogleEvent = event?.type === 'Google'
+
+  const buildPayload = (): CalendarEventPayload => {
+    if (isGoogleEvent && event) {
+      return {
+        title: event.title,
+        description: event.description,
+        location: event.location,
+        roomId: form.roomId ? Number(form.roomId) : null,
+        type: 'Google',
+        homeGroupId: null,
+        isRecurring: false,
+        recurringDayOfWeek: null,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        date: event.date,
+      }
+    }
+    return {
+      title: form.title.trim(),
+      description: form.description.trim() || null,
+      location: form.location.trim() || null,
+      roomId: form.roomId ? Number(form.roomId) : null,
+      type: form.type,
+      homeGroupId: form.type === 'HomeGroup' && form.homeGroupId ? Number(form.homeGroupId) : null,
+      isRecurring,
+      recurringDayOfWeek: isRecurring ? Number(form.recurringDayOfWeek) : null,
+      startTime: form.startTime || null,
+      endTime: form.endTime || null,
+      date: !isRecurring ? form.date : null,
+    }
+  }
 
   const handleSave = async () => {
-    if (!form.title.trim()) return Toast.show({ content: 'Введіть назву', icon: 'fail' })
+    if (!isGoogleEvent && !form.title.trim()) return Toast.show({ content: 'Введіть назву', icon: 'fail' })
     setSaving(true)
     try {
       if (event) await calendarApi.update(event.id, buildPayload())
@@ -305,8 +327,6 @@ function EventForm({
     })
   }
 
-  const isAutoHomeGroup = event?.type === 'HomeGroup' && event?.isRecurring
-
   return (
     <div style={{ padding: 16, paddingBottom: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -320,51 +340,84 @@ function EventForm({
         )}
       </div>
 
+      {isGoogleEvent && (
+        <div style={{ padding: '8px 12px', background: `${TYPE_COLORS.Google}18`, borderRadius: 8, marginBottom: 12, fontSize: 13, color: '#047857' }}>
+          Подія з Google Calendar. Редагувати можна лише бронювання кімнати.
+        </div>
+      )}
+
       {isAutoHomeGroup && (
         <div style={{ padding: '8px 12px', background: '#F59E0B18', borderRadius: 8, marginBottom: 12, fontSize: 13, color: '#B45309' }}>
           Авто-подія домашньої групи. Час зустрічі змінюється в налаштуваннях групи.
         </div>
       )}
 
-      <FormField label="Тип">
-        <div style={{ display: 'flex', gap: 6 }}>
-          {(['Recurring', 'Global', 'HomeGroup'] as const).map((t) => (
-            <button key={t} onClick={() => set('type', t)} style={{
-              flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-              border: `1.5px solid ${form.type === t ? TYPE_COLORS[t] : 'var(--color-border)'}`,
-              background: form.type === t ? `${TYPE_COLORS[t]}18` : 'transparent',
-              color: form.type === t ? TYPE_COLORS[t] : 'var(--color-text-secondary)',
-              cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-            }}>
-              {TYPE_LABELS[t]}
-            </button>
-          ))}
-        </div>
-      </FormField>
+      {isGoogleEvent ? (
+        <>
+          <FormField label="Назва">
+            <div style={{ ...inputStyle, color: 'var(--color-text)', background: 'var(--color-border-light)' }}>{event!.title}</div>
+          </FormField>
+          {event?.description && (
+            <FormField label="Опис">
+              <div style={{ ...inputStyle, background: 'var(--color-border-light)', whiteSpace: 'pre-wrap' }}>{event.description}</div>
+            </FormField>
+          )}
+          {event?.location && (
+            <FormField label="Локація">
+              <div style={{ ...inputStyle, background: 'var(--color-border-light)' }}>{event.location}</div>
+            </FormField>
+          )}
+          {event?.date && (
+            <FormField label="Дата та час">
+              <div style={{ ...inputStyle, background: 'var(--color-border-light)' }}>
+                {event.date}{event.startTime ? ` · ${event.startTime}${event.endTime ? `–${event.endTime}` : ''}` : ''}
+              </div>
+            </FormField>
+          )}
+        </>
+      ) : (
+        <>
+          <FormField label="Тип">
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['Recurring', 'Global', 'HomeGroup'] as const).map((t) => (
+                <button key={t} onClick={() => set('type', t)} style={{
+                  flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  border: `1.5px solid ${form.type === t ? TYPE_COLORS[t] : 'var(--color-border)'}`,
+                  background: form.type === t ? `${TYPE_COLORS[t]}18` : 'transparent',
+                  color: form.type === t ? TYPE_COLORS[t] : 'var(--color-text-secondary)',
+                  cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+                }}>
+                  {TYPE_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </FormField>
 
-      {form.type === 'HomeGroup' && (
-        <FormField label="Домашня група">
-          <select value={form.homeGroupId} onChange={(e) => set('homeGroupId', e.target.value)} style={inputStyle}>
-            <option value="">— Вибрати групу —</option>
-            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-        </FormField>
+          {form.type === 'HomeGroup' && (
+            <FormField label="Домашня група">
+              <select value={form.homeGroupId} onChange={(e) => set('homeGroupId', e.target.value)} style={inputStyle}>
+                <option value="">— Вибрати групу —</option>
+                {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            </FormField>
+          )}
+
+          <FormField label="Назва">
+            <input value={form.title} onChange={(e) => set('title', e.target.value)}
+              placeholder="Назва події" style={inputStyle} />
+          </FormField>
+
+          <FormField label="Опис">
+            <textarea value={form.description} onChange={(e) => set('description', e.target.value)}
+              placeholder="Необов'язково" rows={2} style={{ ...inputStyle, resize: 'none' }} />
+          </FormField>
+
+          <FormField label="Локація">
+            <input value={form.location} onChange={(e) => set('location', e.target.value)}
+              placeholder="Де відбудеться?" style={inputStyle} />
+          </FormField>
+        </>
       )}
-
-      <FormField label="Назва">
-        <input value={form.title} onChange={(e) => set('title', e.target.value)}
-          placeholder="Назва події" style={inputStyle} />
-      </FormField>
-
-      <FormField label="Опис">
-        <textarea value={form.description} onChange={(e) => set('description', e.target.value)}
-          placeholder="Необов'язково" rows={2} style={{ ...inputStyle, resize: 'none' }} />
-      </FormField>
-
-      <FormField label="Локація">
-        <input value={form.location} onChange={(e) => set('location', e.target.value)}
-          placeholder="Де відбудеться?" style={inputStyle} />
-      </FormField>
 
       {rooms.length > 0 && (
         <FormField label="Бронювання">
@@ -385,33 +438,37 @@ function EventForm({
         </FormField>
       )}
 
-      {isRecurring ? (
-        <FormField label="День тижня">
-          <select value={form.recurringDayOfWeek} onChange={(e) => set('recurringDayOfWeek', e.target.value)} style={inputStyle}>
-            {UKR_DAYS_FULL.map((name, i) => (
-              <option key={i} value={i}>{name}</option>
-            ))}
-          </select>
-        </FormField>
-      ) : (
-        <FormField label="Дата">
-          <input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} style={inputStyle} />
-        </FormField>
-      )}
+      {!isGoogleEvent && (
+        <>
+          {isRecurring ? (
+            <FormField label="День тижня">
+              <select value={form.recurringDayOfWeek} onChange={(e) => set('recurringDayOfWeek', e.target.value)} style={inputStyle}>
+                {UKR_DAYS_FULL.map((name, i) => (
+                  <option key={i} value={i}>{name}</option>
+                ))}
+              </select>
+            </FormField>
+          ) : (
+            <FormField label="Дата">
+              <input type="date" value={form.date} onChange={(e) => set('date', e.target.value)} style={inputStyle} />
+            </FormField>
+          )}
 
-      <div style={{ display: 'flex', gap: 20 }}>
-        <FormField label="Початок">
-          <input type="time" value={form.startTime} onChange={(e) => set('startTime', e.target.value)} style={inputStyle} />
-        </FormField>
-        <FormField label="Кінець">
-          <input type="time" value={form.endTime} onChange={(e) => set('endTime', e.target.value)} style={inputStyle} />
-        </FormField>
-      </div>
+          <div style={{ display: 'flex', gap: 20 }}>
+            <FormField label="Початок">
+              <input type="time" value={form.startTime} onChange={(e) => set('startTime', e.target.value)} style={inputStyle} />
+            </FormField>
+            <FormField label="Кінець">
+              <input type="time" value={form.endTime} onChange={(e) => set('endTime', e.target.value)} style={inputStyle} />
+            </FormField>
+          </div>
+        </>
+      )}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <Button block fill="outline" onClick={onCancel}>Скасувати</Button>
         <Button block color="primary" loading={saving} onClick={() => { handleSave() }}>
-          {event ? 'Зберегти' : 'Створити'}
+          {isGoogleEvent ? 'Зберегти кімнату' : event ? 'Зберегти' : 'Створити'}
         </Button>
       </div>
 
@@ -510,7 +567,7 @@ export function CalendarPage() {
 
   const [selectedDate, setSelectedDate] = useState<Date>(getDefaultSelectedDate)
   const [occurrences, setOccurrences] = useState<CalendarOccurrence[]>([])
-  const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set(['Recurring', 'Global', 'HomeGroup']))
+  const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set(['Recurring', 'Global', 'HomeGroup', 'Google']))
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set())
   const [groups, setGroups] = useState<Group[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
@@ -518,6 +575,7 @@ export function CalendarPage() {
   const [formVisible, setFormVisible] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
   const [formKey, setFormKey] = useState(0)
+  const [syncing, setSyncing] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
 
   const now = new Date()
@@ -577,6 +635,19 @@ export function CalendarPage() {
     loadOccurrences(selectedDate, activeTypes, selectedGroupIds)
   }
 
+  const handleGoogleSync = async () => {
+    setSyncing(true)
+    try {
+      const result = await calendarApi.googleSync()
+      Toast.show({ content: `Синхронізовано: ${result.synced} подій`, icon: 'success' })
+      loadOccurrences(selectedDate, activeTypes, selectedGroupIds)
+    } catch {
+      Toast.show({ content: 'Помилка синхронізації', icon: 'fail' })
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   const toggleType = (t: string) => setActiveTypes((prev) => {
     const next = new Set(prev)
     next.has(t) ? next.delete(t) : next.add(t)
@@ -587,17 +658,23 @@ export function CalendarPage() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: '#fff' }}>
       {/* Header */}
       <NavBar back={null} right={
-        <button onClick={() => { setEditingEvent(null); setFormKey((k) => k + 1); setFormVisible(true) }}
-          style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'var(--color-primary)', display: 'flex' }}>
-          <AddOutline style={{ fontSize: 22 }} />
-        </button>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={handleGoogleSync} disabled={syncing}
+            style={{ background: 'none', border: 'none', padding: 4, cursor: syncing ? 'default' : 'pointer', color: TYPE_COLORS.Google, display: 'flex', opacity: syncing ? 0.5 : 1 }}>
+            <RedoOutline style={{ fontSize: 20 }} />
+          </button>
+          <button onClick={() => { setEditingEvent(null); setFormKey((k) => k + 1); setFormVisible(true) }}
+            style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'var(--color-primary)', display: 'flex' }}>
+            <AddOutline style={{ fontSize: 22 }} />
+          </button>
+        </div>
       }>
         Календар
       </NavBar>
 
       {/* Filter bar */}
       <div style={{ padding: '4px 12px 8px', display: 'flex', gap: 6, overflowX: 'auto', borderBottom: '1px solid var(--color-border-light)' }}>
-        <FilterPill label="Google" active={false} onToggle={() => {}} disabled />
+        <FilterPill label="Google" active={activeTypes.has('Google')} onToggle={() => toggleType('Google')} color={TYPE_COLORS.Google} />
         <FilterPill label="Повторювані" active={activeTypes.has('Recurring')} onToggle={() => toggleType('Recurring')} />
         <FilterPill
           label="Глобальні" active={activeTypes.has('Global')}

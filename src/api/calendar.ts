@@ -29,6 +29,9 @@ export const calendarApi = {
     api.put<CalendarEvent>(`/calendar/events/${id}`, data).then((r) => r.data),
 
   delete: (id: number) => api.delete(`/calendar/events/${id}`),
+
+  googleSync: () =>
+    api.post<{ synced: number }>('/google-calendar/sync').then((r) => r.data),
 }
 
 export interface RoomPayload {
