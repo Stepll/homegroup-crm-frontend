@@ -450,40 +450,66 @@ export function CalendarPage() {
         />
       </div>
 
-      {/* Day strip — day abbr + date number, iOS-style */}
+      {/* Day strip — 7 days, first 3 in pill, today with circle */}
       <div style={{ background: '#fff', borderBottom: '1px solid var(--color-border-light)', padding: '6px 0 8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
           <button onClick={() => setSelectedDate((p) => addDays(p, -1))}
-            style={{ background: 'none', border: 'none', padding: '6px 12px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
+            style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             <LeftOutline />
           </button>
 
-          {[col0, col1, col2].map((day, i) => {
-            const isSel = i === 0
+          {/* Active 3 days — grouped in a pill */}
+          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.07)', borderRadius: 9999, padding: '3px 2px', flexShrink: 0 }}>
+            {[col0, col1, col2].map((day, i) => {
+              const isToday = isSameDay(day, today)
+              return (
+                <button key={i} onClick={() => setSelectedDate(day)}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                    width: 44, padding: '2px 0',
+                    border: 'none', cursor: 'pointer',
+                    background: 'none', WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <span style={{ fontSize: 10, fontWeight: 500, lineHeight: 1, color: 'var(--color-text-secondary)' }}>
+                    {DAY_ABBR[day.getDay()]}
+                  </span>
+                  <span style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 32, height: 32, borderRadius: 9999,
+                    background: isToday ? 'var(--color-primary)' : 'transparent',
+                    fontSize: 17, fontWeight: 700, lineHeight: 1,
+                    color: isToday ? '#fff' : 'var(--color-text)',
+                  }}>
+                    {day.getDate()}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Next 4 days — plain */}
+          {[3, 4, 5, 6].map((offset) => {
+            const day = addDays(selectedDate, offset)
             const isToday = isSameDay(day, today)
             return (
-              <button key={i} onClick={() => setSelectedDate(day)}
+              <button key={offset} onClick={() => setSelectedDate(day)}
                 style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                  padding: '4px 10px', border: 'none', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                  flex: 1, padding: '5px 0',
+                  border: 'none', cursor: 'pointer',
                   background: 'none', WebkitTapHighlightColor: 'transparent',
                 }}
               >
-                <span style={{
-                  fontSize: 11, fontWeight: 500, lineHeight: 1,
-                  color: isSel && isToday ? 'var(--color-primary)' : 'var(--color-text-tertiary)',
-                }}>
+                <span style={{ fontSize: 10, fontWeight: 400, lineHeight: 1, color: 'var(--color-text-tertiary)' }}>
                   {DAY_ABBR[day.getDay()]}
                 </span>
                 <span style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 34, height: 34,
-                  borderRadius: isSel ? 9999 : 8,
-                  background: isSel
-                    ? 'var(--color-primary)'
-                    : 'rgba(0,0,0,0.06)',
-                  fontSize: 17, fontWeight: 700, lineHeight: 1,
-                  color: isSel ? '#fff' : isToday ? 'var(--color-primary)' : 'var(--color-text)',
+                  width: 30, height: 30, borderRadius: 9999,
+                  background: isToday ? 'var(--color-primary)' : 'transparent',
+                  fontSize: 15, fontWeight: 400, lineHeight: 1,
+                  color: isToday ? '#fff' : 'var(--color-text-tertiary)',
                 }}>
                   {day.getDate()}
                 </span>
@@ -492,7 +518,7 @@ export function CalendarPage() {
           })}
 
           <button onClick={() => setSelectedDate((p) => addDays(p, 1))}
-            style={{ background: 'none', border: 'none', padding: '6px 12px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
+            style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             <RightOutline />
           </button>
         </div>
