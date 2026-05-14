@@ -19,31 +19,47 @@ React SPA з мобайл-фьорст дизайном для CRM церков�
 src/
   api/
     client.ts             — Axios instance з baseURL + JWT interceptor
-    people.ts             — peopleApi (update приймає всі розширені поля Person)
+    people.ts             — peopleApi.getAll повертає GroupMember[] з параметрами
+                            includeAdmins?, myOversight?; update приймає всі розширені поля
     groups.ts             — groupsApi (CRUD, members, custom fields, cabinet,
                             events, setNextMeetingDate, skipMeeting, getStats)
     roles.ts              — rolesApi
     attendance.ts         — attendanceApi (getByGroup, getSummary, record, getMeta, saveMeta)
     personStatuses.ts     — personStatusesApi (getAll, create, update, delete)
     churchEvents.ts       — churchEventsApi (getAll, add, delete)
-    admins.ts             — adminsApi (getAll, getById, create, update, setPassword, remove)
+    admins.ts             — adminsApi (getMe, getAll, getById, create, update, updateProfile,
+                            setPassword, remove)
     planning.ts           — planningApi (getPlans, getPlan, savePlan,
                             deletePlanByDate, getTemplates, createTemplate, deleteTemplate)
   components/
     AppLayout.tsx         — bottom tab bar (5 tabs) + <Outlet />
     ProtectedRoute.tsx    — redirect to /login if not authed
+    AttendanceGrid.tsx    — shared 12-month activity grid (props: personId?, userId?,
+                            group?, attendance[], loading, noGroupMessage?)
   pages/
     auth/
       LoginPage.tsx
     DashboardPage.tsx
     profile/
-      ProfilePage.tsx
+      ProfilePage.tsx            — особистий профіль поточного адміна: особиста інфо,
+                                   комунікація, церква, відвідуваність (AttendanceGrid),
+                                   зміна пароля, logout
     people/
-      PeoplePage.tsx             — список з пошуком + colored group tag
+      PeoplePage.tsx             — список людей + адмінів, пошук, фільтри:
+                                   "Показати адмінів" (default on) / "Під моєю опікою"
+                                   → /people/:id або /admins/:userId
       PersonCreatePage.tsx
-      PersonDetailPage.tsx       — 4 блоки з popup-редагуванням + блок відвідуваності
+      PersonDetailPage.tsx       — 4 блоки з popup-редагуванням + AttendanceGrid
+    admins/
+      AdminProfilePage.tsx       — read-only профіль адміна (hero + особиста/комунікація/
+                                   церква блоки + AttendanceGrid); /admins/:id
+      AdminDetailPage.tsx        — superadmin management: ім'я, email, ролі, рідна домашка,
+                                   видимі групи, особиста інфо, AttendanceGrid, пароль;
+                                   /settings/admins/:id
+      AdminsPage.tsx             — список адмінів (для settings)
+      AdminCreatePage.tsx
     attendance/
-      AttendancePage.tsx         — card-based toggle, guest count + info, date picker
+      AttendancePage.tsx         — card-based toggle, admins + persons, guest count + info
     cabinet/
       GroupCabinetPage.tsx       — кабінет домашки: наступна зустріч, відвідуваність,
                                    події, орг команда, церковний календар, статистика
@@ -52,9 +68,6 @@ src/
       StatsPage.tsx              — статистика: summary, chart, person ranking, meetings
     settings/
       SettingsPage.tsx           — меню: Адміни, Ролі, Домашні групи, Статуси людей
-      AdminsPage.tsx
-      AdminDetailPage.tsx
-      AdminCreatePage.tsx
       RolesSettingsPage.tsx
       RoleFormPage.tsx
       HomeGroupsSettingsPage.tsx
@@ -74,19 +87,20 @@ src/
 ```
 /login
 /                              — Dashboard
-/profile
+/profile                       — особистий профіль поточного адміна (editable)
+/admins/:id                    — read-only профіль будь-якого адміна (з People list)
 /cabinet                       — вибір групи (для адмінів) або одразу кабінет
 /cabinet/:id                   — кабінет домашки
 /cabinet/:id/attendance        — відмічання присутніх
 /cabinet/:id/plan              — планування зустрічі (?date=yyyy-MM-dd)
 /cabinet/:id/stats             — статистика групи
-/people
+/people                        — список людей + адмінів
 /people/new
 /people/:id
 /settings
-/settings/admins
+/settings/admins               — управління адмінами (superadmin)
 /settings/admins/new
-/settings/admins/:id
+/settings/admins/:id           — superadmin управління: ролі, групи, профіль, пароль
 /settings/roles
 /settings/roles/:id
 /settings/home-groups
@@ -150,13 +164,15 @@ src/
 - **Опіка** — Опікун (select з admins), Статус (select з personStatuses, відображається кольоровим тегом)
 - **Додаткова інформація** — group-scoped custom fields (+ Додати)
 
-**Блок відвідуваності** (`AttendanceGrid`):
+**Блок відвідуваності** (shared `AttendanceGrid` компонент, `src/components/AttendanceGrid.tsx`):
+- Props: `personId?`, `userId?`, `group?`, `attendance[]`, `loading`, `noGroupMessage?`
 - 12 стовбців = 12 місяців (oldest→newest)
-- Є записи → кольор по wasPresent (зелений/сірий)
+- Є записи → кольор по wasPresent (зелений/сірий); фільтрує по userId або personId
 - Немає записів → розраховує очікувані зустрічі з `group.meetingDay` (укр назви днів: Понеділок..Неділя)
 - Жирна лінія над стовбцями поточного року (flex: currentYearStartIdx / flex: 12-currentYearStartIdx)
 - "Сьогодні" правий підпис, легенда знизу
-- Завантажується окремим `useEffect` після person (non-blocking)
+- Завантажується окремим `useEffect` після person/admin (non-blocking)
+- Використовується в: PersonDetailPage, AdminDetailPage, AdminProfilePage, ProfilePage
 
 **Popup форми** (`PopupForm` компонент): `maxHeight: 85vh; overflowY: auto`
 **Збереження**: `basePayload()` → spread з patch → `peopleApi.update()`
@@ -222,10 +238,26 @@ PlanTemplate: { id, name, blocks[], createdAt }
 GroupStats: {
   summary: { avgAttendanceRate, meetingCount, totalGuests, newMembers }
   meetings: [{ date, presentCount, totalMembers, attendanceRate, guestCount, absentees[] }]
-  personStats: [{ personId, fullName, presentCount, totalMeetings, attendanceRate }]
+  personStats: [{ personId?, userId?, fullName, presentCount, totalMeetings, attendanceRate }]
 }
 
-AttendanceRecord, AttendanceSummary
+AttendanceRecord: { id, personId?, userId?, memberName, homeGroupId, meetingDate, wasPresent, notes? }
+AttendanceSummary: { meetingDate, totalMembers, presentCount, attendanceRate }
+
+Admin: {
+  id, name, lastName?, email,
+  roles: RoleTag[], primaryGroupId?, primaryGroupName?, primaryGroupColor?,
+  visibleGroups: GroupTag[],
+  phone?, telegram?, notes?, gender?, maritalStatus?, address?, dateOfBirth?,
+  isBaptized, church?, ministry?, isBaptizedWithSpirit,
+  status?: { id, name, color } | null, createdAt
+}
+
+GroupMember: {
+  id, name, lastName?, phone?, email?, notes?,
+  status?, primaryGroupId?, primaryGroupName?, primaryGroupColor?,
+  createdAt, isAdmin, userId?, roleTag?: { name, color } | null
+}
 ```
 
 ## API Client
@@ -272,11 +304,17 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
       IsBaptized, Church, Ministry, IsBaptizedWithSpirit)
 - [x] PersonDetailPage — блок відвідуваності (12-column activity grid)
 - [x] Комунікація — кнопки tel: дзвінок і t.me/ Telegram чат
+- [x] Admins CRUD (AdminsPage, AdminDetailPage, AdminCreatePage)
+- [x] Admin profile fields (PersonDetailPage-style blocks: Особиста/Комунікація/Церква/Безпека)
+- [x] AttendanceGrid extracted to shared component (personId OR userId)
+- [x] AttendanceGrid in: PersonDetailPage, AdminDetailPage, AdminProfilePage, ProfilePage
+- [x] PeoplePage — показує admins + persons, filter toggles "Показати адмінів" / "Під моєю опікою"
+- [x] AdminProfilePage — read-only профіль адміна (/admins/:id) з AttendanceGrid
+- [x] ProfilePage — відвідуваність блок
 
 ## TODO
 
 - [ ] Dashboard (реальна статистика)
-- [ ] Admins page (CRUD користувачів системи)
 - [ ] Enforcement прав доступу (показувати/ховати секції по ролі)
 - [ ] Telegram notify (кнопка "Повідомити про план" — поки заглушка)
 - [ ] Pull-to-refresh
