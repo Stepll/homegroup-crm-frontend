@@ -3,10 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { NavBar, Input, Button, Toast, SpinLoading, Dialog, Popup, Switch } from 'antd-mobile'
 import { CloseOutline, EditSOutline } from 'antd-mobile-icons'
 import { adminsApi } from '@/api/admins'
+import { attendanceApi } from '@/api/attendance'
 import { groupsApi } from '@/api/groups'
 import { rolesApi } from '@/api/roles'
 import { personStatusesApi, type PersonStatus } from '@/api/personStatuses'
-import type { Admin, Group } from '@/types'
+import { AttendanceGrid } from '@/components/AttendanceGrid'
+import type { Admin, Group, AttendanceRecord } from '@/types'
 import type { Role } from '@/api/roles'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -129,6 +131,8 @@ export function AdminDetailPage() {
   const [roles, setRoles] = useState<Role[]>([])
   const [statuses, setStatuses] = useState<PersonStatus[]>([])
   const [loading, setLoading] = useState(true)
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
+  const [attendanceLoading, setAttendanceLoading] = useState(false)
 
   const [pwdVisible, setPwdVisible] = useState(false)
   const [newPwd, setNewPwd] = useState('')
@@ -162,6 +166,15 @@ export function AdminDetailPage() {
       .finally(() => setLoading(false))
 
   useEffect(() => { load() }, [adminId])
+
+  useEffect(() => {
+    if (!admin?.primaryGroupId) return
+    setAttendanceLoading(true)
+    const from = new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1).toISOString().slice(0, 10)
+    attendanceApi.getByGroup(admin.primaryGroupId, from)
+      .then(setAttendance)
+      .finally(() => setAttendanceLoading(false))
+  }, [admin?.primaryGroupId])
 
   if (loading || !admin) {
     return (
@@ -339,6 +352,15 @@ export function AdminDetailPage() {
           <InfoRow label="Служіння">{admin.ministry ?? '—'}</InfoRow>
           <InfoRow label="Хрещення Духом">{admin.isBaptizedWithSpirit ? 'Так' : 'Ні'}</InfoRow>
         </BlockCard>
+
+        {/* Block 5: Attendance */}
+        <AttendanceGrid
+          userId={adminId}
+          group={groups.find((g) => g.id === admin.primaryGroupId)}
+          attendance={attendance}
+          loading={attendanceLoading}
+          noGroupMessage="Адмін не прив'язаний до групи"
+        />
 
         {/* Block 5: Security */}
         <div style={block}>

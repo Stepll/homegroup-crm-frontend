@@ -4,7 +4,7 @@ import { NavBar, Input, TextArea, Button, Toast, SpinLoading, Dialog, Popup } fr
 import { DeleteOutline, CloseOutline, AddOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
 import { peopleApi } from '@/api/people'
-import type { Group, GroupCustomField, GroupMember, Person } from '@/types'
+import type { Group, GroupCustomField, GroupMember } from '@/types'
 
 const COLORS = [
   '#2AAFCA', '#10B981', '#6366F1', '#F59E0B',
@@ -28,8 +28,8 @@ export function HomeGroupFormPage() {
   const [newFieldName, setNewFieldName] = useState('')
 
   const [search, setSearch] = useState('')
-  const [searchResults, setSearchResults] = useState<Person[]>([])
-  const [selected, setSelected] = useState<Person | null>(null)
+  const [searchResults, setSearchResults] = useState<GroupMember[]>([])
+  const [selected, setSelected] = useState<GroupMember | null>(null)
   const [searching, setSearching] = useState(false)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -68,7 +68,7 @@ export function HomeGroupFormPage() {
     fetchNoGroup(val)
   }
 
-  const handleSelect = (person: Person) => {
+  const handleSelect = (person: GroupMember) => {
     setSelected(person)
     setSearch([person.name, person.lastName].filter(Boolean).join(' '))
     setSearchResults([])
@@ -76,8 +76,7 @@ export function HomeGroupFormPage() {
 
   const handleAdd = () => {
     if (!selected) return
-    const asMember: import('@/types').GroupMember = { ...selected, isAdmin: false }
-    setMembers((prev) => [...prev, asMember])
+    setMembers((prev) => [...prev, { ...selected, isAdmin: false }])
     setSelected(null)
     setSearch('')
     setSearchResults([])
