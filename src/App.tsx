@@ -10,6 +10,7 @@ import { AttendancePage } from '@/pages/attendance/AttendancePage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { AdminsPage } from '@/pages/admins/AdminsPage'
 import { AdminDetailPage } from '@/pages/admins/AdminDetailPage'
+import { AdminProfilePage } from '@/pages/admins/AdminProfilePage'
 import { AdminCreatePage } from '@/pages/admins/AdminCreatePage'
 import { RolesSettingsPage } from '@/pages/settings/RolesSettingsPage'
 import { RoleFormPage } from '@/pages/settings/RoleFormPage'
@@ -46,6 +47,7 @@ export function App() {
             <Route path="people" element={<PeoplePage />} />
             <Route path="people/new" element={<PersonCreatePage />} />
             <Route path="people/:id" element={<PersonDetailPage />} />
+            <Route path="admins/:id" element={<AdminProfilePage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/admins" element={<AdminsPage />} />
             <Route path="settings/admins/new" element={<AdminCreatePage />} />

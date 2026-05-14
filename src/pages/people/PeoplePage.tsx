@@ -20,7 +20,7 @@ export function PeoplePage() {
   }, [search, showAdmins, myOversight])
 
   const handleItemClick = (m: GroupMember) => {
-    if (m.isAdmin) navigate(`/settings/admins/${m.userId}`)
+    if (m.isAdmin) navigate(`/admins/${m.userId}`)
     else navigate(`/people/${m.id}`)
   }
 
