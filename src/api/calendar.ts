@@ -31,6 +31,17 @@ export const calendarApi = {
   delete: (id: number) => api.delete(`/calendar/events/${id}`),
 }
 
+export interface RoomPayload {
+  name: string
+  building: string
+  floor: number
+  color: string
+}
+
 export const roomsApi = {
   getAll: () => api.get<Room[]>('/rooms').then((r) => r.data),
+  getById: (id: number) => api.get<Room>(`/rooms/${id}`).then((r) => r.data),
+  create: (data: RoomPayload) => api.post<Room>('/rooms', data).then((r) => r.data),
+  update: (id: number, data: RoomPayload) => api.put<Room>(`/rooms/${id}`, data).then((r) => r.data),
+  delete: (id: number) => api.delete(`/rooms/${id}`),
 }

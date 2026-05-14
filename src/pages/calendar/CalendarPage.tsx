@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavBar, Popup, Toast, Dialog, Button, Checkbox } from 'antd-mobile'
 import { AddOutline, LeftOutline, RightOutline } from 'antd-mobile-icons'
 import { calendarApi, roomsApi, type CalendarEventPayload } from '@/api/calendar'
@@ -218,11 +218,45 @@ function EventForm({
     date: event?.date ?? defaultDate,
   })
   const [saving, setSaving] = useState(false)
+  const [roomPickerVisible, setRoomPickerVisible] = useState(false)
+  const [dayOccurrences, setDayOccurrences] = useState<CalendarOccurrence[]>([])
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((p) => ({ ...p, [k]: v }))
 
   const isRecurring = event ? event.isRecurring : form.type === 'Recurring'
+
+  useEffect(() => {
+    if (isRecurring || !form.date) { setDayOccurrences([]); return }
+    calendarApi.getOccurrences({ from: form.date, to: form.date }).then(setDayOccurrences).catch(() => {})
+  }, [form.date, isRecurring])
+
+  const bookedRoomIds = useMemo(() => {
+    const s = new Set<number>()
+    if (!form.startTime) return s
+    const fStart = timeToMin(form.startTime)
+    const fEnd = form.endTime ? timeToMin(form.endTime) : fStart + 60
+    for (const occ of dayOccurrences) {
+      if (!occ.roomId) continue
+      if (event?.id === occ.eventId) continue
+      const oStart = timeToMin(occ.startTime ?? '00:00')
+      const oEnd = occ.endTime ? timeToMin(occ.endTime) : oStart + 60
+      if (fStart < oEnd && oStart < fEnd) s.add(Number(occ.roomId))
+    }
+    return s
+  }, [dayOccurrences, form.startTime, form.endTime, event?.id])
+
+  const selectedRoom = rooms.find((r) => r.id === Number(form.roomId))
+
+  const groupedRooms = useMemo(() => {
+    const acc: Record<string, Record<number, Room[]>> = {}
+    for (const r of rooms) {
+      if (!acc[r.building]) acc[r.building] = {}
+      if (!acc[r.building][r.floor]) acc[r.building][r.floor] = []
+      acc[r.building][r.floor].push(r)
+    }
+    return acc
+  }, [rooms])
 
   const buildPayload = (): CalendarEventPayload => ({
     title: form.title.trim(),
@@ -257,6 +291,8 @@ function EventForm({
     if (!event) return
     Dialog.confirm({
       content: 'Видалити подію?',
+      confirmText: 'Видалити',
+      cancelText: 'Скасувати',
       onConfirm: async () => {
         try {
           await calendarApi.delete(event.id)
@@ -331,11 +367,21 @@ function EventForm({
       </FormField>
 
       {rooms.length > 0 && (
-        <FormField label="Кімната (бронювання)">
-          <select value={form.roomId} onChange={(e) => set('roomId', e.target.value)} style={inputStyle}>
-            <option value="">— Без кімнати —</option>
-            {rooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
+        <FormField label="Бронювання">
+          <button
+            onClick={() => setRoomPickerVisible(true)}
+            style={{ ...inputStyle, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            {selectedRoom ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: selectedRoom.color, flexShrink: 0 }} />
+                {selectedRoom.name}
+              </span>
+            ) : (
+              <span style={{ color: 'var(--color-text-tertiary)' }}>— Без бронювання —</span>
+            )}
+            <span style={{ color: 'var(--color-text-tertiary)', fontSize: 12 }}>▾</span>
+          </button>
         </FormField>
       )}
 
@@ -368,6 +414,90 @@ function EventForm({
           {event ? 'Зберегти' : 'Створити'}
         </Button>
       </div>
+
+      {/* Room picker popup */}
+      <Popup
+        visible={roomPickerVisible}
+        onMaskClick={() => setRoomPickerVisible(false)}
+        position="bottom"
+        bodyStyle={{ borderRadius: '16px 16px 0 0', maxHeight: '72vh', overflowY: 'auto', padding: 16 }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Бронювання кімнати</div>
+
+        {isRecurring && (
+          <div style={{ padding: '8px 12px', background: '#F59E0B18', borderRadius: 8, marginBottom: 12, fontSize: 12, color: '#B45309' }}>
+            Для повторюваних подій конфлікти не перевіряються
+          </div>
+        )}
+
+        <button
+          onClick={() => { set('roomId', ''); setRoomPickerVisible(false) }}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '12px 8px', borderRadius: 8, border: 'none', marginBottom: 8,
+            background: !form.roomId ? 'var(--color-primary-bg)' : 'transparent',
+            cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <span style={{ fontSize: 15, color: 'var(--color-text-secondary)' }}>— Без бронювання —</span>
+          {!form.roomId && <span style={{ color: 'var(--color-primary)', fontSize: 16 }}>✓</span>}
+        </button>
+
+        {(['Church', 'SocialCenter'] as const).filter((b) => groupedRooms[b]).map((building) => (
+          <div key={building}>
+            <div style={{
+              fontSize: 12, fontWeight: 700, color: 'var(--color-text-secondary)',
+              textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 12, marginBottom: 6,
+            }}>
+              {building === 'Church' ? 'Церква' : 'Соц. центр'}
+            </div>
+            {Object.entries(groupedRooms[building])
+              .sort(([a], [b]) => Number(a) - Number(b))
+              .map(([floorStr, floorRooms]) => (
+                <div key={floorStr}>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginBottom: 4, marginLeft: 4 }}>
+                    Поверх {floorStr}
+                  </div>
+                  {floorRooms.map((room) => {
+                    const isBooked = bookedRoomIds.has(room.id)
+                    const isSelected = form.roomId === String(room.id)
+                    return (
+                      <button
+                        key={room.id}
+                        disabled={isBooked}
+                        onClick={() => { if (!isBooked) { set('roomId', String(room.id)); setRoomPickerVisible(false) } }}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 8px', borderRadius: 8, border: 'none', marginBottom: 2,
+                          background: isSelected ? 'var(--color-primary-bg)' : 'transparent',
+                          cursor: isBooked ? 'default' : 'pointer',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                      >
+                        <span style={{ width: 12, height: 12, borderRadius: '50%', background: room.color, flexShrink: 0 }} />
+                        <span style={{ flex: 1, textAlign: 'left', fontSize: 15, color: isBooked ? 'var(--color-text-secondary)' : 'var(--color-text)' }}>
+                          {room.name}
+                        </span>
+                        {isBooked && (
+                          <span style={{ background: '#1F2937', color: '#fff', fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>
+                            заброньовано
+                          </span>
+                        )}
+                        {isSelected && !isBooked && (
+                          <span style={{ color: 'var(--color-primary)', fontSize: 16, flexShrink: 0 }}>✓</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
+          </div>
+        ))}
+
+        <Button block fill="outline" style={{ marginTop: 16 }} onClick={() => setRoomPickerVisible(false)}>
+          Закрити
+        </Button>
+      </Popup>
     </div>
   )
 }

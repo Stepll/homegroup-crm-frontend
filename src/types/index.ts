@@ -187,6 +187,9 @@ export interface CalendarEvent {
 export interface Room {
   id: number
   name: string
+  building: string // 'Church' | 'SocialCenter'
+  floor: number
+  color: string
 }
 
 export interface PlanBlock {

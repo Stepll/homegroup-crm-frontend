@@ -7,6 +7,7 @@ const items = [
   { label: 'Ролі', path: '/settings/roles' },
   { label: 'Домашні групи', path: '/settings/home-groups' },
   { label: 'Статуси людей', path: '/settings/person-statuses' },
+  { label: 'Кімнати для бронювання', path: '/settings/rooms' },
 ]
 
 export function SettingsPage() {

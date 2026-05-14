@@ -18,6 +18,8 @@ import { HomeGroupsSettingsPage } from '@/pages/settings/HomeGroupsSettingsPage'
 import { HomeGroupFormPage } from '@/pages/settings/HomeGroupFormPage'
 import { PersonStatusesPage } from '@/pages/settings/PersonStatusesPage'
 import { PersonStatusFormPage } from '@/pages/settings/PersonStatusFormPage'
+import { RoomsSettingsPage } from '@/pages/settings/RoomsSettingsPage'
+import { RoomFormPage } from '@/pages/settings/RoomFormPage'
 import { PersonCreatePage } from '@/pages/people/PersonCreatePage'
 import { PersonDetailPage } from '@/pages/people/PersonDetailPage'
 import { GroupCabinetPage } from '@/pages/cabinet/GroupCabinetPage'
@@ -60,6 +62,8 @@ export function App() {
             <Route path="settings/home-groups/:id" element={<HomeGroupFormPage />} />
             <Route path="settings/person-statuses" element={<PersonStatusesPage />} />
             <Route path="settings/person-statuses/:id" element={<PersonStatusFormPage />} />
+            <Route path="settings/rooms" element={<RoomsSettingsPage />} />
+            <Route path="settings/rooms/:id" element={<RoomFormPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
