@@ -153,7 +153,7 @@ function EventBlock({ ev, onClick }: { ev: Laid; onClick: () => void }) {
         borderLeft: `3px solid ${color}`,
         borderRadius: '0 4px 4px 0',
         padding: '2px 5px',
-        border: 'none', borderLeft: `3px solid ${color}`,
+        outline: 'none',
         overflow: 'hidden', textAlign: 'left', cursor: 'pointer',
         zIndex: 2, WebkitTapHighlightColor: 'transparent',
       }}
@@ -354,7 +354,7 @@ function EventForm({
 
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
         <Button block fill="outline" onClick={onCancel}>Скасувати</Button>
-        <Button block color="primary" loading={saving} onClick={handleSave}>
+        <Button block color="primary" loading={saving} onClick={() => { handleSave() }}>
           {event ? 'Зберегти' : 'Створити'}
         </Button>
       </div>
@@ -598,7 +598,7 @@ export function CalendarPage() {
           >
             <div style={{ width: 12, height: 12, borderRadius: 9999, background: g.color, flexShrink: 0 }} />
             <span style={{ flex: 1, fontSize: 15 }}>{g.name}</span>
-            <Checkbox checked={selectedGroupIds.has(g.id)} readOnly />
+            <Checkbox checked={selectedGroupIds.has(g.id)} onChange={() => {}} />
           </div>
         ))}
         <Button block color="primary" style={{ marginTop: 16 }} onClick={() => setGroupsDrawerVisible(false)}>
