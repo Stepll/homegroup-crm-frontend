@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button, Dialog } from 'antd-mobile'
+import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button, Dialog, Switch } from 'antd-mobile'
 import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
 import { planningApi } from '@/api/planning'
+import { roomsApi } from '@/api/calendar'
 import { useAuth } from '@/store/auth'
-import type { Group, GroupCabinet, GroupEvent } from '@/types'
+import type { Group, GroupCabinet, GroupEvent, Room, CabinetCalendarEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 
@@ -70,6 +71,7 @@ export function GroupCabinetPage() {
 function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }) {
   const navigate = useNavigate()
   const [cabinet, setCabinet] = useState<GroupCabinet | null>(null)
+  const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [editVisible, setEditVisible] = useState(false)
   const [events, setEvents] = useState<GroupEvent[]>([])
@@ -80,10 +82,20 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const [rescheduleVisible, setRescheduleVisible] = useState(false)
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduling, setRescheduling] = useState(false)
+  const [roomPickerVisible, setRoomPickerVisible] = useState(false)
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
+  const [autoBook, setAutoBook] = useState(false)
+  const [bookingLoading, setBookingLoading] = useState(false)
 
   const load = () =>
-    Promise.all([groupsApi.getCabinet(groupId), groupsApi.getEvents(groupId)])
-      .then(([cab, evts]) => { setCabinet(cab); setEvents(evts) })
+    Promise.all([groupsApi.getCabinet(groupId), groupsApi.getEvents(groupId), roomsApi.getAll()])
+      .then(([cab, evts, rms]) => {
+        setCabinet(cab)
+        setEvents(evts)
+        setRooms(rms)
+        setSelectedRoomId(cab.nextMeetingRoomId ?? null)
+        setAutoBook(cab.autoBookEnabled)
+      })
       .catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))
 
@@ -106,7 +118,6 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     if (!rescheduleDate) return
     setRescheduling(true)
     try {
-      // Pass old date so backend migrates the plan to the new date
       await groupsApi.setNextMeetingDate(groupId, rescheduleDate, nextMeetingDate ?? undefined)
       setRescheduleVisible(false)
       await load()
@@ -125,7 +136,6 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     })
     if (!ok) return
 
-    // If a plan exists for the cancelled meeting, ask whether to delete it
     if (hasPlanForNextMeeting && nextMeetingDate) {
       const deletePlan = await Dialog.confirm({
         title: 'Видалити план зустрічі?',
@@ -141,7 +151,6 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     }
 
     try {
-      // Backend computes exact next occurrence of meeting day
       await groupsApi.skipMeeting(groupId)
       await load()
     } catch {
@@ -154,6 +163,24 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     setEvents((prev) => prev.filter((e) => e.id !== eventId))
   }
 
+  const handleBookRoom = async () => {
+    if (!nextMeetingDate) return
+    setBookingLoading(true)
+    try {
+      await groupsApi.bookRoom(groupId, {
+        date: nextMeetingDate,
+        roomId: selectedRoomId,
+        autoBook,
+      })
+      setRoomPickerVisible(false)
+      await load()
+      Toast.show({ content: selectedRoomId ? 'Кімнату заброньовано' : 'Бронювання скасовано', icon: 'success' })
+    } catch {
+      Toast.show({ content: 'Помилка бронювання', icon: 'fail' })
+    }
+    setBookingLoading(false)
+  }
+
   useEffect(() => { load() }, [groupId])
 
   if (loading || !cabinet) return (
@@ -163,7 +190,8 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     </div>
   )
 
-  const { group, nextMeetingDate, lastMeetingDate, lastAttendance, upcomingEvents, orgTeam, stats, hasPlanForNextMeeting } = cabinet
+  const { group, nextMeetingDate, lastMeetingDate, lastAttendance, upcomingEvents, orgTeam, stats,
+    hasPlanForNextMeeting, nextMeetingRoomId, nextMeetingEvents, nextMeetingConflicts } = cabinet
 
   const attendancePct = lastAttendance
     ? Math.round(lastAttendance.present * 100 / (lastAttendance.total || 1))
@@ -174,6 +202,16 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     const d = new Date(iso)
     return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', weekday: 'short' })
   }
+
+  const bookedRoom = rooms.find((r) => r.id === nextMeetingRoomId)
+  const hasConflicts = (nextMeetingConflicts?.length ?? 0) > 0
+
+  // Per-room busy map from events that day
+  const busyRoomIds = useMemo(() => {
+    const ids = new Set<number>()
+    ;(nextMeetingEvents ?? []).forEach((e) => { if (e.roomId) ids.add(e.roomId) })
+    return ids
+  }, [nextMeetingEvents])
 
   return (
     <div style={{ paddingBottom: 80 }}>
@@ -192,7 +230,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                 </div>
                 {(group.meetingDay || group.meetingTime) && (
                   <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 2 }}>
-                    {[group.meetingDay, group.meetingTime].filter(Boolean).join(' · ')}
+                    {[group.meetingDay, group.meetingTime, group.meetingEndTime && `— ${group.meetingEndTime}`].filter(Boolean).join(' ')}
                   </div>
                 )}
                 {group.location && (
@@ -209,6 +247,25 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           </div>
         </div>
 
+        {/* Conflict warning */}
+        {hasConflicts && bookedRoom && (
+          <div style={{
+            marginTop: 12, padding: '10px 14px', borderRadius: 'var(--radius-md)',
+            background: '#FFF3CD', border: '1px solid #FBBF24',
+            display: 'flex', alignItems: 'flex-start', gap: 8,
+          }}>
+            <span style={{ fontSize: 16 }}>⚠️</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#92400E' }}>
+                Конфлікт бронювання — {bookedRoom.name}
+              </div>
+              <div style={{ fontSize: 12, color: '#92400E', marginTop: 2 }}>
+                {nextMeetingConflicts!.map((e) => e.title).join(', ')} накладається на час зустрічі
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Block 2: Next meeting */}
         <div style={block}>
           <div style={{ padding: '14px 0' }}>
@@ -223,6 +280,30 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                 Планування
               </Button>
             </div>
+
+            {/* Room booking row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Кімната:</span>
+                {bookedRoom
+                  ? <span style={{ ...tagStyle, color: bookedRoom.color, background: `${bookedRoom.color}18`, fontSize: 12 }}>{bookedRoom.name}</span>
+                  : <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>не заброньовано</span>
+                }
+                {hasConflicts && <span style={{ fontSize: 14 }}>⚠️</span>}
+                {cabinet.autoBookEnabled && <span style={{ fontSize: 10, color: '#6366F1', fontWeight: 600 }}>авто</span>}
+              </div>
+              <Button size="mini" fill="outline"
+                disabled={!nextMeetingDate}
+                style={{ '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}
+                onClick={() => {
+                  setSelectedRoomId(nextMeetingRoomId ?? null)
+                  setAutoBook(cabinet.autoBookEnabled)
+                  setRoomPickerVisible(true)
+                }}>
+                Бронювати
+              </Button>
+            </div>
+
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Button size="mini" fill="outline"
                 style={{ '--border-color': 'var(--color-border)', '--text-color': 'var(--color-text-secondary)' } as React.CSSProperties}
@@ -274,7 +355,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           </div>
         </div>
 
-        {/* Block 4: Upcoming events */}
+        {/* Block 4: Upcoming birthdays */}
         {upcomingEvents.length > 0 && (
           <div style={{ ...block, padding: '14px 16px' }}>
             <SectionLabel>Найближчі події</SectionLabel>
@@ -354,8 +435,6 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           </div>
         </Popup>
 
-        {/* Church calendar — moved to Calendar tab */}
-
         {/* Stats */}
         <div style={block}>
           <div style={{ padding: '14px 0' }}>
@@ -398,6 +477,96 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
         </div>
       </Popup>
 
+      {/* Room picker popup */}
+      <Popup visible={roomPickerVisible} onMaskClick={() => setRoomPickerVisible(false)}
+        bodyStyle={{ borderRadius: '16px 16px 0 0', maxHeight: '80vh', overflowY: 'auto' }}>
+        <div style={{ padding: 24, paddingBottom: 8 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Бронювання кімнати</div>
+          {nextMeetingDate && (
+            <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16 }}>
+              {formatDate(nextMeetingDate)}
+            </div>
+          )}
+
+          {/* Auto-book toggle */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 14px', borderRadius: 'var(--radius-md)',
+            background: 'var(--color-bg)', marginBottom: 16,
+          }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>Автобронювання</div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2 }}>
+                Бронювати цю кімнату автоматично щозустрічі
+              </div>
+            </div>
+            <Switch checked={autoBook} onChange={setAutoBook} />
+          </div>
+
+          {/* Room list */}
+          <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Кімната
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+            {/* No room option */}
+            <button
+              onClick={() => setSelectedRoomId(null)}
+              style={{
+                width: '100%', textAlign: 'left', padding: '10px 14px',
+                borderRadius: 'var(--radius-md)', border: `2px solid ${selectedRoomId === null ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                background: selectedRoomId === null ? 'rgba(99,102,241,0.06)' : '#fff',
+                cursor: 'pointer',
+              }}>
+              <span style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Без кімнати</span>
+            </button>
+            {rooms.map((room) => {
+              const isBusy = busyRoomIds.has(room.id) && room.id !== nextMeetingRoomId
+              return (
+                <button
+                  key={room.id}
+                  onClick={() => setSelectedRoomId(room.id)}
+                  style={{
+                    width: '100%', textAlign: 'left', padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: `2px solid ${selectedRoomId === room.id ? room.color : 'var(--color-border)'}`,
+                    background: selectedRoomId === room.id ? `${room.color}10` : '#fff',
+                    cursor: 'pointer',
+                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: room.color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text)' }}>{room.name}</span>
+                      <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>{room.building} · пов. {room.floor}</span>
+                    </div>
+                    {isBusy && (
+                      <span style={{ fontSize: 11, color: '#D97706', fontWeight: 600 }}>зайнято</span>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Events timeline for meeting day */}
+          {(nextMeetingEvents?.length ?? 0) > 0 && (
+            <>
+              <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Події цього дня
+              </div>
+              <MeetingTimeline events={nextMeetingEvents!} meetingStartTime={group.meetingTime} meetingEndTime={group.meetingEndTime} rooms={rooms} bookedRoomId={selectedRoomId} />
+            </>
+          )}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingBottom: 8 }}>
+            <Button block loading={bookingLoading} onClick={handleBookRoom}
+              style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>
+              Зберегти
+            </Button>
+            <Button block fill="outline" onClick={() => setRoomPickerVisible(false)}>Назад</Button>
+          </div>
+        </div>
+      </Popup>
+
       {/* Edit group info popup */}
       <EditGroupPopup
         group={group}
@@ -405,6 +574,70 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
         onClose={() => setEditVisible(false)}
         onSaved={() => { setEditVisible(false); load() }}
       />
+    </div>
+  )
+}
+
+// ── Meeting day timeline ──────────────────────────────────────────────────────
+
+function MeetingTimeline({ events, meetingStartTime, meetingEndTime, rooms, bookedRoomId }: {
+  events: CabinetCalendarEvent[]
+  meetingStartTime?: string
+  meetingEndTime?: string
+  rooms: Room[]
+  bookedRoomId: number | null
+}) {
+  const sorted = [...events].sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+  const roomMap = useMemo(() => new Map(rooms.map((r) => [r.id, r])), [rooms])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
+      {/* Our meeting row */}
+      {meetingStartTime && (
+        <div style={{
+          padding: '7px 10px', borderRadius: 8,
+          background: 'rgba(99,102,241,0.08)', border: '1px dashed rgba(99,102,241,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#6366F1' }}>Домашка</span>
+            {bookedRoomId && roomMap.get(bookedRoomId) && (
+              <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginLeft: 6 }}>
+                {roomMap.get(bookedRoomId)!.name}
+              </span>
+            )}
+          </div>
+          <span style={{ fontSize: 12, color: '#6366F1' }}>
+            {meetingStartTime}{meetingEndTime ? ` — ${meetingEndTime}` : ''}
+          </span>
+        </div>
+      )}
+      {sorted.map((ev) => {
+        const room = ev.roomId ? roomMap.get(ev.roomId) : null
+        const isConflict = ev.roomId === bookedRoomId && bookedRoomId !== null
+        return (
+          <div key={ev.eventId} style={{
+            padding: '7px 10px', borderRadius: 8,
+            background: isConflict ? '#FEF3C7' : 'var(--color-bg)',
+            border: `1px solid ${isConflict ? '#FBBF24' : 'var(--color-border-light)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{
+                width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                background: ev.homeGroupColor ?? ev.roomId ? (room?.color ?? '#9CA3AF') : '#9CA3AF',
+              }} />
+              <span style={{ fontSize: 13, color: 'var(--color-text)' }}>{ev.title}</span>
+              {room && (
+                <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>{room.name}</span>
+              )}
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', flexShrink: 0, marginLeft: 8 }}>
+              {[ev.startTime, ev.endTime].filter(Boolean).join(' — ')}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -478,6 +711,7 @@ function EditGroupPopup({ group, visible, onClose, onSaved }: {
   const [name, setName] = useState(group.name)
   const [meetingDay, setMeetingDay] = useState(group.meetingDay ?? '')
   const [meetingTime, setMeetingTime] = useState(group.meetingTime ?? '')
+  const [meetingEndTime, setMeetingEndTime] = useState(group.meetingEndTime ?? '')
   const [location, setLocation] = useState(group.location ?? '')
   const [telegramGroupId, setTelegramGroupId] = useState(group.telegramGroupId ?? '')
   const [saving, setSaving] = useState(false)
@@ -487,6 +721,7 @@ function EditGroupPopup({ group, visible, onClose, onSaved }: {
       setName(group.name)
       setMeetingDay(group.meetingDay ?? '')
       setMeetingTime(group.meetingTime ?? '')
+      setMeetingEndTime(group.meetingEndTime ?? '')
       setLocation(group.location ?? '')
       setTelegramGroupId(group.telegramGroupId ?? '')
     }
@@ -502,6 +737,7 @@ function EditGroupPopup({ group, visible, onClose, onSaved }: {
         name: name.trim(),
         meetingDay: meetingDay || undefined,
         meetingTime: meetingTime || undefined,
+        meetingEndTime: meetingEndTime || undefined,
         location: location.trim() || undefined,
         telegramGroupId: telegramGroupId.trim() || undefined,
       })
@@ -525,10 +761,20 @@ function EditGroupPopup({ group, visible, onClose, onSaved }: {
           {MEETING_DAYS.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
       </FormField>
-      <FormField label="Час">
-        <input type="time" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)}
-          style={{ ...nativeSelect, padding: 0 }} />
-      </FormField>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <FormField label="Початок">
+            <input type="time" value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)}
+              style={{ ...nativeSelect, padding: 0 }} />
+          </FormField>
+        </div>
+        <div style={{ flex: 1 }}>
+          <FormField label="Кінець">
+            <input type="time" value={meetingEndTime} onChange={(e) => setMeetingEndTime(e.target.value)}
+              style={{ ...nativeSelect, padding: 0 }} />
+          </FormField>
+        </div>
+      </div>
       <FormField label="Адреса">
         <Input value={location} onChange={setLocation} placeholder="Адреса зустрічі" />
       </FormField>

@@ -52,6 +52,7 @@ export interface Group {
   color: string
   meetingDay?: string
   meetingTime?: string
+  meetingEndTime?: string
   location?: string
   leaderId?: number
   leaderName?: string
@@ -115,6 +116,17 @@ export interface GroupMember {
   roleTag?: { name: string; color: string } | null
 }
 
+export interface CabinetCalendarEvent {
+  eventId: number
+  title: string
+  type: string
+  startTime?: string
+  endTime?: string
+  roomId?: number
+  roomColor?: string
+  homeGroupColor?: string
+}
+
 export interface GroupCabinet {
   group: {
     id: number
@@ -122,8 +134,10 @@ export interface GroupCabinet {
     color: string
     meetingDay?: string
     meetingTime?: string
+    meetingEndTime?: string
     location?: string
     telegramGroupId?: string
+    autoBookRoomId?: number
   }
   nextMeetingDate?: string
   lastMeetingDate?: string
@@ -140,6 +154,10 @@ export interface GroupCabinet {
   }[]
   stats: { avgAttendanceRate: number; newMembersThisMonth: number; totalMembers: number }
   hasPlanForNextMeeting: boolean
+  nextMeetingRoomId?: number
+  nextMeetingEvents?: CabinetCalendarEvent[]
+  nextMeetingConflicts?: CabinetCalendarEvent[]
+  autoBookEnabled: boolean
 }
 
 export interface GroupEvent {

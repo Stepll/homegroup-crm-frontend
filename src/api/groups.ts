@@ -52,6 +52,9 @@ export const groupsApi = {
   skipMeeting: (groupId: number) =>
     api.put<{ date: string }>(`/groups/${groupId}/skip-meeting`).then((r) => r.data),
 
+  bookRoom: (groupId: number, data: { date: string; roomId: number | null; autoBook: boolean }) =>
+    api.put(`/groups/${groupId}/book-room`, data),
+
   getStats: (groupId: number, period: '1m' | '3m' | '6m') =>
     api.get<GroupStats>(`/groups/${groupId}/stats`, { params: { period } }).then((r) => r.data),
 }

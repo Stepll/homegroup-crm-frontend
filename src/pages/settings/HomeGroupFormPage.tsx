@@ -11,8 +11,13 @@ const COLORS = [
   '#EF4444', '#F97316', '#EC4899', '#64748B',
 ]
 
-interface FormState { name: string; description: string; color: string }
-const EMPTY: FormState = { name: '', description: '', color: '#2AAFCA' }
+const MEETING_DAYS = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'Пʼятниця', 'Субота', 'Неділя']
+
+interface FormState {
+  name: string; description: string; color: string
+  meetingDay: string; meetingTime: string; meetingEndTime: string; location: string
+}
+const EMPTY: FormState = { name: '', description: '', color: '#2AAFCA', meetingDay: '', meetingTime: '', meetingEndTime: '', location: '' }
 
 export function HomeGroupFormPage() {
   const { id } = useParams<{ id: string }>()
@@ -41,7 +46,11 @@ export function HomeGroupFormPage() {
       groupsApi.getCustomFields(Number(id)),
     ]).then(([g, m, cf]) => {
       const group = g as Group
-      setForm({ name: group.name, description: group.description ?? '', color: group.color })
+      setForm({
+        name: group.name, description: group.description ?? '', color: group.color,
+        meetingDay: group.meetingDay ?? '', meetingTime: group.meetingTime ?? '',
+        meetingEndTime: group.meetingEndTime ?? '', location: group.location ?? '',
+      })
       setMembers((m as GroupMember[]).filter((x) => !x.isAdmin))
       setCustomFields(cf as GroupCustomField[])
     }).catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
@@ -94,11 +103,21 @@ export function HomeGroupFormPage() {
     setSaving(true)
     try {
       let groupId: number
+      const payload = {
+        name: form.name.trim(),
+        description: form.description.trim() || undefined,
+        color: form.color,
+        meetingDay: form.meetingDay || undefined,
+        meetingTime: form.meetingTime || undefined,
+        meetingEndTime: form.meetingEndTime || undefined,
+        location: form.location.trim() || undefined,
+        isActive: true,
+      }
       if (isNew) {
-        const created = await groupsApi.create({ ...form, isActive: true }) as Group
+        const created = await groupsApi.create(payload) as Group
         groupId = created.id
       } else {
-        await groupsApi.update(Number(id), { ...form, isActive: true })
+        await groupsApi.update(Number(id), payload)
         groupId = Number(id)
       }
       await groupsApi.syncMembers(groupId, members.map((m) => m.id))
@@ -215,6 +234,33 @@ export function HomeGroupFormPage() {
                 }}
               />
             ))}
+          </div>
+        </div>
+
+        {/* Meeting schedule */}
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Розклад</label>
+          <div style={{ ...inputWrap, marginBottom: 8 }}>
+            <select value={form.meetingDay} onChange={(e) => setForm((f) => ({ ...f, meetingDay: e.target.value }))}
+              style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 15, color: 'var(--color-text)' }}>
+              <option value="">— день не вибрано —</option>
+              {MEETING_DAYS.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1, ...inputWrap }}>
+              <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginBottom: 2 }}>Початок</div>
+              <input type="time" value={form.meetingTime} onChange={(e) => setForm((f) => ({ ...f, meetingTime: e.target.value }))}
+                style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 15, color: 'var(--color-text)', padding: 0 }} />
+            </div>
+            <div style={{ flex: 1, ...inputWrap }}>
+              <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginBottom: 2 }}>Кінець</div>
+              <input type="time" value={form.meetingEndTime} onChange={(e) => setForm((f) => ({ ...f, meetingEndTime: e.target.value }))}
+                style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 15, color: 'var(--color-text)', padding: 0 }} />
+            </div>
+          </div>
+          <div style={{ ...inputWrap, marginTop: 8 }}>
+            <Input placeholder="Адреса зустрічі" value={form.location} onChange={(v) => setForm((f) => ({ ...f, location: v }))} />
           </div>
         </div>
 
