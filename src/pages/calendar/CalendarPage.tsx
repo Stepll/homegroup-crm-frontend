@@ -399,7 +399,7 @@ function EventForm({
         </FormField>
       )}
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 20 }}>
         <FormField label="Початок">
           <input type="time" value={form.startTime} onChange={(e) => set('startTime', e.target.value)} style={inputStyle} />
         </FormField>
@@ -517,6 +517,7 @@ export function CalendarPage() {
   const [groupsDrawerVisible, setGroupsDrawerVisible] = useState(false)
   const [formVisible, setFormVisible] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
+  const [formKey, setFormKey] = useState(0)
   const gridRef = useRef<HTMLDivElement>(null)
 
   const now = new Date()
@@ -541,11 +542,14 @@ export function CalendarPage() {
   }, [])
 
   const loadOccurrences = (date: Date, types: Set<string>, groupIds: Set<number>) => {
-    if (types.size === 0) { setOccurrences([]); return }
+    // When HomeGroup type active but no groups selected — exclude it (show nothing for HomeGroup)
+    const effectiveTypes = new Set(types)
+    if (groupIds.size === 0) effectiveTypes.delete('HomeGroup')
+    if (effectiveTypes.size === 0) { setOccurrences([]); return }
     calendarApi.getOccurrences({
       from: formatDate(date),
       to: formatDate(addDays(date, 2)),
-      types: [...types].join(','),
+      types: [...effectiveTypes].join(','),
       groupIds: groupIds.size > 0 ? [...groupIds].join(',') : undefined,
     }).then(setOccurrences).catch(() => {})
   }
@@ -560,6 +564,7 @@ export function CalendarPage() {
     try {
       const ev = await calendarApi.getEvent(o.eventId)
       setEditingEvent(ev)
+      setFormKey((k) => k + 1)
       setFormVisible(true)
     } catch {
       Toast.show({ content: 'Помилка завантаження', icon: 'fail' })
@@ -582,7 +587,7 @@ export function CalendarPage() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: '#fff' }}>
       {/* Header */}
       <NavBar back={null} right={
-        <button onClick={() => { setEditingEvent(null); setFormVisible(true) }}
+        <button onClick={() => { setEditingEvent(null); setFormKey((k) => k + 1); setFormVisible(true) }}
           style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'var(--color-primary)', display: 'flex' }}>
           <AddOutline style={{ fontSize: 22 }} />
         </button>
@@ -786,6 +791,7 @@ export function CalendarPage() {
         bodyStyle={{ borderRadius: '16px 16px 0 0', maxHeight: '92vh', overflowY: 'auto' }}
       >
         <EventForm
+          key={formKey}
           event={editingEvent}
           groups={groups}
           rooms={rooms}
