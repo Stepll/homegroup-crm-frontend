@@ -39,6 +39,23 @@ function addDays(date: Date, n: number): Date {
   return d
 }
 
+function mondayOf(date: Date): Date {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  const dow = d.getDay()
+  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow))
+  return d
+}
+
+function getDefaultSelectedDate(): Date {
+  const t = new Date()
+  t.setHours(0, 0, 0, 0)
+  const dow = t.getDay()
+  if (dow === 0) { t.setDate(t.getDate() + 1); return t }
+  if (dow === 6) { t.setDate(t.getDate() + 2); return t }
+  return t
+}
+
 function formatDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
@@ -361,8 +378,7 @@ export function CalendarPage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const [selectedDate, setSelectedDate] = useState<Date>(today)
-  const [weekStart, setWeekStart] = useState<Date>(today)
+  const [selectedDate, setSelectedDate] = useState<Date>(getDefaultSelectedDate)
   const [occurrences, setOccurrences] = useState<CalendarOccurrence[]>([])
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set(['Recurring', 'Global', 'HomeGroup']))
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set())
@@ -380,14 +396,10 @@ export function CalendarPage() {
   const col1 = addDays(selectedDate, 1)
   const col2 = addDays(selectedDate, 2)
 
+  const weekStart = mondayOf(selectedDate)
   const stripDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-  const selOffsetRaw = stripDays.findIndex((d) => isSameDay(d, selectedDate))
-  const selOffset = selOffsetRaw < 0 ? 0 : Math.min(4, selOffsetRaw)
-
-  useEffect(() => {
-    if (selOffsetRaw < 0) setWeekStart(selectedDate)
-    else if (selOffsetRaw > 4) setWeekStart(addDays(selectedDate, -4))
-  }, [selOffsetRaw, selectedDate])
+  const dow = selectedDate.getDay()
+  const selOffset = dow === 0 ? 6 : dow - 1
 
   useEffect(() => {
     groupsApi.getAll().then(setGroups)
@@ -464,10 +476,10 @@ export function CalendarPage() {
         />
       </div>
 
-      {/* Day strip — 7-day window, labels above, pill behind selected + 2 circles */}
+      {/* Day strip — fixed Mon-Sun week, arrows shift by week, Sat/Sun not selectable */}
       <div style={{ background: '#fff', borderBottom: '1px solid var(--color-border-light)', padding: '6px 0 8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <button onClick={() => setSelectedDate((p) => addDays(p, -1))}
+          <button onClick={() => setSelectedDate((p) => addDays(p, -7))}
             style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             <LeftOutline />
           </button>
@@ -476,12 +488,14 @@ export function CalendarPage() {
             {/* Day-of-week labels above */}
             <div style={{ display: 'flex', marginBottom: 3 }}>
               {stripDays.map((day, i) => {
+                const isWeekend = i >= 5
                 const isToday = isSameDay(day, today)
                 return (
                   <div key={i} style={{
                     width: STRIP_CELL_W, textAlign: 'center',
                     fontSize: 10, fontWeight: 500, lineHeight: 1,
-                    color: isToday ? 'var(--color-primary)' : 'var(--color-text-tertiary)',
+                    color: isToday && !isWeekend ? 'var(--color-primary)' : 'var(--color-text-tertiary)',
+                    opacity: isWeekend ? 0.5 : 1,
                   }}>
                     {DAY_ABBR[day.getDay()]}
                   </div>
@@ -502,14 +516,18 @@ export function CalendarPage() {
               }} />
 
               {stripDays.map((day, i) => {
+                const isWeekend = i >= 5
                 const isSelected = isSameDay(day, selectedDate)
                 const isToday = isSameDay(day, today)
                 return (
-                  <button key={i} onClick={() => setSelectedDate(day)}
+                  <button key={i}
+                    onClick={() => { if (!isWeekend) setSelectedDate(day) }}
+                    disabled={isWeekend}
                     style={{
                       width: STRIP_CELL_W, height: STRIP_CIRCLE,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: 'none', background: 'none', cursor: 'pointer', padding: 0,
+                      border: 'none', background: 'none',
+                      cursor: isWeekend ? 'default' : 'pointer', padding: 0,
                       position: 'relative', zIndex: 1,
                       WebkitTapHighlightColor: 'transparent',
                     }}
@@ -518,7 +536,14 @@ export function CalendarPage() {
                       width: STRIP_CIRCLE, height: STRIP_CIRCLE, borderRadius: 9999,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: isSelected ? 'var(--color-primary)' : 'transparent',
-                      color: isSelected ? '#fff' : isToday ? 'var(--color-primary)' : 'var(--color-text)',
+                      color: isSelected
+                        ? '#fff'
+                        : isToday
+                          ? 'var(--color-primary)'
+                          : isWeekend
+                            ? 'var(--color-text-tertiary)'
+                            : 'var(--color-text)',
+                      opacity: isWeekend ? 0.5 : 1,
                       fontSize: 17, fontWeight: 700, lineHeight: 1,
                     }}>
                       {day.getDate()}
@@ -529,7 +554,7 @@ export function CalendarPage() {
             </div>
           </div>
 
-          <button onClick={() => setSelectedDate((p) => addDays(p, 1))}
+          <button onClick={() => setSelectedDate((p) => addDays(p, 7))}
             style={{ background: 'none', border: 'none', padding: '6px 10px', cursor: 'pointer', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
             <RightOutline />
           </button>
