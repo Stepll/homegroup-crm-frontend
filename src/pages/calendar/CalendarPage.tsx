@@ -595,6 +595,7 @@ export function CalendarPage() {
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set())
   const [groups, setGroups] = useState<Group[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
+  const [groupsLoaded, setGroupsLoaded] = useState(false)
   const [groupsDrawerVisible, setGroupsDrawerVisible] = useState(false)
   const [formVisible, setFormVisible] = useState(false)
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null)
@@ -615,21 +616,16 @@ export function CalendarPage() {
   const selOffset = dow === 0 ? 6 : dow - 1
 
   useEffect(() => {
-    const savedTypes = localStorage.getItem('cal_types')
-    if (savedTypes) {
-      try { setActiveTypes(new Set(JSON.parse(savedTypes) as string[])) } catch { /* ignore */ }
-    }
-
     Promise.all([groupsApi.getAll(), roomsApi.getAll()]).then(([gs, rms]) => {
       setGroups(gs)
       setRooms(rms)
-      // Restore saved group selection; default = all groups selected
       const savedIds = localStorage.getItem('cal_groupIds')
       if (savedIds) {
         try { setSelectedGroupIds(new Set(JSON.parse(savedIds) as number[])) } catch { /* ignore */ }
       } else {
         setSelectedGroupIds(new Set(gs.map((g) => g.id)))
       }
+      setGroupsLoaded(true)
     })
   }, [])
 
@@ -652,9 +648,11 @@ export function CalendarPage() {
     }).then(setOccurrences).catch(() => {})
   }
 
+  // Only load occurrences after groups are loaded so selectedGroupIds is correct
   useEffect(() => {
+    if (!groupsLoaded) return
     loadOccurrences(selectedDate, activeTypes, selectedGroupIds)
-  }, [selectedDate, activeTypes, selectedGroupIds])
+  }, [selectedDate, activeTypes, selectedGroupIds, groupsLoaded])
 
   const eventsFor = (d: Date) => occurrences.filter((o) => o.date === formatDate(d))
 
