@@ -1,5 +1,6 @@
 import { api } from './client'
 import type { Admin } from '@/types'
+import type { WidgetConfig } from '@/pages/dashboard/widgetRegistry'
 
 export interface CreateAdminData {
   name: string
@@ -44,4 +45,6 @@ export const adminsApi = {
   updateProfile: (id: number, data: UpdateAdminProfileData) => api.put<Admin>(`/admins/${id}/profile`, data).then((r) => r.data),
   setPassword: (id: number, newPassword: string) => api.post(`/admins/${id}/set-password`, { newPassword }),
   remove: (id: number) => api.delete(`/admins/${id}`),
+  getDashboardConfig: () => api.get<WidgetConfig[]>('/admins/me/dashboard').then((r) => r.data),
+  saveDashboardConfig: (config: WidgetConfig[]) => api.put('/admins/me/dashboard', { config }),
 }

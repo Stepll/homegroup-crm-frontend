@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SetOutline } from 'antd-mobile-icons'
+import { SpinLoading } from 'antd-mobile'
 import { useAuth } from '@/store/auth'
-import { loadWidgetConfig, type WidgetConfig } from './widgetRegistry'
+import { adminsApi } from '@/api/admins'
+import { mergeWithDefaults, defaultConfig, type WidgetConfig } from './widgetRegistry'
 import { AttendanceWidget } from './widgets/AttendanceWidget'
 import type { ComponentType } from 'react'
 
@@ -14,10 +16,16 @@ export function DashboardPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [config, setConfig] = useState<WidgetConfig[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (user?.email) setConfig(loadWidgetConfig(user.email))
-  }, [user?.email])
+    adminsApi.getDashboardConfig()
+      .then((saved) => {
+        setConfig(saved.length > 0 ? mergeWithDefaults(saved) : defaultConfig())
+      })
+      .catch(() => setConfig(defaultConfig()))
+      .finally(() => setLoading(false))
+  }, [])
 
   const enabledWidgets = config.filter((w) => w.enabled)
 
@@ -30,26 +38,34 @@ export function DashboardPage() {
         )}
       </div>
 
-      {enabledWidgets.map((w) => {
-        const Component = WIDGET_COMPONENTS[w.id]
-        if (!Component) return null
-        return <Component key={w.id} />
-      })}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+          <SpinLoading color="primary" />
+        </div>
+      ) : (
+        <>
+          {enabledWidgets.map((w) => {
+            const Component = WIDGET_COMPONENTS[w.id]
+            if (!Component) return null
+            return <Component key={w.id} />
+          })}
 
-      <button
-        onClick={() => navigate('/dashboard/settings')}
-        style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          width: '100%', padding: '22px 16px', gap: 8,
-          border: '2.5px dashed var(--color-border)',
-          borderRadius: 'var(--radius-lg)', background: 'transparent', cursor: 'pointer',
-          color: 'var(--color-text-tertiary)',
-          WebkitTapHighlightColor: 'transparent',
-        }}
-      >
-        <SetOutline style={{ fontSize: 22 }} />
-        <span style={{ fontSize: 14, fontWeight: 500 }}>Редагувати блоки</span>
-      </button>
+          <button
+            onClick={() => navigate('/dashboard/settings')}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              width: '100%', padding: '22px 16px', gap: 8,
+              border: '2.5px dashed var(--color-border)',
+              borderRadius: 'var(--radius-lg)', background: 'transparent', cursor: 'pointer',
+              color: 'var(--color-text-tertiary)',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <SetOutline style={{ fontSize: 22 }} />
+            <span style={{ fontSize: 14, fontWeight: 500 }}>Редагувати блоки</span>
+          </button>
+        </>
+      )}
     </div>
   )
 }

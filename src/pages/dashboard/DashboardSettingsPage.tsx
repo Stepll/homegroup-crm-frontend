@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { NavBar, Button } from 'antd-mobile'
-import { useAuth } from '@/store/auth'
-import { ALL_WIDGETS, loadWidgetConfig, saveWidgetConfig } from './widgetRegistry'
+import { NavBar, Button, Toast, SpinLoading } from 'antd-mobile'
+import { adminsApi } from '@/api/admins'
+import { ALL_WIDGETS, mergeWithDefaults, defaultConfig } from './widgetRegistry'
 
 function DragHandleIcon() {
   return (
@@ -15,33 +15,46 @@ function DragHandleIcon() {
 }
 
 export function DashboardSettingsPage() {
-  const { user } = useAuth()
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
-  const initialConfig = user ? loadWidgetConfig(user.email) : []
-
-  // enabledOrder: IDs of enabled widgets in display order
-  const [enabledOrder, setEnabledOrder] = useState<string[]>(
-    () => initialConfig.filter((w) => w.enabled).map((w) => w.id)
-  )
-  // enabledSet: which widget IDs are enabled
-  const [enabledSet, setEnabledSet] = useState<Set<string>>(
-    () => new Set(initialConfig.filter((w) => w.enabled).map((w) => w.id))
-  )
-
+  const [enabledOrder, setEnabledOrder] = useState<string[]>([])
+  const [enabledSet, setEnabledSet] = useState<Set<string>>(new Set())
   const [dragId, setDragId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
 
-  const handleSave = () => {
-    if (!user?.email) return
+  useEffect(() => {
+    adminsApi.getDashboardConfig()
+      .then((saved) => {
+        const config = saved.length > 0 ? mergeWithDefaults(saved) : defaultConfig()
+        setEnabledOrder(config.filter((w) => w.enabled).map((w) => w.id))
+        setEnabledSet(new Set(config.filter((w) => w.enabled).map((w) => w.id)))
+      })
+      .catch(() => {
+        const config = defaultConfig()
+        setEnabledOrder(config.map((w) => w.id))
+        setEnabledSet(new Set(config.map((w) => w.id)))
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
     const config = [
       ...enabledOrder.map((id) => ({ id, enabled: true })),
       ...ALL_WIDGETS
         .filter((w) => !enabledSet.has(w.id))
         .map((w) => ({ id: w.id, enabled: false })),
     ]
-    saveWidgetConfig(user.email, config)
-    navigate(-1)
+    try {
+      await adminsApi.saveDashboardConfig(config)
+      navigate(-1)
+    } catch {
+      Toast.show({ content: 'Помилка збереження', icon: 'fail' })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const toggleWidget = (id: string) => {
@@ -76,7 +89,6 @@ export function DashboardSettingsPage() {
     })
   }
 
-  // HTML5 drag-and-drop handlers
   const handleDragStart = (id: string) => setDragId(id)
 
   const handleDragEnter = (id: string) => {
@@ -101,12 +113,23 @@ export function DashboardSettingsPage() {
   const widgetLabel = (id: string) =>
     ALL_WIDGETS.find((w) => w.id === id)?.label ?? id
 
+  if (loading) {
+    return (
+      <div>
+        <NavBar onBack={() => navigate(-1)}>Блоки дашборду</NavBar>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+          <SpinLoading color="primary" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ paddingBottom: 32 }}>
       <NavBar
         onBack={() => navigate(-1)}
         right={
-          <Button size="small" color="primary" onClick={handleSave}>
+          <Button size="small" color="primary" loading={saving} onClick={handleSave}>
             Зберегти
           </Button>
         }
@@ -114,7 +137,7 @@ export function DashboardSettingsPage() {
         Блоки дашборду
       </NavBar>
 
-      {/* Active blocks section */}
+      {/* Active blocks */}
       <div style={{ padding: '16px 16px 8px' }}>
         <div style={sectionLabel}>Вибрані блоки</div>
       </div>
@@ -144,39 +167,22 @@ export function DashboardSettingsPage() {
                 cursor: 'grab',
               }}
             >
-              {/* Drag handle */}
               <span style={{ color: 'var(--color-text-tertiary)', display: 'flex', flexShrink: 0, cursor: 'grab' }}>
                 <DragHandleIcon />
               </span>
-
-              {/* Label */}
               <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: 'var(--color-text)' }}>
                 {widgetLabel(id)}
               </span>
-
-              {/* Up/Down for mobile */}
               <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                <button
-                  onClick={() => moveUp(index)}
-                  disabled={index === 0}
-                  style={arrowBtn(index === 0)}
-                >
-                  ↑
-                </button>
-                <button
-                  onClick={() => moveDown(index)}
-                  disabled={index === enabledOrder.length - 1}
-                  style={arrowBtn(index === enabledOrder.length - 1)}
-                >
-                  ↓
-                </button>
+                <button onClick={() => moveUp(index)} disabled={index === 0} style={arrowBtn(index === 0)}>↑</button>
+                <button onClick={() => moveDown(index)} disabled={index === enabledOrder.length - 1} style={arrowBtn(index === enabledOrder.length - 1)}>↓</button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* All blocks section */}
+      {/* All blocks */}
       <div style={{ padding: '20px 16px 8px' }}>
         <div style={sectionLabel}>Всі блоки</div>
       </div>
@@ -190,15 +196,13 @@ export function DashboardSettingsPage() {
               onClick={() => toggleWidget(w.id)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 14,
-                padding: '14px 14px',
-                background: '#fff',
+                padding: '14px 14px', background: '#fff',
                 border: `1.5px solid ${checked ? 'var(--color-primary)' : 'var(--color-border-light)'}`,
                 borderRadius: 'var(--radius-md)',
                 cursor: 'pointer', textAlign: 'left',
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
-              {/* Checkbox */}
               <span style={{
                 width: 20, height: 20, borderRadius: 5, flexShrink: 0,
                 border: `2px solid ${checked ? 'var(--color-primary)' : 'var(--color-border)'}`,
@@ -212,7 +216,6 @@ export function DashboardSettingsPage() {
                   </svg>
                 )}
               </span>
-
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--color-text)' }}>{w.label}</div>
                 <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2 }}>{w.description}</div>
@@ -226,21 +229,17 @@ export function DashboardSettingsPage() {
 }
 
 const sectionLabel: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 600,
+  fontSize: 12, fontWeight: 600,
   color: 'var(--color-text-tertiary)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.06em',
+  textTransform: 'uppercase', letterSpacing: '0.06em',
 }
 
 const arrowBtn = (disabled: boolean): React.CSSProperties => ({
   width: 30, height: 30,
   border: `1px solid ${disabled ? 'var(--color-border-light)' : 'var(--color-border)'}`,
-  borderRadius: 6,
-  background: 'var(--color-bg)',
+  borderRadius: 6, background: 'var(--color-bg)',
   color: disabled ? 'var(--color-border)' : 'var(--color-text-secondary)',
   fontSize: 14, cursor: disabled ? 'default' : 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  padding: 0,
-  WebkitTapHighlightColor: 'transparent',
+  padding: 0, WebkitTapHighlightColor: 'transparent',
 })
