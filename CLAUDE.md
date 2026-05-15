@@ -22,13 +22,13 @@ src/
     people.ts             — peopleApi.getAll повертає GroupMember[] з параметрами
                             includeAdmins?, myOversight?; update приймає всі розширені поля
     groups.ts             — groupsApi (CRUD, members, custom fields, cabinet,
-                            events, setNextMeetingDate, skipMeeting, getStats)
+                            events, setNextMeetingDate, skipMeeting, getStats, getStatsAll)
     roles.ts              — rolesApi
     attendance.ts         — attendanceApi (getByGroup, getSummary, record, getMeta, saveMeta)
     personStatuses.ts     — personStatusesApi (getAll, create, update, delete)
     churchEvents.ts       — churchEventsApi (getAll, add, delete)
     admins.ts             — adminsApi (getMe, getAll, getById, create, update, updateProfile,
-                            setPassword, remove)
+                            setPassword, remove, getDashboardConfig, saveDashboardConfig)
     planning.ts           — planningApi (getPlans, getPlan, savePlan,
                             deletePlanByDate, getTemplates, createTemplate, deleteTemplate)
   components/
@@ -39,7 +39,14 @@ src/
   pages/
     auth/
       LoginPage.tsx
-    DashboardPage.tsx
+    dashboard/
+      DashboardPage.tsx          — завантажує конфіг з API, рендерить увімкнені віджети + "Редагувати блоки"
+      DashboardSettingsPage.tsx  — drag-and-drop (HTML5) + ↑↓ кнопки, чекбокси вмикання/вимикання
+      widgetRegistry.ts          — ALL_WIDGETS, WidgetConfig, mergeWithDefaults, defaultConfig
+      widgets/
+        AttendanceWidget.tsx     — cabinet-style картка + "Відмітити" → /cabinet/:id/attendance?date=
+        GroupStatsWidget.tsx     — select групи + 1м/3м/6м + stacked bar chart
+        UpcomingEventsWidget.tsx — дні народження + кастомні події своєї домашки (read-only)
     profile/
       ProfilePage.tsx            — особистий профіль поточного адміна: особиста інфо,
                                    комунікація, церква, відвідуваність (AttendanceGrid),
@@ -86,7 +93,8 @@ src/
 
 ```
 /login
-/                              — Dashboard
+/                              — Dashboard (widget-based)
+/dashboard/settings            — налаштування блоків дашборду
 /profile                       — особистий профіль поточного адміна (editable)
 /admins/:id                    — read-only профіль будь-якого адміна (з People list)
 /cabinet                       — вибір групи (для адмінів) або одразу кабінет
@@ -205,6 +213,29 @@ src/
 - Тип HomeGroup + IsRecurring=false + isHomeGroupMeeting=true → suppresses ghost for that week
 - Тип HomeGroup + IsRecurring=false + isHomeGroupMeeting=false → cancellation marker (ghost suppressed,
   подія НЕ відображається в календарі)
+
+### Dashboard (src/pages/dashboard/)
+
+Кастомізований дашборд — кожен адмін сам вибирає і впорядковує блоки.
+
+**Конфіг**: `WidgetConfig[] = [{id, enabled}]` — зберігається на бекенді (`GET/PUT /admins/me/dashboard`).
+Порожня відповідь → `defaultConfig()` (всі увімкнені).
+
+**Реєстр віджетів** (`widgetRegistry.ts`): `ALL_WIDGETS` — масив `{id, label, description}`.
+Щоб додати новий віджет: 1) додати в `ALL_WIDGETS`, 2) додати в `WIDGET_COMPONENTS` в `DashboardPage.tsx`.
+
+**DashboardPage**: завантажує конфіг з API → фільтрує увімкнені → рендерить компоненти по порядку.
+Останній блок завжди — пунктирна картка "Редагувати блоки" → `/dashboard/settings`.
+
+**DashboardSettingsPage**:
+- Верхня секція: увімкнені блоки з drag handle (≡) + ↑↓ кнопки
+- Нижня секція: всі блоки з чекбоксами
+- Кнопка "Зберегти" → `PUT /admins/me/dashboard`
+
+**Поточні віджети**:
+- `attendance` — присутність своєї домашки (lastMeetingDate з cabinet + кнопка "Відмітити")
+- `groupStats` — stat chart з select групи (або "всі домашки" → `/groups/stats/all`) + period toggle
+- `upcomingEvents` — дні народження + кастомні події своєї домашки (read-only)
 
 ### OrgMemberRow
 - Кнопка-акордеон: ім'я | тег ролі (колір ролі з бекенду) | кількість під опікою
@@ -349,10 +380,10 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
 - [x] Conflicts тільки з Recurring/Global/Google (не з іншими HomeGroup подіями)
 - [x] AttendancePage — date selector зі списку реальних дат (getSummary), pre-populate відміток
 - [x] lastMeetingDate — з реальних записів БД, не по розкладу
+- [x] Dashboard — widget-based, конфіг на бекенді per user; 3 віджети:
+      attendance (cabinet-style), groupStats (chart + group/period selectors), upcomingEvents
 
 ## TODO
-
-- [ ] Dashboard (реальна статистика)
 - [ ] Enforcement прав доступу (показувати/ховати секції по ролі)
 - [ ] Telegram notify (кнопка "Повідомити про план" — поки заглушка)
 - [ ] Pull-to-refresh

@@ -15,6 +15,11 @@ export const ALL_WIDGETS: WidgetDef[] = [
     label: 'Відвідуваність домашок',
     description: 'Статистика відвідуваності по домашці або всіх групах',
   },
+  {
+    id: 'upcomingEvents',
+    label: 'Найближчі події',
+    description: 'Дні народження та події твоєї домашки',
+  },
 ]
 
 export interface WidgetConfig {

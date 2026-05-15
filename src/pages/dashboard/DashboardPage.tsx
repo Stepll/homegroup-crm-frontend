@@ -7,11 +7,13 @@ import { adminsApi } from '@/api/admins'
 import { mergeWithDefaults, defaultConfig, type WidgetConfig } from './widgetRegistry'
 import { AttendanceWidget } from './widgets/AttendanceWidget'
 import { GroupStatsWidget } from './widgets/GroupStatsWidget'
+import { UpcomingEventsWidget } from './widgets/UpcomingEventsWidget'
 import type { ComponentType } from 'react'
 
 const WIDGET_COMPONENTS: Record<string, ComponentType> = {
   attendance: AttendanceWidget,
   groupStats: GroupStatsWidget,
+  upcomingEvents: UpcomingEventsWidget,
 }
 
 export function DashboardPage() {
