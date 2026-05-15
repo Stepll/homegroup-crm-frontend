@@ -24,11 +24,21 @@ export function AttendancePage() {
   const [guestCount, setGuestCount] = useState(0)
   const [guestInfo, setGuestInfo] = useState('')
   const [showGuestInfo, setShowGuestInfo] = useState(false)
+  const [meetingDates, setMeetingDates] = useState<string[]>([])
 
   useEffect(() => {
     groupsApi.getMembers(Number(id))
       .then((m) => setMembers(m))
       .finally(() => setLoading(false))
+  }, [id])
+
+  useEffect(() => {
+    const initialDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+    attendanceApi.getSummary(Number(id)).then((summary) => {
+      const dates = summary.map((s) => s.meetingDate).sort((a, b) => b.localeCompare(a))
+      if (!dates.includes(initialDate)) dates.unshift(initialDate)
+      setMeetingDates(dates)
+    }).catch(() => setMeetingDates([initialDate]))
   }, [id])
 
   // Pre-populate present set from already-saved attendance when date changes
@@ -116,12 +126,15 @@ export function AttendancePage() {
       {/* Summary bar */}
       <div style={{ padding: '12px 16px 14px', background: '#fff', borderBottom: '1px solid var(--color-border-light)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <input
-            type="date"
+          <select
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            style={{ border: 'none', outline: 'none', fontSize: 14, color: 'var(--color-text-secondary)', background: 'transparent', cursor: 'pointer' }}
-          />
+            style={{ border: 'none', outline: 'none', fontSize: 14, color: 'var(--color-text-secondary)', background: 'transparent', cursor: 'pointer', maxWidth: 200 }}
+          >
+            {meetingDates.map((d) => (
+              <option key={d} value={d}>{formatMeetingDate(d)}</option>
+            ))}
+          </select>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
             <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-text)' }}>{presentCount}</span>
             <span style={{ fontSize: 14, color: 'var(--color-text-tertiary)' }}>/{totalCount}</span>
@@ -231,6 +244,11 @@ export function AttendancePage() {
       </div>
     </div>
   )
+}
+
+function formatMeetingDate(iso: string) {
+  const d = new Date(iso + 'T00:00:00')
+  return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', weekday: 'short', year: 'numeric' })
 }
 
 const quickBtn: React.CSSProperties = {
