@@ -620,11 +620,14 @@ export function CalendarPage() {
       setGroups(gs)
       setRooms(rms)
       const savedIds = localStorage.getItem('cal_groupIds')
+      let restored: Set<number> | null = null
       if (savedIds) {
-        try { setSelectedGroupIds(new Set(JSON.parse(savedIds) as number[])) } catch { /* ignore */ }
-      } else {
-        setSelectedGroupIds(new Set(gs.map((g) => g.id)))
+        try {
+          const parsed = JSON.parse(savedIds) as number[]
+          if (parsed.length > 0) restored = new Set(parsed)
+        } catch { /* ignore */ }
       }
+      setSelectedGroupIds(restored ?? new Set(gs.map((g) => g.id)))
       setGroupsLoaded(true)
     })
   }, [])
