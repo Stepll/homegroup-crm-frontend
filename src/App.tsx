@@ -3,7 +3,8 @@ import { AuthProvider } from '@/store/auth'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/AppLayout'
 import { LoginPage } from '@/pages/auth/LoginPage'
-import { DashboardPage } from '@/pages/DashboardPage'
+import { DashboardPage } from '@/pages/dashboard/DashboardPage'
+import { DashboardSettingsPage } from '@/pages/dashboard/DashboardSettingsPage'
 import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { PeoplePage } from '@/pages/people/PeoplePage'
 import { AttendancePage } from '@/pages/attendance/AttendancePage'
@@ -41,6 +42,7 @@ export function App() {
             }
           >
             <Route index element={<DashboardPage />} />
+            <Route path="dashboard/settings" element={<DashboardSettingsPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="cabinet" element={<GroupCabinetPage />} />
             <Route path="cabinet/:id" element={<GroupCabinetPage />} />
