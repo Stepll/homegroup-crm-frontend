@@ -86,6 +86,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
   const [autoBook, setAutoBook] = useState(false)
   const [bookingLoading, setBookingLoading] = useState(false)
+  const [sendingPlan, setSendingPlan] = useState(false)
 
   const load = () =>
     Promise.all([groupsApi.getCabinet(groupId), groupsApi.getEvents(groupId), roomsApi.getAll()])
@@ -317,9 +318,21 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                 Скасувати
               </Button>
               <Button size="mini" fill="solid"
-                disabled={!hasPlanForNextMeeting || !group.telegramGroupId}
+                disabled={!hasPlanForNextMeeting || !group.telegramGroupId || sendingPlan}
+                loading={sendingPlan}
                 style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
-                onClick={() => { Toast.show({ content: 'Незабаром' }) }}>
+                onClick={async () => {
+                  if (!nextMeetingDate) return
+                  setSendingPlan(true)
+                  try {
+                    await planningApi.sendPlanToTelegram(groupId, nextMeetingDate)
+                    Toast.show({ content: 'План надіслано в Telegram', icon: 'success' })
+                  } catch {
+                    Toast.show({ content: 'Помилка надсилання', icon: 'fail' })
+                  } finally {
+                    setSendingPlan(false)
+                  }
+                }}>
                 Повідомити про план
               </Button>
             </div>

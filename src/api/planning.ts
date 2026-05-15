@@ -29,4 +29,7 @@ export const planningApi = {
 
   deletePlanByDate: (groupId: number, date: string) =>
     api.delete(`/groups/${groupId}/plans/date/${date}`),
+
+  sendPlanToTelegram: (groupId: number, date: string) =>
+    api.post(`/groups/${groupId}/plans/date/${date}/send-to-telegram`),
 }
