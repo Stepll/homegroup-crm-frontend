@@ -107,6 +107,7 @@ src/
 /settings/home-groups/:id
 /settings/person-statuses
 /settings/person-statuses/:id
+/calendar                      — 3-колонковий тижневий календар
 ```
 
 ## Bottom Tab Bar (AppLayout.tsx)
@@ -119,10 +120,13 @@ src/
 - **GroupSelector** — показується адміну без `:id` в URL
 - **CabinetView** — основний вміст:
   - Блок 1: інфо групи (EditGroupPopup — назва, день, час, адреса, TelegramGroupId)
-  - Блок 2: наступна домашка + 3 кнопки (Перенести, Скасувати, Повідомити про план)
+  - Блок 2: наступна домашка + бронювання кімнати + 3 кнопки
     - "Перенести" → popup з date picker → `groupsApi.setNextMeetingDate(id, date, oldDate)` (переміщає план)
     - "Скасувати" → Dialog confirm → опційно Dialog для видалення плану → `groupsApi.skipMeeting(id)`
     - "Повідомити" → disabled якщо !hasPlanForNextMeeting || !telegramGroupId
+    - **Room picker popup**: список кімнат + автобронювання switch + MeetingTimeline
+      - Зайнята кімната показує "зайнято" і блокує кнопку "Зберегти" з попередженням
+      - Конфлікти тільки з Recurring/Global/Google подіями (не з іншими HomeGroup)
   - Блок 3: присутність + кнопка відмітити
   - Блок 4: birthday events (якщо є)
   - Блок 5: орг команда (OrgMemberRow: ім'я + тег ролі + кількість під опікою, collapse з navigate до /people/:id)
@@ -132,7 +136,10 @@ src/
 
 ### AttendancePage
 - Card-based toggle (зелений = присутній, сірий = відсутній)
-- Date picker вгорі (читає `?date=` query param)
+- **Date selector** — `<select>` зі списком реальних дат зустрічей (з `attendanceApi.getSummary`),
+  відсортований від нових до старих; дата з `?date=` query param додається якщо ще немає записів
+- **Pre-populate присутності** — при зміні дати одразу завантажує існуючі записи
+  (`attendanceApi.getByGroup(id, date, date)`) і підсвічує вже відмічених
 - Гості block: числовий інпут + "Вказати інформацію про гостей" link → textarea
 - Save: `attendanceApi.record(...)` + `attendanceApi.saveMeta(...)` паралельно
 - Зберігає назад до `/cabinet/:id`
@@ -176,6 +183,28 @@ src/
 
 **Popup форми** (`PopupForm` компонент): `maxHeight: 85vh; overflowY: auto`
 **Збереження**: `basePayload()` → spread з patch → `peopleApi.update()`
+
+### CalendarPage (`src/pages/calendar/CalendarPage.tsx`)
+3-колонковий тижневий календар (Пн–Нд strip + 3 дні одночасно).
+
+**Фільтри (localStorage persistence):**
+- Типи подій: Recurring, Global, HomeGroup, Google — чіпи вгорі; стан зберігається в `cal_types`
+- Домашки: `<select>` груп — зберігається в `cal_groupIds`; дефолт = всі групи вибрані
+- Якщо жодної групи не вибрано → HomeGroup тип виключається з запиту (не показуються)
+- Завантаження: `groupsLoaded` флаг — `loadOccurrences` викликається тільки після того як
+  список груп завантажився і `selectedGroupIds` встановлено (уникає зайвих запитів)
+- При відновленні з localStorage: порожній масив `[]` = дефолт (всі групи), не "нічого не вибрано"
+
+**Ghost-події (recurring HomeGroup):**
+- `isGhost: true` — прозоріший фон (`color + '08'`), без лівого бордера, opacity 0.6
+- Ghost пригнічується якщо є non-recurring HomeGroup подія з `IsHomeGroupMeeting != null`
+  для того ж тижня (Mon–Sun) — перевіряється бекендом окремим запитом на весь тижневий діапазон
+
+**Форма події (EventForm):**
+- `isHomeGroupMeeting` чекбокс для non-recurring HomeGroup подій ("Це зустріч домашньої групи")
+- Тип HomeGroup + IsRecurring=false + isHomeGroupMeeting=true → suppresses ghost for that week
+- Тип HomeGroup + IsRecurring=false + isHomeGroupMeeting=false → cancellation marker (ghost suppressed,
+  подія НЕ відображається в календарі)
 
 ### OrgMemberRow
 - Кнопка-акордеон: ім'я | тег ролі (колір ролі з бекенду) | кількість під опікою
@@ -311,6 +340,15 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
 - [x] PeoplePage — показує admins + persons, filter toggles "Показати адмінів" / "Під моєю опікою"
 - [x] AdminProfilePage — read-only профіль адміна (/admins/:id) з AttendanceGrid
 - [x] ProfilePage — відвідуваність блок
+- [x] CalendarPage — 3-колонковий тижневий календар (Recurring/Global/HomeGroup/Google)
+- [x] Calendar ghost events — прозорі recurring HomeGroup, suppression по IsHomeGroupMeeting
+- [x] Calendar filter persistence — activeTypes + selectedGroupIds в localStorage
+- [x] Calendar HomeGroup filter — дефолт всі групи вибрані; жодної = не показувати
+- [x] Room booking в кабінеті — picker з зайнятістю, автобронювання, MeetingTimeline,
+      блокування Save для зайнятої кімнати
+- [x] Conflicts тільки з Recurring/Global/Google (не з іншими HomeGroup подіями)
+- [x] AttendancePage — date selector зі списку реальних дат (getSummary), pre-populate відміток
+- [x] lastMeetingDate — з реальних записів БД, не по розкладу
 
 ## TODO
 
