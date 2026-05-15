@@ -27,9 +27,21 @@ export function AttendancePage() {
 
   useEffect(() => {
     groupsApi.getMembers(Number(id))
-      .then((m) => { setMembers(m); setPresent(new Set()) })
+      .then((m) => setMembers(m))
       .finally(() => setLoading(false))
   }, [id])
+
+  // Pre-populate present set from already-saved attendance when date changes
+  useEffect(() => {
+    attendanceApi.getByGroup(Number(id), date, date).then((records) => {
+      const keys = new Set<string>(
+        records
+          .filter((r) => r.wasPresent)
+          .map((r) => r.userId != null ? `u_${r.userId}` : `p_${r.personId}`)
+      )
+      setPresent(keys)
+    }).catch(() => setPresent(new Set()))
+  }, [id, date])
 
   useEffect(() => {
     attendanceApi.getMeta(Number(id), date).then((meta) => {
