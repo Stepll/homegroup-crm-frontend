@@ -557,13 +557,30 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             </>
           )}
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingBottom: 8 }}>
-            <Button block loading={bookingLoading} onClick={handleBookRoom}
-              style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>
-              Зберегти
-            </Button>
-            <Button block fill="outline" onClick={() => setRoomPickerVisible(false)}>Назад</Button>
-          </div>
+          {(() => {
+            const selectedIsBusy = selectedRoomId !== null && busyRoomIds.has(selectedRoomId) && selectedRoomId !== nextMeetingRoomId
+            const busyRoom = selectedIsBusy ? rooms.find((r) => r.id === selectedRoomId) : null
+            return (
+              <>
+                {selectedIsBusy && (
+                  <div style={{
+                    padding: '8px 12px', borderRadius: 8, marginBottom: 8,
+                    background: '#FEF3C7', border: '1px solid #FBBF24',
+                    fontSize: 12, color: '#92400E',
+                  }}>
+                    {busyRoom?.name} зайнято на цей час — оберіть іншу кімнату
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, paddingBottom: 8 }}>
+                  <Button block loading={bookingLoading} disabled={selectedIsBusy} onClick={handleBookRoom}
+                    style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>
+                    Зберегти
+                  </Button>
+                  <Button block fill="outline" onClick={() => setRoomPickerVisible(false)}>Назад</Button>
+                </div>
+              </>
+            )
+          })()}
         </div>
       </Popup>
 
