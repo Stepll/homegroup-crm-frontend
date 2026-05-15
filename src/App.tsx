@@ -41,31 +41,31 @@ export function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<DashboardPage />} />
-            <Route path="dashboard/settings" element={<DashboardSettingsPage />} />
+            <Route index element={<ProtectedRoute permission="page.dashboard"><DashboardPage /></ProtectedRoute>} />
+            <Route path="dashboard/settings" element={<ProtectedRoute permission="page.dashboard"><DashboardSettingsPage /></ProtectedRoute>} />
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="cabinet" element={<GroupCabinetPage />} />
-            <Route path="cabinet/:id" element={<GroupCabinetPage />} />
-            <Route path="cabinet/:id/attendance" element={<AttendancePage />} />
-            <Route path="cabinet/:id/plan" element={<PlanningPage />} />
-            <Route path="cabinet/:id/stats" element={<StatsPage />} />
-            <Route path="calendar" element={<CalendarPage />} />
-            <Route path="people" element={<PeoplePage />} />
-            <Route path="people/new" element={<PersonCreatePage />} />
-            <Route path="people/:id" element={<PersonDetailPage />} />
+            <Route path="cabinet" element={<ProtectedRoute permission="page.cabinet"><GroupCabinetPage /></ProtectedRoute>} />
+            <Route path="cabinet/:id" element={<ProtectedRoute permission="page.cabinet"><GroupCabinetPage /></ProtectedRoute>} />
+            <Route path="cabinet/:id/attendance" element={<ProtectedRoute permission="attendance.view"><AttendancePage /></ProtectedRoute>} />
+            <Route path="cabinet/:id/plan" element={<ProtectedRoute permission="planning.view"><PlanningPage /></ProtectedRoute>} />
+            <Route path="cabinet/:id/stats" element={<ProtectedRoute permission="attendance.stats"><StatsPage /></ProtectedRoute>} />
+            <Route path="calendar" element={<ProtectedRoute permission="page.calendar"><CalendarPage /></ProtectedRoute>} />
+            <Route path="people" element={<ProtectedRoute permission="page.people"><PeoplePage /></ProtectedRoute>} />
+            <Route path="people/new" element={<ProtectedRoute permission="people.create"><PersonCreatePage /></ProtectedRoute>} />
+            <Route path="people/:id" element={<ProtectedRoute permission="people.view"><PersonDetailPage /></ProtectedRoute>} />
             <Route path="admins/:id" element={<AdminProfilePage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="settings/admins" element={<AdminsPage />} />
-            <Route path="settings/admins/new" element={<AdminCreatePage />} />
-            <Route path="settings/admins/:id" element={<AdminDetailPage />} />
-            <Route path="settings/roles" element={<RolesSettingsPage />} />
-            <Route path="settings/roles/:id" element={<RoleFormPage />} />
-            <Route path="settings/home-groups" element={<HomeGroupsSettingsPage />} />
-            <Route path="settings/home-groups/:id" element={<HomeGroupFormPage />} />
-            <Route path="settings/person-statuses" element={<PersonStatusesPage />} />
-            <Route path="settings/person-statuses/:id" element={<PersonStatusFormPage />} />
-            <Route path="settings/rooms" element={<RoomsSettingsPage />} />
-            <Route path="settings/rooms/:id" element={<RoomFormPage />} />
+            <Route path="settings" element={<ProtectedRoute permission="page.settings"><SettingsPage /></ProtectedRoute>} />
+            <Route path="settings/admins" element={<ProtectedRoute permission="settings.admins"><AdminsPage /></ProtectedRoute>} />
+            <Route path="settings/admins/new" element={<ProtectedRoute permission="settings.admins"><AdminCreatePage /></ProtectedRoute>} />
+            <Route path="settings/admins/:id" element={<ProtectedRoute permission="settings.admins"><AdminDetailPage /></ProtectedRoute>} />
+            <Route path="settings/roles" element={<ProtectedRoute permission="settings.roles"><RolesSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/roles/:id" element={<ProtectedRoute permission="settings.roles"><RoleFormPage /></ProtectedRoute>} />
+            <Route path="settings/home-groups" element={<ProtectedRoute permission="settings.groups"><HomeGroupsSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/home-groups/:id" element={<ProtectedRoute permission="settings.groups"><HomeGroupFormPage /></ProtectedRoute>} />
+            <Route path="settings/person-statuses" element={<ProtectedRoute permission="settings.statuses"><PersonStatusesPage /></ProtectedRoute>} />
+            <Route path="settings/person-statuses/:id" element={<ProtectedRoute permission="settings.statuses"><PersonStatusFormPage /></ProtectedRoute>} />
+            <Route path="settings/rooms" element={<ProtectedRoute permission="settings.rooms"><RoomsSettingsPage /></ProtectedRoute>} />
+            <Route path="settings/rooms/:id" element={<ProtectedRoute permission="settings.rooms"><RoomFormPage /></ProtectedRoute>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

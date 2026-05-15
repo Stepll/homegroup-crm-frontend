@@ -5,6 +5,7 @@ export interface AuthResponse {
   role: string
   roles: string[]
   primaryGroupId?: number
+  permissions: string[]
 }
 
 export interface Person {

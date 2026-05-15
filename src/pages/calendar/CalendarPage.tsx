@@ -3,6 +3,7 @@ import { NavBar, Popup, Toast, Dialog, Button, Checkbox } from 'antd-mobile'
 import { AddOutline, LeftOutline, RightOutline, RedoOutline } from 'antd-mobile-icons'
 import { calendarApi, roomsApi, type CalendarEventPayload } from '@/api/calendar'
 import { groupsApi } from '@/api/groups'
+import { useAuth } from '@/store/auth'
 import type { CalendarOccurrence, CalendarEvent, Room, Group } from '@/types'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -583,6 +584,7 @@ function EventForm({
 export function CalendarPage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  const { hasPermission } = useAuth()
 
   const [selectedDate, setSelectedDate] = useState<Date>(getDefaultSelectedDate)
   const [occurrences, setOccurrences] = useState<CalendarOccurrence[]>([])
@@ -660,6 +662,7 @@ export function CalendarPage() {
   const eventsFor = (d: Date) => occurrences.filter((o) => o.date === formatDate(d))
 
   const handleEventClick = async (o: CalendarOccurrence) => {
+    if (!hasPermission('calendar.events.manage')) return
     try {
       const ev = await calendarApi.getEvent(o.eventId)
       setEditingEvent(ev)
@@ -700,14 +703,18 @@ export function CalendarPage() {
       {/* Header */}
       <NavBar back={null} right={
         <div style={{ display: 'flex', gap: 4 }}>
-          <button onClick={handleGoogleSync} disabled={syncing}
-            style={{ background: 'none', border: 'none', padding: 4, cursor: syncing ? 'default' : 'pointer', color: TYPE_COLORS.Google, display: 'flex', opacity: syncing ? 0.5 : 1 }}>
-            <RedoOutline style={{ fontSize: 20 }} />
-          </button>
-          <button onClick={() => { setEditingEvent(null); setFormKey((k) => k + 1); setFormVisible(true) }}
-            style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'var(--color-primary)', display: 'flex' }}>
-            <AddOutline style={{ fontSize: 22 }} />
-          </button>
+          {hasPermission('calendar.google.sync') && (
+            <button onClick={handleGoogleSync} disabled={syncing}
+              style={{ background: 'none', border: 'none', padding: 4, cursor: syncing ? 'default' : 'pointer', color: TYPE_COLORS.Google, display: 'flex', opacity: syncing ? 0.5 : 1 }}>
+              <RedoOutline style={{ fontSize: 20 }} />
+            </button>
+          )}
+          {hasPermission('calendar.events.manage') && (
+            <button onClick={() => { setEditingEvent(null); setFormKey((k) => k + 1); setFormVisible(true) }}
+              style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'var(--color-primary)', display: 'flex' }}>
+              <AddOutline style={{ fontSize: 22 }} />
+            </button>
+          )}
         </div>
       }>
         Календар

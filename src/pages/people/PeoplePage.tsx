@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { NavBar, List, SearchBar, Button, Empty, SpinLoading, Popup, Checkbox } from 'antd-mobile'
 import { peopleApi } from '@/api/people'
 import { groupsApi } from '@/api/groups'
+import { usePermission } from '@/hooks/usePermission'
 import type { Group, GroupMember } from '@/types'
 
 export function PeoplePage() {
   const navigate = useNavigate()
+  const canCreate = usePermission('people.create')
   const [people, setPeople] = useState<GroupMember[]>([])
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,7 +46,7 @@ export function PeoplePage() {
 
   return (
     <div>
-      <NavBar back={null} right={<Button size="small" color="primary" onClick={() => navigate('/people/new')}>+ Додати</Button>}>
+      <NavBar back={null} right={canCreate ? <Button size="small" color="primary" onClick={() => navigate('/people/new')}>+ Додати</Button> : null}>
         Люди
       </NavBar>
 

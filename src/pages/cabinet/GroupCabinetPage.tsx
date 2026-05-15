@@ -6,6 +6,7 @@ import { groupsApi } from '@/api/groups'
 import { planningApi } from '@/api/planning'
 import { roomsApi } from '@/api/calendar'
 import { useAuth } from '@/store/auth'
+import { usePermissions } from '@/hooks/usePermission'
 import type { Group, GroupCabinet, GroupEvent, Room, CabinetCalendarEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
@@ -70,6 +71,11 @@ export function GroupCabinetPage() {
 
 function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }) {
   const navigate = useNavigate()
+  const perms = usePermissions([
+    'groups.edit', 'groups.nextMeeting.manage', 'groups.events.manage',
+    'groups.members.manage', 'attendance.record', 'planning.view',
+    'planning.edit', 'planning.sendToTelegram',
+  ])
   const [cabinet, setCabinet] = useState<GroupCabinet | null>(null)
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
@@ -238,7 +244,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                   <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>{group.location}</div>
                 )}
               </div>
-              <button onClick={() => setEditVisible(true)} style={iconBtn}><EditSOutline style={{ fontSize: 18 }} /></button>
+              {perms['groups.edit'] && <button onClick={() => setEditVisible(true)} style={iconBtn}><EditSOutline style={{ fontSize: 18 }} /></button>}
             </div>
             <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
               <Stat label="Учасників" value={stats.totalMembers} />
@@ -275,11 +281,13 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
               <span style={{ fontSize: 15, color: 'var(--color-text)', fontWeight: 500 }}>
                 {formatDate(nextMeetingDate) ?? 'Невідомо'}
               </span>
-              <Button size="small" fill="outline"
-                style={{ '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}
-                onClick={() => navigate(`/cabinet/${groupId}/plan${nextMeetingDate ? `?date=${nextMeetingDate}` : ''}`)}>
-                Планування
-              </Button>
+              {perms['planning.view'] && (
+                <Button size="small" fill="outline"
+                  style={{ '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}
+                  onClick={() => navigate(`/cabinet/${groupId}/plan${nextMeetingDate ? `?date=${nextMeetingDate}` : ''}`)}>
+                  Планування
+                </Button>
+              )}
             </div>
 
             {/* Room booking row */}
@@ -306,35 +314,41 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             </div>
 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Button size="mini" fill="outline"
-                style={{ '--border-color': 'var(--color-border)', '--text-color': 'var(--color-text-secondary)' } as React.CSSProperties}
-                onClick={() => { setRescheduleDate(nextMeetingDate ?? ''); setRescheduleVisible(true) }}>
-                Перенести
-              </Button>
-              <Button size="mini" fill="outline"
-                disabled={!nextMeetingDate}
-                style={{ '--border-color': 'var(--adm-color-danger)', '--text-color': 'var(--adm-color-danger)' } as React.CSSProperties}
-                onClick={() => { handleCancelMeeting() }}>
-                Скасувати
-              </Button>
-              <Button size="mini" fill="solid"
-                disabled={!hasPlanForNextMeeting || !group.telegramGroupId || sendingPlan}
-                loading={sendingPlan}
-                style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
-                onClick={async () => {
-                  if (!nextMeetingDate) return
-                  setSendingPlan(true)
-                  try {
-                    await planningApi.sendPlanToTelegram(groupId, nextMeetingDate)
-                    Toast.show({ content: 'План надіслано в Telegram', icon: 'success' })
-                  } catch {
-                    Toast.show({ content: 'Помилка надсилання', icon: 'fail' })
-                  } finally {
-                    setSendingPlan(false)
-                  }
-                }}>
-                Повідомити про план
-              </Button>
+              {perms['groups.nextMeeting.manage'] && (
+                <Button size="mini" fill="outline"
+                  style={{ '--border-color': 'var(--color-border)', '--text-color': 'var(--color-text-secondary)' } as React.CSSProperties}
+                  onClick={() => { setRescheduleDate(nextMeetingDate ?? ''); setRescheduleVisible(true) }}>
+                  Перенести
+                </Button>
+              )}
+              {perms['groups.nextMeeting.manage'] && (
+                <Button size="mini" fill="outline"
+                  disabled={!nextMeetingDate}
+                  style={{ '--border-color': 'var(--adm-color-danger)', '--text-color': 'var(--adm-color-danger)' } as React.CSSProperties}
+                  onClick={() => { handleCancelMeeting() }}>
+                  Скасувати
+                </Button>
+              )}
+              {perms['planning.sendToTelegram'] && (
+                <Button size="mini" fill="solid"
+                  disabled={!hasPlanForNextMeeting || !group.telegramGroupId || sendingPlan}
+                  loading={sendingPlan}
+                  style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
+                  onClick={async () => {
+                    if (!nextMeetingDate) return
+                    setSendingPlan(true)
+                    try {
+                      await planningApi.sendPlanToTelegram(groupId, nextMeetingDate)
+                      Toast.show({ content: 'План надіслано в Telegram', icon: 'success' })
+                    } catch {
+                      Toast.show({ content: 'Помилка надсилання', icon: 'fail' })
+                    } finally {
+                      setSendingPlan(false)
+                    }
+                  }}>
+                  Повідомити про план
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -357,7 +371,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                   </div>
                 )}
               </div>
-              {lastMeetingDate && (
+              {lastMeetingDate && perms['attendance.record'] && (
                 <Button size="small" fill="solid"
                   style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
                   onClick={() => navigate(`/cabinet/${groupId}/attendance${lastMeetingDate ? `?date=${lastMeetingDate}` : ''}`)}>
@@ -403,9 +417,11 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
         <div style={{ ...block, padding: '14px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <SectionLabel>Найближчі події</SectionLabel>
-            <button onClick={() => setAddEventVisible(true)} style={{ ...iconBtn, color: 'var(--color-primary)' }}>
-              <AddOutline style={{ fontSize: 18 }} />
-            </button>
+            {perms['groups.events.manage'] && (
+              <button onClick={() => setAddEventVisible(true)} style={{ ...iconBtn, color: 'var(--color-primary)' }}>
+                <AddOutline style={{ fontSize: 18 }} />
+              </button>
+            )}
           </div>
           {events.length === 0 ? (
             <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', display: 'block' }}>Немає запланованих подій</span>
@@ -422,9 +438,11 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
               <span style={{ fontSize: 12, fontWeight: 600, color: ev.daysUntil === 0 ? 'var(--color-error)' : 'var(--color-text-secondary)', marginRight: 10 }}>
                 {ev.daysUntil === 0 ? 'Сьогодні!' : ev.daysUntil === 1 ? 'Завтра' : `за ${ev.daysUntil} дн.`}
               </span>
-              <button onClick={() => handleDeleteEvent(ev.id)} style={{ ...iconBtn, color: 'var(--color-error)', padding: 2 }}>
-                <DeleteOutline style={{ fontSize: 16 }} />
-              </button>
+              {perms['groups.events.manage'] && (
+                <button onClick={() => handleDeleteEvent(ev.id)} style={{ ...iconBtn, color: 'var(--color-error)', padding: 2 }}>
+                  <DeleteOutline style={{ fontSize: 16 }} />
+                </button>
+              )}
             </div>
           ))}</div>}
         </div>

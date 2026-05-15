@@ -8,13 +8,79 @@ const COLORS = [
   '#EF4444', '#F97316', '#EC4899', '#64748B',
 ]
 
-const PAGES = [
-  { key: 'dashboard', label: 'Дашборд' },
-  { key: 'people', label: 'Люди' },
-  { key: 'groups', label: 'Групи' },
-  { key: 'attendance', label: 'Відвідуваність' },
-  { key: 'admins', label: 'Адміни' },
-  { key: 'settings', label: 'Налаштування' },
+interface PermGroup {
+  label: string
+  items: { key: string; label: string }[]
+}
+
+const PERMISSION_GROUPS: PermGroup[] = [
+  {
+    label: 'Сторінки',
+    items: [
+      { key: 'page.dashboard', label: 'Дашборд' },
+      { key: 'page.people', label: 'Люди' },
+      { key: 'page.cabinet', label: 'Кабінет домашки' },
+      { key: 'page.calendar', label: 'Церковний календар' },
+      { key: 'page.settings', label: 'Налаштування' },
+    ],
+  },
+  {
+    label: 'Люди',
+    items: [
+      { key: 'people.view', label: 'Переглядати список людей' },
+      { key: 'people.viewSensitive', label: 'Бачити телефон, адресу, дату народження' },
+      { key: 'people.create', label: 'Додавати нових людей' },
+      { key: 'people.edit', label: 'Редагувати профілі' },
+      { key: 'people.delete', label: 'Видаляти людей' },
+      { key: 'people.customFields', label: 'Управляти кастомними полями' },
+    ],
+  },
+  {
+    label: 'Домашні групи',
+    items: [
+      { key: 'groups.members.manage', label: 'Додавати / видаляти / синхронізувати членів' },
+      { key: 'groups.nextMeeting.manage', label: 'Змінювати / пропускати дату зустрічі' },
+      { key: 'groups.events.manage', label: 'Додавати / видаляти події групи' },
+      { key: 'groups.create', label: 'Створювати нові групи' },
+      { key: 'groups.edit', label: 'Редагувати налаштування групи' },
+      { key: 'groups.delete', label: 'Видаляти групи' },
+    ],
+  },
+  {
+    label: 'Відвідуваність',
+    items: [
+      { key: 'attendance.view', label: 'Переглядати відвідуваність' },
+      { key: 'attendance.record', label: 'Відмічати відвідуваність' },
+      { key: 'attendance.stats', label: 'Переглядати статистику' },
+    ],
+  },
+  {
+    label: 'Планування',
+    items: [
+      { key: 'planning.view', label: 'Переглядати плани зустрічей' },
+      { key: 'planning.edit', label: 'Створювати / редагувати / видаляти плани' },
+      { key: 'planning.sendToTelegram', label: 'Надсилати план в Telegram' },
+      { key: 'planning.templates', label: 'Управляти шаблонами планів' },
+    ],
+  },
+  {
+    label: 'Календар',
+    items: [
+      { key: 'calendar.view', label: 'Переглядати церковний календар' },
+      { key: 'calendar.events.manage', label: 'Створювати / редагувати / видаляти події' },
+      { key: 'calendar.google.sync', label: 'Синхронізація з Google Calendar' },
+    ],
+  },
+  {
+    label: 'Налаштування',
+    items: [
+      { key: 'settings.admins', label: 'Управляти адмінами' },
+      { key: 'settings.roles', label: 'Управляти ролями' },
+      { key: 'settings.groups', label: 'Налаштування груп' },
+      { key: 'settings.rooms', label: 'Управляти кімнатами' },
+      { key: 'settings.statuses', label: 'Управляти статусами людей' },
+    ],
+  },
 ]
 
 const EMPTY: RoleFormData = { name: '', description: '', color: '#2AAFCA', permissions: [], isDefault: false }
@@ -147,26 +213,33 @@ export function RoleFormPage() {
         </div>
 
         {/* Permissions */}
-        <div style={sectionStyle}>
-          <label style={labelStyle}>Доступні сторінки</label>
-          <div style={{ ...inputWrap, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {isSystem && form.permissions.includes('*') ? (
-              <span style={{ color: 'var(--color-primary)', fontSize: 14 }}>Доступ до всіх сторінок</span>
-            ) : (
-              PAGES.map(({ key, label }) => (
-                <Checkbox
-                  key={key}
-                  checked={form.permissions.includes(key)}
-                  onChange={() => togglePermission(key)}
-                  disabled={isSystem}
-                  style={{ '--font-size': '15px' } as React.CSSProperties}
-                >
-                  {label}
-                </Checkbox>
-              ))
-            )}
+        {isSystem && form.permissions.includes('*') ? (
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Права доступу</label>
+            <div style={{ ...inputWrap }}>
+              <span style={{ color: 'var(--color-primary)', fontSize: 14 }}>Повний доступ до всього</span>
+            </div>
           </div>
-        </div>
+        ) : (
+          PERMISSION_GROUPS.map((group) => (
+            <div key={group.label} style={sectionStyle}>
+              <label style={labelStyle}>{group.label}</label>
+              <div style={{ ...inputWrap, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {group.items.map(({ key, label }) => (
+                  <Checkbox
+                    key={key}
+                    checked={form.permissions.includes(key)}
+                    onChange={() => togglePermission(key)}
+                    disabled={isSystem}
+                    style={{ '--font-size': '14px' } as React.CSSProperties}
+                  >
+                    {label}
+                  </Checkbox>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
 
         {/* IsDefault */}
         <div style={sectionStyle}>

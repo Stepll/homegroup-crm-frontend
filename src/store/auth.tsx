@@ -7,11 +7,13 @@ interface AuthUser {
   role: string
   roles: string[]
   primaryGroupId?: number
+  permissions: string[]
 }
 
 interface AuthContextValue {
   user: AuthUser | null
   isAuthenticated: boolean
+  hasPermission: (permission: string) => boolean
   login: (data: AuthResponse) => void
   logout: () => void
 }
@@ -37,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: data.role,
       roles: data.roles ?? [data.role].filter(Boolean),
       primaryGroupId: data.primaryGroupId,
+      permissions: data.permissions ?? [],
     }
     localStorage.setItem('token', data.token)
     localStorage.setItem('user', JSON.stringify(u))
@@ -49,8 +52,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false
+    const perms = user.permissions
+    return perms.includes('*') || perms.includes(permission)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, hasPermission, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

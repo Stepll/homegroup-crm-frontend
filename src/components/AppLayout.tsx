@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { AppOutline, UserOutline, SetOutline } from 'antd-mobile-icons'
+import { useAuth } from '@/store/auth'
 import type { FC } from 'react'
 
 function ProfileIcon() {
@@ -26,18 +27,21 @@ function CalendarIcon() {
   )
 }
 
-const tabs: { key: string; title: string; icon: FC }[] = [
-  { key: '/', title: 'Дашборд', icon: AppOutline },
-  { key: '/people', title: 'Люди', icon: UserOutline },
-  { key: '/calendar', title: 'Календар', icon: CalendarIcon },
-  { key: '/cabinet', title: 'Домашка', icon: CabinetIcon },
+const ALL_TABS: { key: string; title: string; icon: FC; permission?: string }[] = [
+  { key: '/', title: 'Дашборд', icon: AppOutline, permission: 'page.dashboard' },
+  { key: '/people', title: 'Люди', icon: UserOutline, permission: 'page.people' },
+  { key: '/calendar', title: 'Календар', icon: CalendarIcon, permission: 'page.calendar' },
+  { key: '/cabinet', title: 'Домашка', icon: CabinetIcon, permission: 'page.cabinet' },
   { key: '/profile', title: 'Профіль', icon: ProfileIcon },
-  { key: '/settings', title: 'Налаштування', icon: SetOutline },
+  { key: '/settings', title: 'Налаштування', icon: SetOutline, permission: 'page.settings' },
 ]
 
 export function AppLayout() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const { hasPermission } = useAuth()
+
+  const tabs = ALL_TABS.filter((t) => !t.permission || hasPermission(t.permission))
 
   const activeKey = tabs.find((t) => t.key !== '/' && pathname.startsWith(t.key))?.key ?? '/'
 
