@@ -54,6 +54,8 @@ src/
     people/
       PeoplePage.tsx             — список людей + адмінів, пошук, фільтри:
                                    "Показати адмінів" (default on) / "Під моєю опікою"
+                                   + фільтр по домашках (FilterPill + bottom Popup, як на Calendar)
+                                   — показується лише якщо видимих груп > 1; тільки видимі групи
                                    → /people/:id або /admins/:userId
       PersonCreatePage.tsx
       PersonDetailPage.tsx       — 4 блоки з popup-редагуванням + AttendanceGrid
@@ -369,6 +371,7 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
 - [x] AttendanceGrid extracted to shared component (personId OR userId)
 - [x] AttendanceGrid in: PersonDetailPage, AdminDetailPage, AdminProfilePage, ProfilePage
 - [x] PeoplePage — показує admins + persons, filter toggles "Показати адмінів" / "Під моєю опікою"
+- [x] PeoplePage — фільтр по домашках (тільки видимі, приховується якщо одна)
 - [x] AdminProfilePage — read-only профіль адміна (/admins/:id) з AttendanceGrid
 - [x] ProfilePage — відвідуваність блок
 - [x] CalendarPage — 3-колонковий тижневий календар (Recurring/Global/HomeGroup/Google)
@@ -382,9 +385,10 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
 - [x] lastMeetingDate — з реальних записів БД, не по розкладу
 - [x] Dashboard — widget-based, конфіг на бекенді per user; 3 віджети:
       attendance (cabinet-style), groupStats (chart + group/period selectors), upcomingEvents
+- [x] GroupCabinetPage — кнопка "Повідомити про план" підключена до POST /groups/:id/plans/date/:date/send-to-telegram
+- [x] GroupCabinetPage — блок подій: maxHeight 280px + scroll (всі події без ліміту)
 
 ## TODO
 - [ ] Enforcement прав доступу (показувати/ховати секції по ролі)
-- [ ] Telegram notify (кнопка "Повідомити про план" — поки заглушка)
 - [ ] Pull-to-refresh
 - [ ] Pagination для великих списків
