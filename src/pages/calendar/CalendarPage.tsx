@@ -592,12 +592,7 @@ export function CalendarPage() {
       return saved ? new Set(JSON.parse(saved) as string[]) : new Set(['Recurring', 'Global', 'HomeGroup', 'Google'])
     } catch { return new Set(['Recurring', 'Global', 'HomeGroup', 'Google']) }
   })
-  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(() => {
-    try {
-      const saved = localStorage.getItem('cal_groupIds')
-      return saved ? new Set(JSON.parse(saved) as number[]) : new Set()
-    } catch { return new Set() }
-  })
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set())
   const [groups, setGroups] = useState<Group[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
   const [groupsDrawerVisible, setGroupsDrawerVisible] = useState(false)
@@ -620,8 +615,22 @@ export function CalendarPage() {
   const selOffset = dow === 0 ? 6 : dow - 1
 
   useEffect(() => {
-    groupsApi.getAll().then(setGroups)
-    roomsApi.getAll().then(setRooms)
+    const savedTypes = localStorage.getItem('cal_types')
+    if (savedTypes) {
+      try { setActiveTypes(new Set(JSON.parse(savedTypes) as string[])) } catch { /* ignore */ }
+    }
+
+    Promise.all([groupsApi.getAll(), roomsApi.getAll()]).then(([gs, rms]) => {
+      setGroups(gs)
+      setRooms(rms)
+      // Restore saved group selection; default = all groups selected
+      const savedIds = localStorage.getItem('cal_groupIds')
+      if (savedIds) {
+        try { setSelectedGroupIds(new Set(JSON.parse(savedIds) as number[])) } catch { /* ignore */ }
+      } else {
+        setSelectedGroupIds(new Set(gs.map((g) => g.id)))
+      }
+    })
   }, [])
 
   useEffect(() => { localStorage.setItem('cal_types', JSON.stringify([...activeTypes])) }, [activeTypes])
@@ -632,12 +641,13 @@ export function CalendarPage() {
   }, [])
 
   const loadOccurrences = (date: Date, types: Set<string>, groupIds: Set<number>) => {
-    if (types.size === 0) { setOccurrences([]); return }
+    const effectiveTypes = new Set(types)
+    if (groupIds.size === 0) effectiveTypes.delete('HomeGroup')
+    if (effectiveTypes.size === 0) { setOccurrences([]); return }
     calendarApi.getOccurrences({
       from: formatDate(date),
       to: formatDate(addDays(date, 2)),
-      types: [...types].join(','),
-      // No groups selected = show all HomeGroup events; specific selection = filter
+      types: [...effectiveTypes].join(','),
       groupIds: groupIds.size > 0 ? [...groupIds].join(',') : undefined,
     }).then(setOccurrences).catch(() => {})
   }
