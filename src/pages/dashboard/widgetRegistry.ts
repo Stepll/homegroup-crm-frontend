@@ -10,6 +10,11 @@ export const ALL_WIDGETS: WidgetDef[] = [
     label: 'Відмітити присутніх',
     description: 'Відмітити відвідуваність на зустрічі групи',
   },
+  {
+    id: 'groupStats',
+    label: 'Відвідуваність домашок',
+    description: 'Статистика відвідуваності по домашці або всіх групах',
+  },
 ]
 
 export interface WidgetConfig {

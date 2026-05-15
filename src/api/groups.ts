@@ -57,4 +57,7 @@ export const groupsApi = {
 
   getStats: (groupId: number, period: '1m' | '3m' | '6m') =>
     api.get<GroupStats>(`/groups/${groupId}/stats`, { params: { period } }).then((r) => r.data),
+
+  getStatsAll: (period: '1m' | '3m' | '6m') =>
+    api.get<GroupStats>('/groups/stats/all', { params: { period } }).then((r) => r.data),
 }
