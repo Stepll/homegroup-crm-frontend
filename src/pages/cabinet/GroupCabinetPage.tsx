@@ -409,7 +409,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           </div>
           {events.length === 0 ? (
             <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', display: 'block' }}>Немає запланованих подій</span>
-          ) : events.map((ev) => (
+          ) : <div style={{ maxHeight: 280, overflowY: 'auto' }}>{events.map((ev) => (
             <div key={ev.id} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '9px 8px', marginBottom: 2, borderRadius: 8,
@@ -426,7 +426,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                 <DeleteOutline style={{ fontSize: 16 }} />
               </button>
             </div>
-          ))}
+          ))}</div>}
         </div>
 
         {/* Add event popup */}
