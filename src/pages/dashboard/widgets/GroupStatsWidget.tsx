@@ -64,80 +64,6 @@ function AttendanceChart({ meetings }: { meetings: GroupStats['meetings'] }) {
   )
 }
 
-// ── Person row ────────────────────────────────────────────────────────────────
-
-function PersonRow({ person, rank }: { person: GroupStats['personStats'][0]; rank: number }) {
-  const rate = person.attendanceRate
-  const barColor = rate >= 80 ? '#22c55e' : rate >= 50 ? '#F97316' : '#ef4444'
-  return (
-    <div style={{ padding: '10px 0', borderBottom: '1px solid var(--color-border-light)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)', minWidth: 18 }}>{rank}.</span>
-          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text)' }}>{person.fullName}</span>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: barColor }}>{rate}%</span>
-          <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginLeft: 5 }}>
-            {person.presentCount}/{person.totalMeetings}
-          </span>
-        </div>
-      </div>
-      <div style={{ height: 4, background: 'var(--color-border-light)', borderRadius: 2, marginLeft: 26 }}>
-        <div style={{ height: '100%', width: `${rate}%`, background: barColor, borderRadius: 2, transition: 'width 0.3s' }} />
-      </div>
-    </div>
-  )
-}
-
-// ── Meeting row ───────────────────────────────────────────────────────────────
-
-function MeetingRow({ meeting }: { meeting: GroupStats['meetings'][0] }) {
-  const [open, setOpen] = useState(false)
-  const fmt = (iso: string) => {
-    const d = new Date(iso + 'T00:00:00')
-    return d.toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })
-  }
-  return (
-    <div>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        style={{ width: '100%', background: 'none', border: 'none', padding: '11px 0', textAlign: 'left', cursor: 'pointer', borderBottom: open ? 'none' : '1px solid var(--color-border-light)' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{fmt(meeting.date)}</div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2 }}>
-              {meeting.presentCount}/{meeting.totalMembers} учасників
-              {meeting.guestCount > 0 && ` · ${meeting.guestCount} гостей`}
-            </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: meeting.attendanceRate >= 80 ? '#22c55e' : meeting.attendanceRate >= 50 ? '#F97316' : '#ef4444' }}>
-              {meeting.attendanceRate}%
-            </span>
-            <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 2 }}>{open ? '▲' : '▼'}</div>
-          </div>
-        </div>
-      </button>
-      {open && (
-        <div style={{ paddingLeft: 12, paddingBottom: 10, borderBottom: '1px solid var(--color-border-light)', borderLeft: '2px solid var(--color-border-light)' }}>
-          {meeting.absentees.length === 0 ? (
-            <div style={{ fontSize: 13, color: '#22c55e', padding: '4px 0' }}>Всі були присутні</div>
-          ) : (
-            <>
-              <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4, marginTop: 2 }}>Відсутні</div>
-              {meeting.absentees.map((name) => (
-                <div key={name} style={{ fontSize: 13, color: 'var(--color-text-secondary)', padding: '2px 0' }}>{name}</div>
-              ))}
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── Widget ────────────────────────────────────────────────────────────────────
 
 export function GroupStatsWidget() {
@@ -164,105 +90,57 @@ export function GroupStatsWidget() {
 
   return (
     <div style={{ marginBottom: 12 }}>
-      {/* Selectors */}
-      <div style={{ ...card, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <select
-          value={selectedKey}
-          onChange={(e) => setSelectedKey(e.target.value)}
-          disabled={loadingGroups}
-          style={{
-            flex: 1, minWidth: 0, border: '1.5px solid var(--color-border)', borderRadius: 8,
-            padding: '7px 10px', fontSize: 14, background: 'var(--color-bg)',
-            color: 'var(--color-text)', outline: 'none', cursor: 'pointer',
-          }}
-        >
-          <option value={ALL_KEY}>Всі домашки</option>
-          {groups.map((g) => (
-            <option key={g.id} value={String(g.id)}>{g.name}</option>
-          ))}
-        </select>
+      <div style={card}>
+        {/* Selectors */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+          <select
+            value={selectedKey}
+            onChange={(e) => setSelectedKey(e.target.value)}
+            disabled={loadingGroups}
+            style={{
+              flex: 1, minWidth: 0, border: '1.5px solid var(--color-border)', borderRadius: 8,
+              padding: '7px 10px', fontSize: 14, background: 'var(--color-bg)',
+              color: 'var(--color-text)', outline: 'none', cursor: 'pointer',
+            }}
+          >
+            <option value={ALL_KEY}>Всі домашки</option>
+            {groups.map((g) => (
+              <option key={g.id} value={String(g.id)}>{g.name}</option>
+            ))}
+          </select>
 
-        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-          {PERIODS.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => setPeriod(p.key)}
-              style={{
-                padding: '7px 12px', border: 'none', borderRadius: 8, cursor: 'pointer',
-                fontSize: 13, fontWeight: 600,
-                background: period === p.key ? 'var(--color-primary)' : 'var(--color-bg)',
-                color: period === p.key ? '#fff' : 'var(--color-text-secondary)',
-                transition: 'background 0.15s, color 0.15s',
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
+          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+            {PERIODS.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setPeriod(p.key)}
+                style={{
+                  padding: '7px 12px', border: 'none', borderRadius: 8, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600,
+                  background: period === p.key ? 'var(--color-primary)' : 'var(--color-bg)',
+                  color: period === p.key ? '#fff' : 'var(--color-text-secondary)',
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {loadingStats ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+            <SpinLoading color="primary" />
+          </div>
+        ) : !stats || stats.meetings.length === 0 ? (
+          <div style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 14, padding: '16px 0' }}>
+            За цей період немає даних про відвідуваність
+          </div>
+        ) : (
+          <AttendanceChart meetings={stats.meetings} />
+        )}
       </div>
 
-      {loadingStats ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-          <SpinLoading color="primary" />
-        </div>
-      ) : !stats || stats.meetings.length === 0 ? (
-        <div style={{ ...card, textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 14, padding: '32px 16px' }}>
-          За цей період немає даних про відвідуваність
-        </div>
-      ) : (
-        <>
-          {/* Summary */}
-          <div style={card}>
-            <div style={{ display: 'flex', gap: 0 }}>
-              <SumStat label="Ср. відвід." value={`${stats.summary.avgAttendanceRate}%`} />
-              <SumStat label="Зустрічей" value={`${stats.summary.meetingCount}`} />
-              <SumStat label="Гостей" value={`${stats.summary.totalGuests}`} />
-              <SumStat label="Нових" value={`${stats.summary.newMembers}`} />
-            </div>
-          </div>
-
-          {/* Chart */}
-          <div style={card}>
-            <SectionLabel>Відвідуваність</SectionLabel>
-            <AttendanceChart meetings={stats.meetings} />
-          </div>
-
-          {/* Person ranking */}
-          <div style={card}>
-            <SectionLabel>Рейтинг присутності</SectionLabel>
-            {stats.personStats.map((p, i) => (
-              <PersonRow key={p.personId ?? `u${p.userId}`} person={p} rank={i + 1} />
-            ))}
-          </div>
-
-          {/* Meeting list */}
-          <div style={card}>
-            <SectionLabel>Минулі зустрічі</SectionLabel>
-            {[...stats.meetings].reverse().map((m) => (
-              <MeetingRow key={m.date} meeting={m} />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
-      {children}
-    </div>
-  )
-}
-
-function SumStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ flex: 1, textAlign: 'center', padding: '10px 4px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>{value}</div>
-      <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 2 }}>{label}</div>
     </div>
   )
 }
