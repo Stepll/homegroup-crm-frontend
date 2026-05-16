@@ -211,6 +211,8 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
     ? Math.round(lastAttendance.present * 100 / (lastAttendance.total || 1))
     : null
 
+  const attendanceDate = lastMeetingDate ?? computePrevMeetingDate(group.meetingDay)
+
   const formatDate = (iso?: string) => {
     if (!iso) return null
     const d = new Date(iso)
@@ -255,7 +257,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
         </div>
 
         {/* Conflict warning */}
-        {hasConflicts && bookedRoom && (
+        {hasConflicts && (
           <div style={{
             marginTop: 12, padding: '10px 14px', borderRadius: 'var(--radius-md)',
             background: '#FFF3CD', border: '1px solid #FBBF24',
@@ -264,7 +266,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             <span style={{ fontSize: 16 }}>⚠️</span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#92400E' }}>
-                Конфлікт бронювання — {bookedRoom.name}
+                {bookedRoom ? `Конфлікт бронювання — ${bookedRoom.name}` : 'Накладення по часу'}
               </div>
               <div style={{ fontSize: 12, color: '#92400E', marginTop: 2 }}>
                 {nextMeetingConflicts!.map((e) => e.title).join(', ')} накладається на час зустрічі
@@ -371,10 +373,10 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                   </div>
                 )}
               </div>
-              {lastMeetingDate && perms['attendance.record'] && (
+              {perms['attendance.record'] && (
                 <Button size="small" fill="solid"
                   style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
-                  onClick={() => navigate(`/cabinet/${groupId}/attendance${lastMeetingDate ? `?date=${lastMeetingDate}` : ''}`)}>
+                  onClick={() => navigate(`/cabinet/${groupId}/attendance${attendanceDate ? `?date=${attendanceDate}` : ''}`)}>
                   Відмітити
                 </Button>
               )}
@@ -913,4 +915,21 @@ const nativeSelect: React.CSSProperties = {
 const tagStyle: React.CSSProperties = {
   fontSize: 11, fontWeight: 600,
   borderRadius: 6, padding: '2px 7px',
+}
+
+const UKR_DAYS: Record<string, number> = {
+  'Неділя': 0, 'Понеділок': 1, 'Вівторок': 2, 'Середа': 3,
+  'Четвер': 4, "Пʼятниця": 5, "П'ятниця": 5, 'Субота': 6,
+}
+
+function computePrevMeetingDate(meetingDay?: string): string | null {
+  if (!meetingDay) return null
+  const target = UKR_DAYS[meetingDay]
+  if (target === undefined) return null
+  const today = new Date()
+  let daysAgo = (today.getDay() - target + 7) % 7
+  if (daysAgo === 0) daysAgo = 7
+  const d = new Date(today)
+  d.setDate(d.getDate() - daysAgo)
+  return d.toISOString().split('T')[0]
 }

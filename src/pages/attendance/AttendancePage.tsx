@@ -34,10 +34,15 @@ export function AttendancePage() {
 
   useEffect(() => {
     const initialDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
-    attendanceApi.getSummary(Number(id)).then((summary) => {
-      const dates = summary.map((s) => s.meetingDate).sort((a, b) => b.localeCompare(a))
-      if (!dates.includes(initialDate)) dates.unshift(initialDate)
-      setMeetingDates(dates)
+    Promise.all([
+      attendanceApi.getSummary(Number(id)),
+      groupsApi.getById(Number(id)),
+    ]).then(([summary, group]) => {
+      const fromSummary = summary.map((s) => s.meetingDate)
+      const generated = generateMeetingDates(group.meetingDay, 8)
+      const merged = Array.from(new Set([...fromSummary, ...generated, initialDate]))
+        .sort((a, b) => b.localeCompare(a))
+      setMeetingDates(merged)
     }).catch(() => setMeetingDates([initialDate]))
   }, [id])
 
@@ -244,6 +249,24 @@ export function AttendancePage() {
       </div>
     </div>
   )
+}
+
+const UKR_DAYS: Record<string, number> = {
+  'Неділя': 0, 'Понеділок': 1, 'Вівторок': 2, 'Середа': 3,
+  'Четвер': 4, "Пʼятниця": 5, "П'ятниця": 5, 'Субота': 6,
+}
+
+function generateMeetingDates(meetingDay: string | undefined, weeks: number): string[] {
+  if (!meetingDay) return []
+  const target = UKR_DAYS[meetingDay]
+  if (target === undefined) return []
+  const today = new Date()
+  const daysAgo = (today.getDay() - target + 7) % 7
+  return Array.from({ length: weeks }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - daysAgo - i * 7)
+    return d.toISOString().split('T')[0]
+  })
 }
 
 function formatMeetingDate(iso: string) {
