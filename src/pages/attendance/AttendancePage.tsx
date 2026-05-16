@@ -24,7 +24,8 @@ export function AttendancePage() {
   const [guestCount, setGuestCount] = useState(0)
   const [guestInfo, setGuestInfo] = useState('')
   const [showGuestInfo, setShowGuestInfo] = useState(false)
-  const [meetingDates, setMeetingDates] = useState<string[]>([])
+  const initialDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+  const [meetingDates, setMeetingDates] = useState<string[]>([initialDate])
 
   useEffect(() => {
     groupsApi.getMembers(Number(id))
@@ -33,17 +34,16 @@ export function AttendancePage() {
   }, [id])
 
   useEffect(() => {
-    const initialDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
-    Promise.all([
-      attendanceApi.getSummary(Number(id)),
-      groupsApi.getById(Number(id)),
-    ]).then(([summary, group]) => {
+    const initDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+    const summaryP = attendanceApi.getSummary(Number(id)).catch(() => [] as { meetingDate: string }[])
+    const groupP = groupsApi.getById(Number(id)).catch(() => null)
+    Promise.all([summaryP, groupP]).then(([summary, group]) => {
       const fromSummary = summary.map((s) => s.meetingDate)
-      const generated = generateMeetingDates(group.meetingDay, 8, initialDate)
-      const merged = Array.from(new Set([...fromSummary, ...generated, initialDate]))
+      const generated = generateMeetingDates(group?.meetingDay, 8, initDate)
+      const merged = Array.from(new Set([...fromSummary, ...generated, initDate]))
         .sort((a, b) => b.localeCompare(a))
       setMeetingDates(merged)
-    }).catch(() => setMeetingDates([initialDate]))
+    })
   }, [id])
 
   // Pre-populate present set from already-saved attendance when date changes
