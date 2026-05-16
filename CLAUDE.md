@@ -28,12 +28,16 @@ src/
     personStatuses.ts     — personStatusesApi (getAll, create, update, delete)
     churchEvents.ts       — churchEventsApi (getAll, add, delete)
     admins.ts             — adminsApi (getMe, getAll, getById, create, update, updateProfile,
-                            setPassword, remove, getDashboardConfig, saveDashboardConfig)
+                            setMyPassword (me/set-password, no settings.admins needed),
+                            setPassword (/:id/set-password, requires settings.admins),
+                            remove, getDashboardConfig, saveDashboardConfig)
     planning.ts           — planningApi (getPlans, getPlan, savePlan,
                             deletePlanByDate, getTemplates, createTemplate, deleteTemplate)
+  hooks/
+    usePermission.ts      — usePermission(key): bool + usePermissions(keys[]): Record<string,bool>
   components/
-    AppLayout.tsx         — bottom tab bar (5 tabs) + <Outlet />
-    ProtectedRoute.tsx    — redirect to /login if not authed
+    AppLayout.tsx         — bottom tab bar (5 tabs, фільтруються по page.* permissions) + <Outlet />
+    ProtectedRoute.tsx    — redirect to /login if not authed; permission? prop → redirect / if no access
     AttendanceGrid.tsx    — shared 12-month activity grid (props: personId?, userId?,
                             group?, attendance[], loading, noGroupMessage?)
   pages/
@@ -84,7 +88,7 @@ src/
       PersonStatusesPage.tsx     — список статусів з кольоровими тегами
       PersonStatusFormPage.tsx   — форма: назва + color swatches + preview
   store/
-    auth.tsx              — AuthContext, useAuth hook, login/logout
+    auth.tsx              — AuthContext, useAuth hook (login/logout + hasPermission(key), wildcard "*")
   types/
     index.ts              — всі типи
   App.tsx
@@ -98,7 +102,7 @@ src/
 /                              — Dashboard (widget-based)
 /dashboard/settings            — налаштування блоків дашборду
 /profile                       — особистий профіль поточного адміна (editable)
-/admins/:id                    — read-only профіль будь-якого адміна (з People list)
+/admins/:id                    — read-only профіль будь-якого адміна; потребує admins.viewProfiles
 /cabinet                       — вибір групи (для адмінів) або одразу кабінет
 /cabinet/:id                   — кабінет домашки
 /cabinet/:id/attendance        — відмічання присутніх
@@ -241,7 +245,29 @@ src/
 
 ### OrgMemberRow
 - Кнопка-акордеон: ім'я | тег ролі (колір ролі з бекенду) | кількість під опікою
-- Collapse: список людей під опікою, кожна людина з `RightOutline` → navigate до `/people/:id`
+- Collapse: список людей під опікою, `RightOutline` → navigate до `/people/:id` тільки якщо `people.view`
+
+### Permissions system
+Реалізовано повний RBAC. Permissions зберігаються в JWT claims (`"permission"` claim, один на кожен ключ).
+
+**Frontend:**
+- `useAuth().hasPermission(key)` — перевіряє наявність, wildcard `"*"` = superadmin
+- `usePermission(key)` / `usePermissions(keys[])` — хуки-обгортки
+- `<ProtectedRoute permission="...">` — guard на рівні роуту
+- AppLayout tabs фільтруються по `page.*`
+- Кнопки/блоки ховаються умовно по `people.*`, `admins.*`, `planning.*` тощо
+
+**Permissions list:**
+- `page.dashboard`, `page.people`, `page.cabinet`, `page.calendar`, `page.settings`
+- `people.view`, `people.viewSensitive` (ховає блок "Комунікація" в PersonDetailPage), `people.create`, `people.edit`, `people.delete`, `people.customFields`
+- `admins.viewProfiles` (guard /admins/:id, стрілочки в PeoplePage), `admins.viewSensitive` (ховає контакти в AdminProfilePage)
+- `groups.members.manage`, `groups.nextMeeting.manage`, `groups.events.manage`, `groups.create`, `groups.edit`, `groups.delete`
+- `attendance.view`, `attendance.record`, `attendance.stats`
+- `planning.view`, `planning.edit`, `planning.sendToTelegram`, `planning.templates`
+- `calendar.view`, `calendar.events.manage`, `calendar.google.sync`
+- `settings.admins`, `settings.roles`, `settings.groups`, `settings.rooms`, `settings.statuses`
+
+**PersonDetailPage special:** `adminsApi.getAll()` огорнутий в `.catch(() => [])` — юзери без `settings.admins` отримають 403, але це ок, список адмінів потрібен тільки для popup опіки.
 
 ## CSS Design Tokens
 
@@ -387,8 +413,12 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
       attendance (cabinet-style), groupStats (chart + group/period selectors), upcomingEvents
 - [x] GroupCabinetPage — кнопка "Повідомити про план" підключена до POST /groups/:id/plans/date/:date/send-to-telegram
 - [x] GroupCabinetPage — блок подій: maxHeight 280px + scroll (всі події без ліміту)
+- [x] RBAC permissions enforcement — ProtectedRoute guards, UI hiding, usePermission hook
+- [x] admins.viewProfiles / admins.viewSensitive permissions
+- [x] ProfilePage — зміна пароля через setMyPassword → /admins/me/set-password (без settings.admins)
+- [x] PeoplePage — стрілочки і навігація conditional на people.view / admins.viewProfiles
+- [x] PersonDetailPage — "Комунікація" прихований без people.viewSensitive; adminsApi.getAll() graceful 403
 
 ## TODO
-- [ ] Enforcement прав доступу (показувати/ховати секції по ролі)
 - [ ] Pull-to-refresh
 - [ ] Pagination для великих списків
