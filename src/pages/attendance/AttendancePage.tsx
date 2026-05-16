@@ -39,7 +39,7 @@ export function AttendancePage() {
       groupsApi.getById(Number(id)),
     ]).then(([summary, group]) => {
       const fromSummary = summary.map((s) => s.meetingDate)
-      const generated = generateMeetingDates(group.meetingDay, 8)
+      const generated = generateMeetingDates(group.meetingDay, 8, initialDate)
       const merged = Array.from(new Set([...fromSummary, ...generated, initialDate]))
         .sort((a, b) => b.localeCompare(a))
       setMeetingDates(merged)
@@ -256,15 +256,23 @@ const UKR_DAYS: Record<string, number> = {
   'Четвер': 4, "Пʼятниця": 5, "П'ятниця": 5, 'Субота': 6,
 }
 
-function generateMeetingDates(meetingDay: string | undefined, weeks: number): string[] {
-  if (!meetingDay) return []
-  const target = UKR_DAYS[meetingDay]
-  if (target === undefined) return []
+function generateMeetingDates(meetingDay: string | undefined, weeks: number, fallbackDate?: string): string[] {
   const today = new Date()
-  const daysAgo = (today.getDay() - target + 7) % 7
+  if (meetingDay) {
+    const target = UKR_DAYS[meetingDay]
+    if (target !== undefined) {
+      const daysAgo = (today.getDay() - target + 7) % 7
+      return Array.from({ length: weeks }, (_, i) => {
+        const d = new Date(today)
+        d.setDate(d.getDate() - daysAgo - i * 7)
+        return d.toISOString().split('T')[0]
+      })
+    }
+  }
+  const start = fallbackDate ? new Date(fallbackDate + 'T00:00:00') : today
   return Array.from({ length: weeks }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(d.getDate() - daysAgo - i * 7)
+    const d = new Date(start)
+    d.setDate(d.getDate() - i * 7)
     return d.toISOString().split('T')[0]
   })
 }
