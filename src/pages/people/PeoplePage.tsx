@@ -1,10 +1,39 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { NavBar, List, SearchBar, Button, Empty, SpinLoading, Popup, Checkbox } from 'antd-mobile'
+import { NavBar, SearchBar, Button, Empty, SpinLoading, Popup, Checkbox } from 'antd-mobile'
 import { peopleApi } from '@/api/people'
 import { groupsApi } from '@/api/groups'
 import { usePermission } from '@/hooks/usePermission'
 import type { Group, GroupMember } from '@/types'
+
+// ── Tag settings ────────────────────────────────────────────────────────────
+
+type TagKey = 'role' | 'group' | 'status' | 'oversight'
+interface TagItem { key: TagKey; enabled: boolean }
+
+const TAG_LABELS: Record<TagKey, string> = {
+  role: 'Роль',
+  group: 'Домашка',
+  status: 'Статус',
+  oversight: 'Опікун',
+}
+
+const DEFAULT_TAGS: TagItem[] = [
+  { key: 'role', enabled: true },
+  { key: 'group', enabled: true },
+  { key: 'status', enabled: false },
+  { key: 'oversight', enabled: false },
+]
+
+function loadTagSettings(): TagItem[] {
+  try {
+    const s = localStorage.getItem('people-tag-settings')
+    if (s) return JSON.parse(s) as TagItem[]
+  } catch {}
+  return DEFAULT_TAGS
+}
+
+// ── Component ───────────────────────────────────────────────────────────────
 
 export function PeoplePage() {
   const navigate = useNavigate()
@@ -19,6 +48,8 @@ export function PeoplePage() {
   const [myOversight, setMyOversight] = useState(false)
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set())
   const [groupsDrawerVisible, setGroupsDrawerVisible] = useState(false)
+  const [tagSettingsVisible, setTagSettingsVisible] = useState(false)
+  const [tagSettings, setTagSettings] = useState<TagItem[]>(loadTagSettings)
 
   useEffect(() => {
     groupsApi.getAll().then((gs) => {
@@ -76,6 +107,12 @@ export function PeoplePage() {
             arrow
           />
         )}
+        <FilterPill
+          label="Теги"
+          active={false}
+          onToggle={() => setTagSettingsVisible(true)}
+          icon="⚙️"
+        />
       </div>
 
       {loading ? (
@@ -85,35 +122,21 @@ export function PeoplePage() {
       ) : filtered.length === 0 ? (
         <Empty description="Людей не знайдено" style={{ marginTop: 48 }} />
       ) : (
-        <List>
+        <div style={{ background: '#fff', borderTop: '1px solid var(--color-border-light)', borderBottom: '1px solid var(--color-border-light)' }}>
           {filtered.map((m) => {
             const key = m.isAdmin ? `u_${m.userId}` : `p_${m.id}`
-            const fullName = [m.name, m.lastName].filter(Boolean).join(' ')
+            const hasArrow = m.isAdmin ? canViewAdminProfiles : canViewPeople
             return (
-              <List.Item
+              <PersonRow
                 key={key}
-                extra={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {m.isAdmin && m.roleTag && (
-                      <span style={{ ...tag, color: m.roleTag.color, background: `${m.roleTag.color}18` }}>
-                        {m.roleTag.name}
-                      </span>
-                    )}
-                    {m.primaryGroupName && (
-                      <span style={{ ...tag, color: m.primaryGroupColor ?? 'var(--color-primary)', background: `${m.primaryGroupColor ?? 'var(--color-primary)'}18` }}>
-                        {m.primaryGroupName}
-                      </span>
-                    )}
-                  </div>
-                }
+                m={m}
+                tagSettings={tagSettings}
+                hasArrow={hasArrow}
                 onClick={() => handleItemClick(m)}
-                arrow={m.isAdmin ? canViewAdminProfiles : canViewPeople}
-              >
-                {fullName}
-              </List.Item>
+              />
             )
           })}
-        </List>
+        </div>
       )}
 
       {/* Groups filter drawer */}
@@ -145,12 +168,153 @@ export function PeoplePage() {
           Готово
         </Button>
       </Popup>
+
+      {/* Tag settings popup */}
+      <TagSettingsPopup
+        visible={tagSettingsVisible}
+        onClose={() => setTagSettingsVisible(false)}
+        settings={tagSettings}
+        onChange={setTagSettings}
+      />
     </div>
   )
 }
 
-function FilterPill({ label, active, onToggle, arrow = false }: {
-  label: string; active: boolean; onToggle: () => void; arrow?: boolean
+// ── PersonRow ────────────────────────────────────────────────────────────────
+
+function getPersonTags(m: GroupMember, settings: TagItem[]) {
+  return settings
+    .filter((s) => s.enabled)
+    .map((s) => {
+      switch (s.key) {
+        case 'role':
+          return m.roleTag ? { key: 'role', label: m.roleTag.name, color: m.roleTag.color } : null
+        case 'group':
+          return m.primaryGroupName ? { key: 'group', label: m.primaryGroupName, color: m.primaryGroupColor ?? 'var(--color-primary)' } : null
+        case 'status':
+          return m.status ? { key: 'status', label: m.status.name, color: m.status.color } : null
+        case 'oversight':
+          return m.oversightUserName ? { key: 'oversight', label: m.oversightUserName, color: '#6B7280' } : null
+        default:
+          return null
+      }
+    })
+    .filter((t): t is { key: string; label: string; color: string } => t !== null)
+}
+
+function PersonRow({ m, tagSettings, hasArrow, onClick }: {
+  m: GroupMember
+  tagSettings: TagItem[]
+  hasArrow: boolean
+  onClick: () => void
+}) {
+  const fullName = [m.name, m.lastName].filter(Boolean).join(' ')
+  const tags = getPersonTags(m, tagSettings)
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center',
+        padding: '13px 16px',
+        borderBottom: '1px solid var(--color-border-light)',
+        cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent',
+        userSelect: 'none',
+      }}
+    >
+      {/* Name — 30% */}
+      <div style={{ width: '30%', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 15, color: 'var(--color-text)' }}>{fullName}</span>
+      </div>
+
+      {/* Tags — 60% */}
+      <div style={{ width: '60%', flexShrink: 0, display: 'flex', gap: 4, overflow: 'hidden', alignItems: 'center' }}>
+        {tags.map((t) => (
+          <span key={t.key} style={{ ...tagStyle, color: t.color, background: `${t.color}18`, flexShrink: 0 }}>
+            {t.label}
+          </span>
+        ))}
+      </div>
+
+      {/* Arrow — 10% */}
+      <div style={{ width: '10%', flexShrink: 0, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', color: 'var(--color-text-tertiary)' }}>
+        {hasArrow && <span style={{ fontSize: 18, lineHeight: 1 }}>›</span>}
+      </div>
+    </div>
+  )
+}
+
+// ── TagSettingsPopup ─────────────────────────────────────────────────────────
+
+function TagSettingsPopup({ visible, onClose, settings, onChange }: {
+  visible: boolean
+  onClose: () => void
+  settings: TagItem[]
+  onChange: (s: TagItem[]) => void
+}) {
+  const [local, setLocal] = useState<TagItem[]>(settings)
+
+  useEffect(() => {
+    if (visible) setLocal(settings)
+  }, [visible])
+
+  const toggle = (idx: number) =>
+    setLocal((prev) => prev.map((t, i) => i === idx ? { ...t, enabled: !t.enabled } : t))
+
+  const move = (idx: number, dir: -1 | 1) => {
+    const newIdx = idx + dir
+    if (newIdx < 0 || newIdx >= local.length) return
+    setLocal((prev) => {
+      const next = [...prev]
+      ;[next[idx], next[newIdx]] = [next[newIdx], next[idx]]
+      return next
+    })
+  }
+
+  const save = () => {
+    localStorage.setItem('people-tag-settings', JSON.stringify(local))
+    onChange(local)
+    onClose()
+  }
+
+  return (
+    <Popup
+      visible={visible}
+      onMaskClick={onClose}
+      position="bottom"
+      bodyStyle={{ borderRadius: '16px 16px 0 0', padding: 16 }}
+    >
+      <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Налаштування тегів</div>
+      <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 16 }}>
+        Оберіть яка інформація відображається та порядок
+      </div>
+      {local.map((item, idx) => (
+        <div key={item.key} style={{ display: 'flex', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+          <div
+            style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+            onClick={() => toggle(idx)}
+          >
+            <Checkbox checked={item.enabled} onChange={() => toggle(idx)} />
+            <span style={{ fontSize: 15 }}>{TAG_LABELS[item.key]}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button onClick={() => move(idx, -1)} disabled={idx === 0} style={reorderBtn(idx === 0)}>▲</button>
+            <button onClick={() => move(idx, 1)} disabled={idx === local.length - 1} style={reorderBtn(idx === local.length - 1)}>▼</button>
+          </div>
+        </div>
+      ))}
+      <Button block color="primary" style={{ marginTop: 16 }} onClick={save}>
+        Готово
+      </Button>
+    </Popup>
+  )
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function FilterPill({ label, active, onToggle, arrow = false, icon }: {
+  label: string; active: boolean; onToggle: () => void; arrow?: boolean; icon?: string
 }) {
   return (
     <button
@@ -165,12 +329,22 @@ function FilterPill({ label, active, onToggle, arrow = false }: {
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      {label}{arrow && <span style={{ fontSize: 10 }}>▾</span>}
+      {icon && <span style={{ fontSize: 12 }}>{icon}</span>}
+      {label}
+      {arrow && <span style={{ fontSize: 10 }}>▾</span>}
     </button>
   )
 }
 
-const tag: React.CSSProperties = {
+const reorderBtn = (disabled: boolean): React.CSSProperties => ({
+  width: 28, height: 28, border: '1px solid var(--color-border)',
+  borderRadius: 6, background: disabled ? 'var(--color-bg)' : '#fff',
+  color: disabled ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)',
+  cursor: disabled ? 'default' : 'pointer', fontSize: 11,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+})
+
+const tagStyle: React.CSSProperties = {
   fontSize: 11, fontWeight: 600, borderRadius: 6,
   padding: '2px 7px', whiteSpace: 'nowrap',
 }

@@ -115,6 +115,7 @@ export interface GroupMember {
   isAdmin: boolean
   userId?: number
   roleTag?: { name: string; color: string } | null
+  oversightUserName?: string | null
 }
 
 export interface CabinetCalendarEvent {
