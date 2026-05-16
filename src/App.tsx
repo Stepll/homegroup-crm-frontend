@@ -53,7 +53,7 @@ export function App() {
             <Route path="people" element={<ProtectedRoute permission="page.people"><PeoplePage /></ProtectedRoute>} />
             <Route path="people/new" element={<ProtectedRoute permission="people.create"><PersonCreatePage /></ProtectedRoute>} />
             <Route path="people/:id" element={<ProtectedRoute permission="people.view"><PersonDetailPage /></ProtectedRoute>} />
-            <Route path="admins/:id" element={<AdminProfilePage />} />
+            <Route path="admins/:id" element={<ProtectedRoute permission="admins.viewProfiles"><AdminProfilePage /></ProtectedRoute>} />
             <Route path="settings" element={<ProtectedRoute permission="page.settings"><SettingsPage /></ProtectedRoute>} />
             <Route path="settings/admins" element={<ProtectedRoute permission="settings.admins"><AdminsPage /></ProtectedRoute>} />
             <Route path="settings/admins/new" element={<ProtectedRoute permission="settings.admins"><AdminCreatePage /></ProtectedRoute>} />

@@ -36,6 +36,13 @@ const PERMISSION_GROUPS: PermGroup[] = [
     ],
   },
   {
+    label: 'Адміни',
+    items: [
+      { key: 'admins.viewProfiles', label: 'Переглядати профілі адмінів' },
+      { key: 'admins.viewSensitive', label: 'Бачити телефон та Telegram адмінів' },
+    ],
+  },
+  {
     label: 'Домашні групи',
     items: [
       { key: 'groups.members.manage', label: 'Додавати / видаляти / синхронізувати членів' },

@@ -5,6 +5,7 @@ import { adminsApi } from '@/api/admins'
 import { attendanceApi } from '@/api/attendance'
 import { groupsApi } from '@/api/groups'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
+import { usePermission } from '@/hooks/usePermission'
 import type { Admin, Group, AttendanceRecord } from '@/types'
 
 const genderLabel = (v?: string) => v === 'Male' ? 'Чоловіча' : v === 'Female' ? 'Жіноча' : '—'
@@ -32,6 +33,8 @@ export function AdminProfilePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const adminId = Number(id)
+
+  const canViewSensitive = usePermission('admins.viewSensitive')
 
   const [admin, setAdmin] = useState<Admin | null>(null)
   const [groups, setGroups] = useState<Group[]>([])
@@ -99,27 +102,29 @@ export function AdminProfilePage() {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-          {admin.phone && (
-            <a href={`tel:${admin.phone}`} style={{ textDecoration: 'none' }}>
-              <Button size="small" fill="outline"
-                style={{ '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}>
-                Подзвонити
-              </Button>
-            </a>
-          )}
-          {admin.telegram && (
-            <a href={`https://t.me/${admin.telegram.replace('@', '')}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-              <Button size="small" fill="outline"
-                style={{ '--border-color': '#2AAFCA', '--text-color': '#2AAFCA' } as React.CSSProperties}>
-                Telegram
-              </Button>
-            </a>
-          )}
-          {!admin.phone && !admin.telegram && (
-            <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>Контакти не вказані</span>
-          )}
-        </div>
+        {canViewSensitive && (
+          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+            {admin.phone && (
+              <a href={`tel:${admin.phone}`} style={{ textDecoration: 'none' }}>
+                <Button size="small" fill="outline"
+                  style={{ '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}>
+                  Подзвонити
+                </Button>
+              </a>
+            )}
+            {admin.telegram && (
+              <a href={`https://t.me/${admin.telegram.replace('@', '')}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                <Button size="small" fill="outline"
+                  style={{ '--border-color': '#2AAFCA', '--text-color': '#2AAFCA' } as React.CSSProperties}>
+                  Telegram
+                </Button>
+              </a>
+            )}
+            {!admin.phone && !admin.telegram && (
+              <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)' }}>Контакти не вказані</span>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '0 16px' }}>
@@ -132,11 +137,13 @@ export function AdminProfilePage() {
           {admin.notes && <InfoRow label="Нотатки">{admin.notes}</InfoRow>}
         </BlockCard>
 
-        <BlockCard title="Комунікація">
-          <InfoRow label="Телефон">{admin.phone ?? '—'}</InfoRow>
-          <InfoRow label="Email">{admin.email}</InfoRow>
-          <InfoRow label="Telegram">{admin.telegram ?? '—'}</InfoRow>
-        </BlockCard>
+        {canViewSensitive && (
+          <BlockCard title="Комунікація">
+            <InfoRow label="Телефон">{admin.phone ?? '—'}</InfoRow>
+            <InfoRow label="Email">{admin.email}</InfoRow>
+            <InfoRow label="Telegram">{admin.telegram ?? '—'}</InfoRow>
+          </BlockCard>
+        )}
 
         <BlockCard title="Церква">
           <InfoRow label="Статус">{admin.status?.name ?? '—'}</InfoRow>

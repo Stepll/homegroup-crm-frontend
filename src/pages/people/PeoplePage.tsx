@@ -9,6 +9,8 @@ import type { Group, GroupMember } from '@/types'
 export function PeoplePage() {
   const navigate = useNavigate()
   const canCreate = usePermission('people.create')
+  const canViewPeople = usePermission('people.view')
+  const canViewAdminProfiles = usePermission('admins.viewProfiles')
   const [people, setPeople] = useState<GroupMember[]>([])
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,8 +35,8 @@ export function PeoplePage() {
   }, [search, showAdmins, myOversight])
 
   const handleItemClick = (m: GroupMember) => {
-    if (m.isAdmin) navigate(`/admins/${m.userId}`)
-    else navigate(`/people/${m.id}`)
+    if (m.isAdmin) { if (canViewAdminProfiles) navigate(`/admins/${m.userId}`) }
+    else { if (canViewPeople) navigate(`/people/${m.id}`) }
   }
 
   const allSelected = selectedGroupIds.size === groups.length
@@ -105,7 +107,7 @@ export function PeoplePage() {
                   </div>
                 }
                 onClick={() => handleItemClick(m)}
-                arrow
+                arrow={m.isAdmin ? canViewAdminProfiles : canViewPeople}
               >
                 {fullName}
               </List.Item>

@@ -43,6 +43,7 @@ export const adminsApi = {
   create: (data: CreateAdminData) => api.post<Admin>('/admins', data).then((r) => r.data),
   update: (id: number, data: UpdateAdminData) => api.put<Admin>(`/admins/${id}`, data).then((r) => r.data),
   updateProfile: (id: number, data: UpdateAdminProfileData) => api.put<Admin>(`/admins/${id}/profile`, data).then((r) => r.data),
+  setMyPassword: (newPassword: string) => api.post('/admins/me/set-password', { newPassword }),
   setPassword: (id: number, newPassword: string) => api.post(`/admins/${id}/set-password`, { newPassword }),
   remove: (id: number) => api.delete(`/admins/${id}`),
   getDashboardConfig: () => api.get<WidgetConfig[]>('/admins/me/dashboard').then((r) => r.data),

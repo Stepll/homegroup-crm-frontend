@@ -6,7 +6,7 @@ import { groupsApi } from '@/api/groups'
 import { planningApi } from '@/api/planning'
 import { roomsApi } from '@/api/calendar'
 import { useAuth } from '@/store/auth'
-import { usePermissions } from '@/hooks/usePermission'
+import { usePermission, usePermissions } from '@/hooks/usePermission'
 import type { Group, GroupCabinet, GroupEvent, Room, CabinetCalendarEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
@@ -694,6 +694,7 @@ function MeetingTimeline({ events, meetingStartTime, meetingEndTime, rooms, book
 
 function OrgMemberRow({ member }: { member: GroupCabinet['orgTeam'][0] }) {
   const navigate = useNavigate()
+  const canViewPeople = usePermission('people.view')
   const [open, setOpen] = useState(false)
   const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
 
@@ -728,11 +729,13 @@ function OrgMemberRow({ member }: { member: GroupCabinet['orgTeam'][0] }) {
           {member.oversees.map((p) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
               <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{p.fullName}</span>
-              <button
-                onClick={(e) => { e.stopPropagation(); navigate(`/people/${p.id}`) }}
-                style={{ ...iconBtn, padding: 4, color: 'var(--color-primary)' }}>
-                <RightOutline style={{ fontSize: 13 }} />
-              </button>
+              {canViewPeople && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigate(`/people/${p.id}`) }}
+                  style={{ ...iconBtn, padding: 4, color: 'var(--color-primary)' }}>
+                  <RightOutline style={{ fontSize: 13 }} />
+                </button>
+              )}
             </div>
           ))}
         </div>

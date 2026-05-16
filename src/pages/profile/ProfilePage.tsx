@@ -236,7 +236,7 @@ export function ProfilePage() {
     if (!newPwd.trim()) return
     setPwdSaving(true)
     try {
-      await adminsApi.setPassword(admin.id, newPwd)
+      await adminsApi.setMyPassword(newPwd)
       Toast.show({ content: 'Пароль змінено', icon: 'success' })
       setPwdOpen(false); setNewPwd('')
     } catch {
