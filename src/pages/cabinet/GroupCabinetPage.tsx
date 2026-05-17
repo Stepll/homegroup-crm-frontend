@@ -851,14 +851,6 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--color-text)' }}>{value}</div>
-      <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{label}</div>
-    </div>
-  )
-}
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
