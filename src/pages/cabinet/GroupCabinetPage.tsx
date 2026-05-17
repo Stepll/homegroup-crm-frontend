@@ -248,11 +248,6 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
               </div>
               {perms['groups.edit'] && <button onClick={() => setEditVisible(true)} style={iconBtn}><EditSOutline style={{ fontSize: 18 }} /></button>}
             </div>
-            <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
-              <Stat label="Учасників" value={stats.totalMembers} />
-              <Stat label="Ср. відвідуваність" value={`${stats.avgAttendanceRate}%`} />
-              <Stat label="Нових цього місяця" value={stats.newMembersThisMonth} />
-            </div>
           </div>
         </div>
 
@@ -384,7 +379,16 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           </div>
         </div>
 
-        {/* Block 4: Upcoming birthdays */}
+        {/* Block 4: Org team */}
+        <div style={{ ...block, padding: '14px 16px' }}>
+          <SectionLabel>Орг команда</SectionLabel>
+          {orgTeam.length === 0
+            ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає призначених адмінів</span>
+            : orgTeam.map((member) => <OrgMemberRow key={member.id} member={member} />)
+          }
+        </div>
+
+        {/* Block 5: Upcoming birthdays */}
         {upcomingEvents.length > 0 && (
           <div style={{ ...block, padding: '14px 16px' }}>
             <SectionLabel>Найближчі події</SectionLabel>
@@ -405,15 +409,6 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             </div>
           </div>
         )}
-
-        {/* Block 5: Org team */}
-        <div style={{ ...block, padding: '14px 16px' }}>
-          <SectionLabel>Орг команда</SectionLabel>
-          {orgTeam.length === 0
-            ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає призначених адмінів</span>
-            : orgTeam.map((member) => <OrgMemberRow key={member.id} member={member} />)
-          }
-        </div>
 
         {/* Block 6: Custom events */}
         <div style={{ ...block, padding: '14px 16px' }}>
