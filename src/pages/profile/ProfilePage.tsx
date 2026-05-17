@@ -202,18 +202,7 @@ export function ProfilePage() {
       maritalStatus: draftMarital || undefined, address: draftAddress.trim() || undefined,
       notes: draftNotes.trim() || undefined,
     })
-    if (ok) {
-      // Also update basic info in the admin record
-      await adminsApi.update(admin.id, {
-        name: draftName.trim(),
-        lastName: draftLastName.trim() || undefined,
-        email: admin.email,
-        roleIds: admin.roles.map((r) => r.id),
-        primaryGroupId: admin.primaryGroupId,
-        visibleGroupIds: admin.visibleGroups.map((g) => g.id),
-      })
-      setPersonalOpen(false)
-    }
+    if (ok) setPersonalOpen(false)
   }
   const saveContact = async () => {
     const ok = await doSaveProfile({
