@@ -379,16 +379,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           </div>
         </div>
 
-        {/* Block 4: Org team */}
-        <div style={{ ...block, padding: '14px 16px' }}>
-          <SectionLabel>Орг команда</SectionLabel>
-          {orgTeam.length === 0
-            ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає призначених адмінів</span>
-            : orgTeam.map((member) => <OrgMemberRow key={member.id} member={member} />)
-          }
-        </div>
-
-        {/* Block 5: Upcoming birthdays */}
+        {/* Block 4: Upcoming birthdays */}
         {upcomingEvents.length > 0 && (
           <div style={{ ...block, padding: '14px 16px' }}>
             <SectionLabel>Найближчі події</SectionLabel>
@@ -410,7 +401,7 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
           </div>
         )}
 
-        {/* Block 6: Custom events */}
+        {/* Block 5: Custom events */}
         <div style={{ ...block, padding: '14px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <SectionLabel>Найближчі події</SectionLabel>
@@ -442,6 +433,15 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
               )}
             </div>
           ))}</div>}
+        </div>
+
+        {/* Block 6: Org team */}
+        <div style={{ ...block, padding: '14px 16px' }}>
+          <SectionLabel>Орг команда</SectionLabel>
+          {orgTeam.length === 0
+            ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає призначених адмінів</span>
+            : orgTeam.map((member) => <OrgMemberRow key={member.id} member={member} />)
+          }
         </div>
 
         {/* Add event popup */}
