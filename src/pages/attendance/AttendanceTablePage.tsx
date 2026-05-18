@@ -370,11 +370,12 @@ export function AttendanceTablePage() {
                   {/* Sticky name cell */}
                   <div style={{
                     ...stickyNameCell(ROW_H, false),
+                    height: 'auto',
                     background: rowIdx % 2 === 0 ? '#fff' : '#FAFAFA',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
                     gap: 0,
-                    padding: '0 8px 0 12px',
+                    padding: '4px 8px 4px 12px',
                   }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.2, maxWidth: NAME_W - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {fullName}
@@ -389,7 +390,7 @@ export function AttendanceTablePage() {
                     const isCancelled = current.meetings[date]?.isCancelled ?? false
 
                     if (isCancelled) {
-                      return <div key={date} style={disabledCell(CELL_W, ROW_H, true)} />
+                      return <div key={date} style={disabledCell(CELL_W, true)} />
                     }
 
                     const present = att[date] ?? false
@@ -397,7 +398,7 @@ export function AttendanceTablePage() {
                       <button
                         key={date}
                         onClick={() => toggleCell(key, date)}
-                        style={attendanceCell(CELL_W, ROW_H, present)}
+                        style={attendanceCell(CELL_W, present)}
                       />
                     )
                   })}
@@ -533,11 +534,10 @@ function stickyNameCell(h: number, isHeader: boolean): React.CSSProperties {
   }
 }
 
-function attendanceCell(w: number, h: number, present: boolean): React.CSSProperties {
+function attendanceCell(w: number, present: boolean): React.CSSProperties {
   return {
     width: w,
     minWidth: w,
-    height: h,
     flexShrink: 0,
     background: present ? '#DCFCE7' : '#FEE2E2',
     border: 'none',
@@ -550,11 +550,10 @@ function attendanceCell(w: number, h: number, present: boolean): React.CSSProper
   }
 }
 
-function disabledCell(w: number, h: number, isCancelled: boolean): React.CSSProperties {
+function disabledCell(w: number, isCancelled: boolean): React.CSSProperties {
   return {
     width: w,
     minWidth: w,
-    height: h,
     flexShrink: 0,
     background: isCancelled ? '#FEF9C3' : '#F3F4F6',
     borderLeft: '1px solid var(--color-border-light)',
