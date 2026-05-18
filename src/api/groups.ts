@@ -43,6 +43,9 @@ export const groupsApi = {
   addEvent: (groupId: number, data: { name: string; month: number; day: number; year?: number }) =>
     api.post<GroupEvent>(`/groups/${groupId}/events`, data).then((r) => r.data),
 
+  updateEvent: (groupId: number, eventId: number, data: { name: string; month: number; day: number; year?: number }) =>
+    api.put<GroupEvent>(`/groups/${groupId}/events/${eventId}`, data).then((r) => r.data),
+
   deleteEvent: (groupId: number, eventId: number) =>
     api.delete(`/groups/${groupId}/events/${eventId}`),
 

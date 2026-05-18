@@ -85,6 +85,11 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const [newEventName, setNewEventName] = useState('')
   const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0])
   const [addingEvent, setAddingEvent] = useState(false)
+  const [editEventVisible, setEditEventVisible] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<GroupEvent | null>(null)
+  const [editEventName, setEditEventName] = useState('')
+  const [editEventDate, setEditEventDate] = useState('')
+  const [savingEvent, setSavingEvent] = useState(false)
   const [rescheduleVisible, setRescheduleVisible] = useState(false)
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [rescheduling, setRescheduling] = useState(false)
@@ -168,6 +173,30 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
   const handleDeleteEvent = async (eventId: number) => {
     await groupsApi.deleteEvent(groupId, eventId)
     setEvents((prev) => prev.filter((e) => e.id !== eventId))
+  }
+
+  const openEditEvent = (ev: GroupEvent) => {
+    setEditingEvent(ev)
+    setEditEventName(ev.name)
+    const y = ev.year ?? new Date().getFullYear()
+    setEditEventDate(`${y}-${String(ev.month).padStart(2, '0')}-${String(ev.day).padStart(2, '0')}`)
+    setEditEventVisible(true)
+  }
+
+  const handleUpdateEvent = async () => {
+    if (!editingEvent || !editEventName.trim() || !editEventDate) return
+    const [y, m, d] = editEventDate.split('-').map(Number)
+    setSavingEvent(true)
+    try {
+      const updated = await groupsApi.updateEvent(groupId, editingEvent.id, {
+        name: editEventName.trim(), month: m, day: d, year: y,
+      })
+      setEvents((prev) => prev.map((e) => e.id === updated.id ? updated : e).sort((a, b) => a.daysUntil - b.daysUntil))
+      setEditEventVisible(false)
+    } catch {
+      Toast.show({ content: 'Помилка', icon: 'fail' })
+    }
+    setSavingEvent(false)
   }
 
   const handleBookRoom = async () => {
@@ -427,6 +456,11 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                 {ev.daysUntil === 0 ? 'Сьогодні!' : ev.daysUntil === 1 ? 'Завтра' : `за ${ev.daysUntil} дн.`}
               </span>
               {perms['groups.events.manage'] && (
+                <button onClick={() => openEditEvent(ev)} style={{ ...iconBtn, color: 'var(--color-primary)', padding: 2, marginRight: 2 }}>
+                  <EditSOutline style={{ fontSize: 16 }} />
+                </button>
+              )}
+              {perms['groups.events.manage'] && (
                 <button onClick={() => handleDeleteEvent(ev.id)} style={{ ...iconBtn, color: 'var(--color-error)', padding: 2 }}>
                   <DeleteOutline style={{ fontSize: 16 }} />
                 </button>
@@ -443,6 +477,25 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
             : orgTeam.map((member) => <OrgMemberRow key={member.id} member={member} />)
           }
         </div>
+
+        {/* Edit event popup */}
+        <Popup visible={editEventVisible} onMaskClick={() => setEditEventVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Редагувати подію</div>
+          <FormField label="Назва">
+            <Input value={editEventName} onChange={setEditEventName} placeholder="Назва події" autoFocus />
+          </FormField>
+          <FormField label="Дата">
+            <input type="date" value={editEventDate} onChange={(e) => setEditEventDate(e.target.value)}
+              style={{ ...nativeSelect, padding: 0 }} />
+          </FormField>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button block loading={savingEvent} onClick={handleUpdateEvent}
+              style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>
+              Зберегти
+            </Button>
+            <Button block fill="outline" onClick={() => setEditEventVisible(false)}>Скасувати</Button>
+          </div>
+        </Popup>
 
         {/* Add event popup */}
         <Popup visible={addEventVisible} onMaskClick={() => setAddEventVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>

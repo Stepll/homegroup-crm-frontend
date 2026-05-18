@@ -167,6 +167,7 @@ export interface GroupEvent {
   name: string
   month: number
   day: number
+  year?: number
   daysUntil: number
 }
 
