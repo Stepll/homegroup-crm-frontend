@@ -266,7 +266,7 @@ export function AttendanceTablePage() {
       <NavBar onBack={() => navigate(-1)}>Таблиця відвідуваності</NavBar>
 
       {/* ── Scrollable table area ── */}
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative', paddingBottom: isDirty ? 72 : 0 }}>
         <div style={{ height: '100%', overflowX: 'auto', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <div style={{ width: totalW, minWidth: '100%', position: 'relative' }}>
 
@@ -412,10 +412,13 @@ export function AttendanceTablePage() {
       {/* ── Save/Cancel bar (only when dirty) ── */}
       {isDirty && (
         <div style={{
+          position: 'fixed',
+          bottom: 'calc(58px + env(safe-area-inset-bottom))',
+          left: 0, right: 0,
           display: 'flex', gap: 10, padding: '12px 16px',
           background: '#fff',
           boxShadow: '0 -1px 0 var(--color-border-light), 0 -4px 12px rgba(0,0,0,0.06)',
-          paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
+          zIndex: 100,
         }}>
           <Button
             fill="outline" size="large"
