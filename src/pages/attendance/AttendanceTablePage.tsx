@@ -304,7 +304,7 @@ export function AttendanceTablePage() {
 
             {/* ── GUESTS ROW ── */}
             <div style={{ display: 'flex', position: 'sticky', top: HEADER_H, zIndex: 19, background: '#F8FAFC', borderBottom: '1px solid var(--color-border)' }}>
-              <div style={stickyNameCell(STATS_H, false)}>
+              <div style={{ ...stickyNameCell(STATS_H, false), background: '#F8FAFC' }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Гості</span>
               </div>
               {dates.map((date) => {
@@ -329,7 +329,7 @@ export function AttendanceTablePage() {
 
             {/* ── TOTAL ROW ── */}
             <div style={{ display: 'flex', position: 'sticky', top: HEADER_H + STATS_H, zIndex: 18, background: '#F8FAFC', borderBottom: '2px solid var(--color-border)' }}>
-              <div style={stickyNameCell(STATS_H, false)}>
+              <div style={{ ...stickyNameCell(STATS_H, false), background: '#F8FAFC' }}>
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Всього</span>
               </div>
               {dates.map((date) => {
@@ -387,13 +387,9 @@ export function AttendanceTablePage() {
                   {/* Attendance cells */}
                   {dates.map((date) => {
                     const isCancelled = current.meetings[date]?.isCancelled ?? false
-                    const joinedAt = m.joinedAt
-                    const disabled = date < joinedAt || isCancelled
 
-                    if (disabled) {
-                      return (
-                        <div key={date} style={disabledCell(CELL_W, ROW_H, isCancelled)} />
-                      )
+                    if (isCancelled) {
+                      return <div key={date} style={disabledCell(CELL_W, ROW_H, true)} />
                     }
 
                     const present = att[date] ?? false
@@ -541,11 +537,11 @@ function attendanceCell(w: number, h: number, present: boolean): React.CSSProper
     height: h,
     flexShrink: 0,
     background: present ? '#DCFCE7' : '#FEE2E2',
-    borderLeft: '1px solid',
-    borderColor: present ? '#BBF7D0' : '#FECACA',
+    border: 'none',
+    borderLeft: `1px solid ${present ? '#BBF7D0' : '#FECACA'}`,
+    borderBottom: `1px solid ${present ? '#BBF7D0' : '#FECACA'}`,
     cursor: 'pointer',
     WebkitTapHighlightColor: 'transparent',
-    border: 'none',
     outline: 'none',
     transition: 'background 0.1s',
   }
@@ -559,6 +555,7 @@ function disabledCell(w: number, h: number, isCancelled: boolean): React.CSSProp
     flexShrink: 0,
     background: isCancelled ? '#FEF9C3' : '#F3F4F6',
     borderLeft: '1px solid var(--color-border-light)',
+    borderBottom: '1px solid var(--color-border-light)',
   }
 }
 
@@ -588,6 +585,13 @@ function statCell(w: number, h: number): React.CSSProperties {
     fontSize: 12,
     fontWeight: 500,
     borderLeft: '1px solid var(--color-border-light)',
+    border: 'none',
+    borderLeftWidth: 1,
+    borderLeftStyle: 'solid',
+    borderLeftColor: 'var(--color-border-light)',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    outline: 'none',
   }
 }
 
