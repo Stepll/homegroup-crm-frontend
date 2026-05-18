@@ -70,6 +70,7 @@ export function AttendanceTablePage() {
   // Mutable state for edits
   const [current, setCurrent] = useState<TableState | null>(null)
   const originalRef = useRef<TableState | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   // Bottom sheet state
   const [colSheet, setColSheet] = useState<string | null>(null) // date string
@@ -87,6 +88,10 @@ export function AttendanceTablePage() {
         const state = cloneTable(d)
         setCurrent(state)
         originalRef.current = cloneTable(d)
+        // Scroll to rightmost (most recent) column after render
+        requestAnimationFrame(() => {
+          if (scrollRef.current) scrollRef.current.scrollLeft = scrollRef.current.scrollWidth
+        })
       })
       .catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))
@@ -267,7 +272,7 @@ export function AttendanceTablePage() {
 
       {/* ── Scrollable table area ── */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative', paddingBottom: isDirty ? 72 : 0 }}>
-        <div style={{ height: '100%', overflowX: 'auto', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div ref={scrollRef} style={{ height: '100%', overflowX: 'auto', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <div style={{ width: totalW, minWidth: '100%', position: 'relative' }}>
 
             {/* ── HEADER ROW: date columns ── */}
