@@ -397,13 +397,20 @@ function CabinetView({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }
                   </div>
                 )}
               </div>
-              {perms['attendance.record'] && (
-                <Button size="small" fill="solid"
-                  style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
-                  onClick={() => navigate(`/cabinet/${groupId}/attendance${attendanceDate ? `?date=${attendanceDate}` : ''}`)}>
-                  Відмітити
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button size="small" fill="outline"
+                  style={{ '--border-color': 'var(--color-border)', '--text-color': 'var(--color-text-secondary)' } as React.CSSProperties}
+                  onClick={() => navigate(`/cabinet/${groupId}/attendance-table`)}>
+                  Таблиця
                 </Button>
-              )}
+                {perms['attendance.record'] && (
+                  <Button size="small" fill="solid"
+                    style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
+                    onClick={() => navigate(`/cabinet/${groupId}/attendance${attendanceDate ? `?date=${attendanceDate}` : ''}`)}>
+                    Відмітити
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

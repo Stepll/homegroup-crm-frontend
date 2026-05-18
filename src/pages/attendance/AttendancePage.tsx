@@ -100,6 +100,7 @@ export function AttendancePage() {
           meetingDate: date,
           guestCount,
           guestInfo: guestInfo.trim() || undefined,
+          isCancelled: false,
         }),
       ])
       Toast.show({ content: 'Збережено!', icon: 'success' })

@@ -8,6 +8,7 @@ import { DashboardSettingsPage } from '@/pages/dashboard/DashboardSettingsPage'
 import { ProfilePage } from '@/pages/profile/ProfilePage'
 import { PeoplePage } from '@/pages/people/PeoplePage'
 import { AttendancePage } from '@/pages/attendance/AttendancePage'
+import { AttendanceTablePage } from '@/pages/attendance/AttendanceTablePage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { AdminsPage } from '@/pages/admins/AdminsPage'
 import { AdminDetailPage } from '@/pages/admins/AdminDetailPage'
@@ -47,6 +48,7 @@ export function App() {
             <Route path="cabinet" element={<ProtectedRoute permission="page.cabinet"><GroupCabinetPage /></ProtectedRoute>} />
             <Route path="cabinet/:id" element={<ProtectedRoute permission="page.cabinet"><GroupCabinetPage /></ProtectedRoute>} />
             <Route path="cabinet/:id/attendance" element={<ProtectedRoute permission="attendance.view"><AttendancePage /></ProtectedRoute>} />
+            <Route path="cabinet/:id/attendance-table" element={<ProtectedRoute permission="attendance.view"><AttendanceTablePage /></ProtectedRoute>} />
             <Route path="cabinet/:id/plan" element={<ProtectedRoute permission="planning.view"><PlanningPage /></ProtectedRoute>} />
             <Route path="cabinet/:id/stats" element={<ProtectedRoute permission="attendance.stats"><StatsPage /></ProtectedRoute>} />
             <Route path="calendar" element={<ProtectedRoute permission="page.calendar"><CalendarPage /></ProtectedRoute>} />

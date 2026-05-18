@@ -289,3 +289,28 @@ export interface AttendanceSummary {
   presentCount: number
   attendanceRate: number
 }
+
+export interface AttendanceTableMeeting {
+  date: string
+  guestCount: number
+  guestInfo: string | null
+  notes: string | null
+  isCancelled: boolean
+  isInDb: boolean
+}
+
+export interface AttendanceTableMember {
+  personId: number | null
+  userId: number | null
+  name: string
+  lastName: string | null
+  joinedAt: string
+  attendanceRate: number
+  attendance: Record<string, boolean>
+}
+
+export interface AttendanceTableResponse {
+  dates: string[]
+  meetings: AttendanceTableMeeting[]
+  members: AttendanceTableMember[]
+}
