@@ -90,7 +90,7 @@ export function PeoplePage() {
         }
         for (const person of people.filter((p) => p.primaryGroupId === gid)) {
           const key = person.isAdmin ? `u_${person.userId}` : `p_${person.id}`
-          const dots: ('green' | 'red' | 'yellow')[] = r.dates.map((date: string) => {
+          const dots: ('green' | 'red' | 'yellow')[] = [...r.dates].reverse().map((date: string) => {
             if (cancelledSet.has(date)) return 'yellow'
             const recKey = person.isAdmin ? `u_${person.userId}_${date}` : `p_${person.id}_${date}`
             const wasPresent = recordMap.get(recKey)
