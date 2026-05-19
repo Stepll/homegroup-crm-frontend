@@ -31,7 +31,12 @@ const DEFAULT_TAGS: TagItem[] = [
 function loadTagSettings(): TagItem[] {
   try {
     const s = localStorage.getItem('people-tag-settings')
-    if (s) return JSON.parse(s) as TagItem[]
+    if (s) {
+      const saved = JSON.parse(s) as TagItem[]
+      const savedKeys = new Set(saved.map((t) => t.key))
+      const merged = [...saved, ...DEFAULT_TAGS.filter((t) => !savedKeys.has(t.key))]
+      return merged
+    }
   } catch {}
   return DEFAULT_TAGS
 }
