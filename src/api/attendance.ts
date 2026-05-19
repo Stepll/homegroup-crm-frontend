@@ -1,6 +1,12 @@
 import { api } from './client'
 import type { AttendanceRecord, AttendanceSummary, AttendanceTableResponse } from '@/types'
 
+export interface AttendanceDotsResponse {
+  dates: string[]
+  cancelledDates: string[]
+  records: { personId?: number; userId?: number; date: string; wasPresent: boolean }[]
+}
+
 export const attendanceApi = {
   getByGroup: (groupId: number, from?: string, to?: string) =>
     api.get<AttendanceRecord[]>('/attendance', { params: { groupId, from, to } }).then((r) => r.data),
@@ -25,4 +31,7 @@ export const attendanceApi = {
 
   getTable: (groupId: number) =>
     api.get<AttendanceTableResponse>(`/groups/${groupId}/attendance-table`).then((r) => r.data),
+
+  getDots: (groupId: number, limit = 5) =>
+    api.get<AttendanceDotsResponse>('/attendance/dots', { params: { groupId, limit } }).then((r) => r.data),
 }
