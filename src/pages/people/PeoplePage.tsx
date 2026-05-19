@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { NavBar, SearchBar, Button, Empty, SpinLoading, Popup, Checkbox } from 'antd-mobile'
 import { peopleApi } from '@/api/people'
 import { groupsApi } from '@/api/groups'
-import { attendanceApi } from '@/api/attendance'
+import { attendanceApi, type AttendanceDotsResponse } from '@/api/attendance'
 import { usePermission } from '@/hooks/usePermission'
 import type { Group, GroupMember } from '@/types'
 
@@ -74,7 +74,7 @@ export function PeoplePage() {
     const attEnabled = tagSettings.some((t) => t.key === 'attendance' && t.enabled)
     if (!attEnabled || people.length === 0) return
     const groupIds = [...new Set(people.map((p) => p.primaryGroupId).filter((id): id is number => id != null))]
-    Promise.all(groupIds.map((gid) => attendanceApi.getDots(gid).then((r) => ({ gid, r })))).then((results) => {
+    Promise.all(groupIds.map((gid) => attendanceApi.getDots(gid).then((r: AttendanceDotsResponse) => ({ gid, r })))).then((results) => {
       const map: Record<string, ('green' | 'red' | 'yellow')[]> = {}
       for (const { gid, r } of results) {
         const cancelledSet = new Set(r.cancelledDates)
@@ -85,7 +85,7 @@ export function PeoplePage() {
         }
         for (const person of people.filter((p) => p.primaryGroupId === gid)) {
           const key = person.isAdmin ? `u_${person.userId}` : `p_${person.id}`
-          const dots: ('green' | 'red' | 'yellow')[] = r.dates.map((date) => {
+          const dots: ('green' | 'red' | 'yellow')[] = r.dates.map((date: string) => {
             if (cancelledSet.has(date)) return 'yellow'
             const recKey = person.isAdmin ? `u_${person.userId}_${date}` : `p_${person.id}_${date}`
             const wasPresent = recordMap.get(recKey)
@@ -241,13 +241,14 @@ function getPersonTags(m: GroupMember, settings: TagItem[]): TagData[] {
     .filter((t): t is TagData => t !== null)
 }
 
+const DOT_COLORS: Record<'green' | 'red' | 'yellow', string> = { green: '#22C55E', red: '#EF4444', yellow: '#F59E0B' }
+
 function AttendanceDotsTag({ dots }: { dots?: ('green' | 'red' | 'yellow')[] }) {
-  const colors = { green: '#22C55E', red: '#EF4444', yellow: '#F59E0B' }
-  const resolved = (dots && dots.length > 0 ? dots : Array(5).fill('red')).slice(0, 5)
+  const resolved: ('green' | 'red' | 'yellow')[] = (dots && dots.length > 0 ? dots : Array(5).fill('red') as ('green' | 'red' | 'yellow')[]).slice(0, 5)
   return (
     <div style={{ ...tagStyle, display: 'flex', gap: 3, alignItems: 'center', padding: '4px 7px', background: 'var(--color-bg)', border: '1px solid var(--color-border-light)', flexShrink: 0 }}>
       {resolved.map((c, i) => (
-        <div key={i} style={{ width: 7, height: 7, borderRadius: 2, background: colors[c], flexShrink: 0 }} />
+        <div key={i} style={{ width: 7, height: 7, borderRadius: 2, background: DOT_COLORS[c], flexShrink: 0 }} />
       ))}
     </div>
   )
