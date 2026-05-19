@@ -5,11 +5,41 @@ import { peopleApi } from '@/api/people'
 import { usePermission } from '@/hooks/usePermission'
 import type { Person, PersonActivity } from '@/types'
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── date helpers ──────────────────────────────────────────────────────────────
+
+function toDateKey(iso: string) {
+  return iso.slice(0, 10)
+}
+
+function fmtDateLabel(iso: string) {
+  const d = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(today.getDate() - 1)
+
+  const sameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+
+  if (sameDay(d, today)) return 'Сьогодні'
+  if (sameDay(d, yesterday)) return 'Вчора'
+  return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
+}
 
 function fmtTime(iso: string) {
-  const d = new Date(iso)
-  return d.toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+}
+
+// ── DateSeparator ─────────────────────────────────────────────────────────────
+
+function DateSeparator({ iso }: { iso: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', margin: '16px 0 8px' }}>
+      <div style={{
+        background: 'rgba(0,0,0,0.07)', borderRadius: 12,
+        padding: '3px 14px', fontSize: 12, color: 'var(--color-text-secondary)', fontWeight: 500,
+      }}>{fmtDateLabel(iso)}</div>
+    </div>
+  )
 }
 
 // ── StatusTag ─────────────────────────────────────────────────────────────────
@@ -26,35 +56,42 @@ function StatusTag({ name, color }: { name: string; color: string }) {
 // ── SystemMessage ─────────────────────────────────────────────────────────────
 
 function SystemMessage({ entry }: { entry: PersonActivity }) {
-  const { oldStatus, newStatus, authorName, createdAt } = entry
-
   let content: React.ReactNode
-  if (!oldStatus && newStatus) {
-    content = <span>Статус встановлено: <StatusTag name={newStatus.name} color={newStatus.color} /></span>
-  } else if (oldStatus && !newStatus) {
-    content = <span>Статус знято: <StatusTag name={oldStatus.name} color={oldStatus.color} /></span>
-  } else if (oldStatus && newStatus) {
-    content = (
-      <span>
-        <StatusTag name={oldStatus.name} color={oldStatus.color} />
-        {' → '}
-        <StatusTag name={newStatus.name} color={newStatus.color} />
-      </span>
-    )
+
+  if (entry.type === 'status_change') {
+    const { oldStatus, newStatus } = entry
+    if (!oldStatus && newStatus) {
+      content = <span>Статус встановлено: <StatusTag name={newStatus.name} color={newStatus.color} /></span>
+    } else if (oldStatus && !newStatus) {
+      content = <span>Статус знято: <StatusTag name={oldStatus.name} color={oldStatus.color} /></span>
+    } else if (oldStatus && newStatus) {
+      content = <span><StatusTag name={oldStatus.name} color={oldStatus.color} />{' → '}<StatusTag name={newStatus.name} color={newStatus.color} /></span>
+    } else {
+      content = <span>Статус змінено</span>
+    }
+  } else if (entry.type === 'oversight_change') {
+    const { oldValue, newValue } = entry
+    if (!oldValue && newValue) {
+      content = <span>Опікун призначений: <b>{newValue}</b></span>
+    } else if (oldValue && !newValue) {
+      content = <span>Опікун знятий: <b>{oldValue}</b></span>
+    } else {
+      content = <span>Опікун змінений: <b>{oldValue}</b>{' → '}<b>{newValue}</b></span>
+    }
   } else {
-    content = <span>Статус змінено</span>
+    content = <span>Зміна</span>
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', margin: '4px 0' }}>
       <div style={{
         background: 'rgba(0,0,0,0.06)', borderRadius: 12,
         padding: '4px 12px', fontSize: 12, color: 'var(--color-text-secondary)',
-        textAlign: 'center', maxWidth: '80%',
+        textAlign: 'center', maxWidth: '84%',
       }}>
         {content}
-        {authorName && <span style={{ color: 'var(--color-text-tertiary)' }}> · {authorName}</span>}
-        <span style={{ color: 'var(--color-text-tertiary)', marginLeft: 4 }}>{fmtTime(createdAt)}</span>
+        {entry.authorName && <span style={{ color: 'var(--color-text-tertiary)' }}> · {entry.authorName}</span>}
+        <span style={{ color: 'var(--color-text-tertiary)', marginLeft: 4 }}>{fmtTime(entry.createdAt)}</span>
       </div>
     </div>
   )
@@ -111,7 +148,7 @@ export function PersonActivityPage() {
     ])
       .then(([p, a]) => {
         setPerson(p)
-        setEntries([...a].reverse()) // API returns desc, we display asc (oldest first)
+        setEntries([...a].reverse())
       })
       .catch(() => Toast.show({ content: 'Помилка завантаження', icon: 'fail' }))
       .finally(() => setLoading(false))
@@ -149,16 +186,32 @@ export function PersonActivityPage() {
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
   }
 
-  const fullName = person ? [person.name, person.lastName].filter(Boolean).join(' ') : 'Людина'
+  const fullName = person ? [person.name, person.lastName].filter(Boolean).join(' ') : ''
+
+  // Insert date separators
+  const renderedItems: React.ReactNode[] = []
+  let lastDateKey = ''
+  for (const entry of entries) {
+    const dk = toDateKey(entry.createdAt)
+    if (dk !== lastDateKey) {
+      renderedItems.push(<DateSeparator key={`date-${dk}`} iso={entry.createdAt} />)
+      lastDateKey = dk
+    }
+    if (entry.type === 'comment') {
+      renderedItems.push(<CommentBubble key={entry.id} entry={entry} />)
+    } else {
+      renderedItems.push(<SystemMessage key={entry.id} entry={entry} />)
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--color-bg)' }}>
       <NavBar onBack={() => navigate(`/people/${personId}`)}>
-        {loading ? 'Активність' : fullName}
+        {fullName || 'Активність'}
       </NavBar>
 
       {/* Feed */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px 8px' }}>
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}>
             <SpinLoading color="primary" />
@@ -171,11 +224,7 @@ export function PersonActivityPage() {
           </div>
         )}
 
-        {entries.map((entry) =>
-          entry.type === 'status_change'
-            ? <SystemMessage key={entry.id} entry={entry} />
-            : <CommentBubble key={entry.id} entry={entry} />
-        )}
+        {renderedItems}
         <div ref={bottomRef} />
       </div>
 

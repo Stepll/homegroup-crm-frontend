@@ -317,11 +317,13 @@ export interface AttendanceTableResponse {
 
 export interface PersonActivity {
   id: number
-  type: 'comment' | 'status_change'
+  type: 'comment' | 'status_change' | 'oversight_change'
   content?: string
   authorId?: number
   authorName?: string
   oldStatus?: { id: number; name: string; color: string } | null
   newStatus?: { id: number; name: string; color: string } | null
+  oldValue?: string | null
+  newValue?: string | null
   createdAt: string
 }
