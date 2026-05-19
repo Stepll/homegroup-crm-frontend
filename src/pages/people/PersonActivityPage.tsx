@@ -97,11 +97,106 @@ function SystemMessage({ entry }: { entry: PersonActivity }) {
   )
 }
 
+// ── ContextMenu ───────────────────────────────────────────────────────────────
+
+interface ContextMenuState {
+  entryId: number
+  x: number
+  y: number
+}
+
+function ContextMenu({ menu, onDelete, onClose }: {
+  menu: ContextMenuState
+  onDelete: (id: number) => void
+  onClose: () => void
+}) {
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Adjust position so menu doesn't overflow screen
+  const menuW = 140
+  const menuH = 44
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const x = Math.min(menu.x, vw - menuW - 8)
+  const y = menu.y + menuH > vh ? menu.y - menuH - 8 : menu.y + 8
+
+  useEffect(() => {
+    const handler = (e: TouchEvent | MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('touchstart', handler)
+    document.addEventListener('mousedown', handler)
+    return () => {
+      document.removeEventListener('touchstart', handler)
+      document.removeEventListener('mousedown', handler)
+    }
+  }, [onClose])
+
+  return (
+    <div
+      ref={menuRef}
+      style={{
+        position: 'fixed', left: x, top: y, zIndex: 1000,
+        background: '#fff', borderRadius: 10,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+        overflow: 'hidden', minWidth: menuW,
+      }}
+    >
+      <button
+        onPointerDown={(e) => { e.stopPropagation(); onDelete(menu.entryId) }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          width: '100%', padding: '10px 16px', border: 'none',
+          background: 'none', cursor: 'pointer', color: 'var(--color-error)',
+          fontSize: 14, fontWeight: 500, WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6M14 11v6" />
+          <path d="M9 6V4h6v2" />
+        </svg>
+        Видалити
+      </button>
+    </div>
+  )
+}
+
 // ── CommentBubble ─────────────────────────────────────────────────────────────
 
-function CommentBubble({ entry }: { entry: PersonActivity }) {
+function CommentBubble({ entry, canEdit, onLongPress }: {
+  entry: PersonActivity
+  canEdit: boolean
+  onLongPress: (id: number, x: number, y: number) => void
+}) {
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!canEdit) return
+    const touch = e.touches[0]
+    pressTimer.current = setTimeout(() => {
+      onLongPress(entry.id, touch.clientX, touch.clientY)
+    }, 400)
+  }
+
+  const handleTouchEnd = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current)
+  }
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!canEdit) return
+    onLongPress(entry.id, e.clientX, e.clientY)
+  }
+
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '4px 0' }}>
+    <div
+      style={{ display: 'flex', justifyContent: 'flex-end', margin: '4px 0' }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchEnd}
+      onClick={handleClick}
+    >
       <div style={{ maxWidth: '75%' }}>
         {entry.authorName && (
           <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', textAlign: 'right', marginBottom: 2, paddingRight: 4 }}>
@@ -112,7 +207,7 @@ function CommentBubble({ entry }: { entry: PersonActivity }) {
           background: 'var(--color-primary)', color: '#fff',
           borderRadius: '16px 16px 4px 16px',
           padding: '8px 12px', fontSize: 14, lineHeight: 1.45,
-          wordBreak: 'break-word',
+          wordBreak: 'break-word', userSelect: 'none',
         }}>
           {entry.content}
         </div>
@@ -137,6 +232,7 @@ export function PersonActivityPage() {
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -173,6 +269,16 @@ export function PersonActivityPage() {
     }
   }
 
+  const handleDelete = async (entryId: number) => {
+    setContextMenu(null)
+    try {
+      await peopleApi.deleteActivity(personId, entryId)
+      setEntries((prev) => prev.filter((e) => e.id !== entryId))
+    } catch {
+      Toast.show({ content: 'Помилка видалення', icon: 'fail' })
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -198,7 +304,14 @@ export function PersonActivityPage() {
       lastDateKey = dk
     }
     if (entry.type === 'comment') {
-      renderedItems.push(<CommentBubble key={entry.id} entry={entry} />)
+      renderedItems.push(
+        <CommentBubble
+          key={entry.id}
+          entry={entry}
+          canEdit={canEdit}
+          onLongPress={(id, x, y) => setContextMenu({ entryId: id, x, y })}
+        />
+      )
     } else {
       renderedItems.push(<SystemMessage key={entry.id} entry={entry} />)
     }
@@ -268,6 +381,15 @@ export function PersonActivityPage() {
             </svg>
           </button>
         </div>
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <ContextMenu
+          menu={contextMenu}
+          onDelete={handleDelete}
+          onClose={() => setContextMenu(null)}
+        />
       )}
     </div>
   )

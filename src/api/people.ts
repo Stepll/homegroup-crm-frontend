@@ -35,4 +35,7 @@ export const peopleApi = {
 
   addComment: (personId: number, content: string) =>
     api.post<PersonActivity>(`/people/${personId}/comments`, { content }).then((r) => r.data),
+
+  deleteActivity: (personId: number, entryId: number) =>
+    api.delete(`/people/${personId}/activity/${entryId}`),
 }
