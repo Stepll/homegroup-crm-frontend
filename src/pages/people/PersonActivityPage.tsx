@@ -110,9 +110,6 @@ function ContextMenu({ menu, onDelete, onClose }: {
   onDelete: (id: number) => void
   onClose: () => void
 }) {
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  // Adjust position so menu doesn't overflow screen
   const menuW = 140
   const menuH = 44
   const vw = window.innerWidth
@@ -120,46 +117,41 @@ function ContextMenu({ menu, onDelete, onClose }: {
   const x = Math.min(menu.x, vw - menuW - 8)
   const y = menu.y + menuH > vh ? menu.y - menuH - 8 : menu.y + 8
 
-  useEffect(() => {
-    const handler = (e: TouchEvent | MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose()
-    }
-    document.addEventListener('touchstart', handler)
-    document.addEventListener('mousedown', handler)
-    return () => {
-      document.removeEventListener('touchstart', handler)
-      document.removeEventListener('mousedown', handler)
-    }
-  }, [onClose])
-
   return (
-    <div
-      ref={menuRef}
-      style={{
-        position: 'fixed', left: x, top: y, zIndex: 1000,
-        background: '#fff', borderRadius: 10,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
-        overflow: 'hidden', minWidth: menuW,
-      }}
-    >
-      <button
-        onPointerDown={(e) => { e.stopPropagation(); onDelete(menu.entryId) }}
+    <>
+      {/* Backdrop — captures outside taps without letting them fall through */}
+      <div
+        style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+        onPointerDown={onClose}
+      />
+      <div
         style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          width: '100%', padding: '10px 16px', border: 'none',
-          background: 'none', cursor: 'pointer', color: 'var(--color-error)',
-          fontSize: 14, fontWeight: 500, WebkitTapHighlightColor: 'transparent',
+          position: 'fixed', left: x, top: y, zIndex: 1000,
+          background: '#fff', borderRadius: 10,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
+          overflow: 'hidden', minWidth: menuW,
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-          <path d="M10 11v6M14 11v6" />
-          <path d="M9 6V4h6v2" />
-        </svg>
-        Видалити
-      </button>
-    </div>
+        <button
+          onTouchEnd={(e) => { e.preventDefault(); onDelete(menu.entryId) }}
+          onClick={(e) => { e.stopPropagation(); onDelete(menu.entryId) }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            width: '100%', padding: '10px 16px', border: 'none',
+            background: 'none', cursor: 'pointer', color: 'var(--color-error)',
+            fontSize: 14, fontWeight: 500, WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4h6v2" />
+          </svg>
+          Видалити
+        </button>
+      </div>
+    </>
   )
 }
 
@@ -233,6 +225,7 @@ export function PersonActivityPage() {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+  const menuJustClosedRef = useRef(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -269,8 +262,14 @@ export function PersonActivityPage() {
     }
   }
 
-  const handleDelete = async (entryId: number) => {
+  const closeMenu = () => {
     setContextMenu(null)
+    menuJustClosedRef.current = true
+    setTimeout(() => { menuJustClosedRef.current = false }, 400)
+  }
+
+  const handleDelete = async (entryId: number) => {
+    closeMenu()
     try {
       await peopleApi.deleteActivity(personId, entryId)
       setEntries((prev) => prev.filter((e) => e.id !== entryId))
@@ -309,7 +308,10 @@ export function PersonActivityPage() {
           key={entry.id}
           entry={entry}
           canEdit={canEdit}
-          onLongPress={(id, x, y) => setContextMenu({ entryId: id, x, y })}
+          onLongPress={(id, x, y) => {
+            if (menuJustClosedRef.current) return
+            setContextMenu({ entryId: id, x, y })
+          }}
         />
       )
     } else {
@@ -388,7 +390,7 @@ export function PersonActivityPage() {
         <ContextMenu
           menu={contextMenu}
           onDelete={handleDelete}
-          onClose={() => setContextMenu(null)}
+          onClose={closeMenu}
         />
       )}
     </div>
