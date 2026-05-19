@@ -106,7 +106,7 @@ export function AdminTasksBlock({ adminId }: Props) {
                 {/* Title row */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                   <span style={{
-                    flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--color-text)',
+                    flex: 1, fontSize: 14, fontWeight: 600,
                     textDecoration: task.isCompleted ? 'line-through' : 'none',
                     color: task.isCompleted ? 'var(--color-text-secondary)' : 'var(--color-text)',
                   }}>{task.title}</span>
