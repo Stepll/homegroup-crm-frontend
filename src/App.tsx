@@ -56,7 +56,6 @@ export function App() {
             <Route path="people" element={<ProtectedRoute permission="page.people"><PeoplePage /></ProtectedRoute>} />
             <Route path="people/new" element={<ProtectedRoute permission="people.create"><PersonCreatePage /></ProtectedRoute>} />
             <Route path="people/:id" element={<ProtectedRoute permission="people.view"><PersonDetailPage /></ProtectedRoute>} />
-            <Route path="people/:id/activity" element={<ProtectedRoute permission="people.view"><PersonActivityPage /></ProtectedRoute>} />
             <Route path="admins/:id" element={<ProtectedRoute permission="admins.viewProfiles"><AdminProfilePage /></ProtectedRoute>} />
             <Route path="settings" element={<ProtectedRoute permission="page.settings"><SettingsPage /></ProtectedRoute>} />
             <Route path="settings/admins" element={<ProtectedRoute permission="settings.admins"><AdminsPage /></ProtectedRoute>} />
@@ -71,6 +70,7 @@ export function App() {
             <Route path="settings/rooms" element={<ProtectedRoute permission="settings.rooms"><RoomsSettingsPage /></ProtectedRoute>} />
             <Route path="settings/rooms/:id" element={<ProtectedRoute permission="settings.rooms"><RoomFormPage /></ProtectedRoute>} />
           </Route>
+          <Route path="people/:id/activity" element={<ProtectedRoute permission="people.view"><PersonActivityPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
