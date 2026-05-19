@@ -5,6 +5,7 @@ import { adminsApi } from '@/api/admins'
 import { attendanceApi } from '@/api/attendance'
 import { groupsApi } from '@/api/groups'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
+import { AdminTasksBlock } from '@/components/AdminTasksBlock'
 import { usePermission } from '@/hooks/usePermission'
 import type { Admin, Group, AttendanceRecord } from '@/types'
 
@@ -128,6 +129,8 @@ export function AdminProfilePage() {
       </div>
 
       <div style={{ padding: '0 16px' }}>
+
+        <AdminTasksBlock adminId={adminId} />
 
         <BlockCard title="Особиста інформація">
           <InfoRow label="Дата народження">{admin.dateOfBirth ?? '—'}</InfoRow>

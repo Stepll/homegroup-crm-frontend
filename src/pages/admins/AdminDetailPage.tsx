@@ -8,6 +8,7 @@ import { groupsApi } from '@/api/groups'
 import { rolesApi } from '@/api/roles'
 import { personStatusesApi, type PersonStatus } from '@/api/personStatuses'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
+import { AdminTasksBlock } from '@/components/AdminTasksBlock'
 import type { Admin, Group, AttendanceRecord } from '@/types'
 import type { Role } from '@/api/roles'
 
@@ -316,6 +317,8 @@ export function AdminDetailPage() {
             )}
           </div>
         </div>
+
+        <AdminTasksBlock adminId={adminId} />
 
         {/* Block 2: Personal info */}
         <BlockCard title="Особиста інформація" onEdit={() => {

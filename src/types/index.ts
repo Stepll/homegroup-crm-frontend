@@ -315,6 +315,16 @@ export interface AttendanceTableResponse {
   members: AttendanceTableMember[]
 }
 
+export interface AdminTask {
+  id: number
+  title: string
+  description?: string
+  isCompleted: boolean
+  createdByUserId?: number
+  createdByName?: string
+  createdAt: string
+}
+
 export interface PersonActivity {
   id: number
   type: 'comment' | 'status_change' | 'oversight_change'

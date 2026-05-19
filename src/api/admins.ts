@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Admin } from '@/types'
+import type { Admin, AdminTask } from '@/types'
 import type { WidgetConfig } from '@/pages/dashboard/widgetRegistry'
 
 export interface CreateAdminData {
@@ -48,4 +48,15 @@ export const adminsApi = {
   remove: (id: number) => api.delete(`/admins/${id}`),
   getDashboardConfig: () => api.get<WidgetConfig[]>('/admins/me/dashboard').then((r) => r.data),
   saveDashboardConfig: (config: WidgetConfig[]) => api.put('/admins/me/dashboard', { config }),
+
+  getTasks: (adminId: number) =>
+    api.get<AdminTask[]>(`/admins/${adminId}/tasks`).then((r) => r.data),
+  createTask: (adminId: number, title: string, description?: string) =>
+    api.post<AdminTask>(`/admins/${adminId}/tasks`, { title, description }).then((r) => r.data),
+  updateTask: (adminId: number, taskId: number, title: string, description?: string) =>
+    api.put<AdminTask>(`/admins/${adminId}/tasks/${taskId}`, { title, description }).then((r) => r.data),
+  toggleTask: (adminId: number, taskId: number) =>
+    api.patch<AdminTask>(`/admins/${adminId}/tasks/${taskId}/toggle`).then((r) => r.data),
+  deleteTask: (adminId: number, taskId: number) =>
+    api.delete(`/admins/${adminId}/tasks/${taskId}`),
 }
