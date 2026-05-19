@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { NavBar, SearchBar, Button, Empty, SpinLoading, Popup, Checkbox } from 'antd-mobile'
 import { peopleApi } from '@/api/people'
 import { groupsApi } from '@/api/groups'
+import { attendanceApi } from '@/api/attendance'
 import { usePermission } from '@/hooks/usePermission'
 import type { Group, GroupMember } from '@/types'
 
 // ── Tag settings ────────────────────────────────────────────────────────────
 
-type TagKey = 'role' | 'group' | 'status' | 'oversight'
+type TagKey = 'role' | 'group' | 'status' | 'oversight' | 'attendance'
 interface TagItem { key: TagKey; enabled: boolean }
 
 const TAG_LABELS: Record<TagKey, string> = {
@@ -16,6 +17,7 @@ const TAG_LABELS: Record<TagKey, string> = {
   group: 'Домашка',
   status: 'Статус',
   oversight: 'Опікун',
+  attendance: 'Відвідуваність',
 }
 
 const DEFAULT_TAGS: TagItem[] = [
@@ -23,6 +25,7 @@ const DEFAULT_TAGS: TagItem[] = [
   { key: 'group', enabled: true },
   { key: 'status', enabled: false },
   { key: 'oversight', enabled: false },
+  { key: 'attendance', enabled: false },
 ]
 
 function loadTagSettings(): TagItem[] {
@@ -50,6 +53,8 @@ export function PeoplePage() {
   const [groupsDrawerVisible, setGroupsDrawerVisible] = useState(false)
   const [tagSettingsVisible, setTagSettingsVisible] = useState(false)
   const [tagSettings, setTagSettings] = useState<TagItem[]>(loadTagSettings)
+  // key: "p_{personId}" or "u_{userId}", value: dot colors
+  const [attDots, setAttDots] = useState<Record<string, ('green' | 'red' | 'yellow')[]>>({})
 
   useEffect(() => {
     groupsApi.getAll().then((gs) => {
@@ -64,6 +69,35 @@ export function PeoplePage() {
       .then(setPeople)
       .finally(() => setLoading(false))
   }, [search, showAdmins, myOversight])
+
+  useEffect(() => {
+    const attEnabled = tagSettings.some((t) => t.key === 'attendance' && t.enabled)
+    if (!attEnabled || people.length === 0) return
+    const groupIds = [...new Set(people.map((p) => p.primaryGroupId).filter((id): id is number => id != null))]
+    Promise.all(groupIds.map((gid) => attendanceApi.getDots(gid).then((r) => ({ gid, r })))).then((results) => {
+      const map: Record<string, ('green' | 'red' | 'yellow')[]> = {}
+      for (const { gid, r } of results) {
+        const cancelledSet = new Set(r.cancelledDates)
+        const recordMap = new Map<string, boolean>()
+        for (const rec of r.records) {
+          const k = rec.personId != null ? `p_${rec.personId}_${rec.date}` : `u_${rec.userId}_${rec.date}`
+          recordMap.set(k, rec.wasPresent)
+        }
+        for (const person of people.filter((p) => p.primaryGroupId === gid)) {
+          const key = person.isAdmin ? `u_${person.userId}` : `p_${person.id}`
+          const dots: ('green' | 'red' | 'yellow')[] = r.dates.map((date) => {
+            if (cancelledSet.has(date)) return 'yellow'
+            const recKey = person.isAdmin ? `u_${person.userId}_${date}` : `p_${person.id}_${date}`
+            const wasPresent = recordMap.get(recKey)
+            return wasPresent === true ? 'green' : 'red'
+          })
+          while (dots.length < 5) dots.push('red')
+          map[key] = dots.slice(0, 5)
+        }
+      }
+      setAttDots(map)
+    })
+  }, [people, tagSettings])
 
   const handleItemClick = (m: GroupMember) => {
     if (m.isAdmin) { if (canViewAdminProfiles) navigate(`/admins/${m.userId}`) }
@@ -131,6 +165,7 @@ export function PeoplePage() {
                 key={key}
                 m={m}
                 tagSettings={tagSettings}
+                attDots={attDots[key]}
                 hasArrow={hasArrow}
                 onClick={() => handleItemClick(m)}
               />
@@ -182,10 +217,12 @@ export function PeoplePage() {
 
 // ── PersonRow ────────────────────────────────────────────────────────────────
 
-function getPersonTags(m: GroupMember, settings: TagItem[]) {
+type TagData = { key: string; label: string; color: string } | { key: 'attendance'; dots: true }
+
+function getPersonTags(m: GroupMember, settings: TagItem[]): TagData[] {
   return settings
     .filter((s) => s.enabled)
-    .map((s) => {
+    .map((s): TagData | null => {
       switch (s.key) {
         case 'role':
           return m.roleTag ? { key: 'role', label: m.roleTag.name, color: m.roleTag.color } : null
@@ -195,16 +232,31 @@ function getPersonTags(m: GroupMember, settings: TagItem[]) {
           return m.status ? { key: 'status', label: m.status.name, color: m.status.color } : null
         case 'oversight':
           return m.oversightUserName ? { key: 'oversight', label: m.oversightUserName, color: '#6B7280' } : null
+        case 'attendance':
+          return { key: 'attendance', dots: true }
         default:
           return null
       }
     })
-    .filter((t): t is { key: string; label: string; color: string } => t !== null)
+    .filter((t): t is TagData => t !== null)
 }
 
-function PersonRow({ m, tagSettings, hasArrow, onClick }: {
+function AttendanceDotsTag({ dots }: { dots?: ('green' | 'red' | 'yellow')[] }) {
+  const colors = { green: '#22C55E', red: '#EF4444', yellow: '#F59E0B' }
+  const resolved = (dots && dots.length > 0 ? dots : Array(5).fill('red')).slice(0, 5)
+  return (
+    <div style={{ ...tagStyle, display: 'flex', gap: 3, alignItems: 'center', padding: '4px 7px', background: 'var(--color-bg)', border: '1px solid var(--color-border-light)', flexShrink: 0 }}>
+      {resolved.map((c, i) => (
+        <div key={i} style={{ width: 7, height: 7, borderRadius: 2, background: colors[c], flexShrink: 0 }} />
+      ))}
+    </div>
+  )
+}
+
+function PersonRow({ m, tagSettings, attDots, hasArrow, onClick }: {
   m: GroupMember
   tagSettings: TagItem[]
+  attDots?: ('green' | 'red' | 'yellow')[]
   hasArrow: boolean
   onClick: () => void
 }) {
@@ -230,11 +282,15 @@ function PersonRow({ m, tagSettings, hasArrow, onClick }: {
 
       {/* Tags — 60% */}
       <div style={{ width: '60%', flexShrink: 0, display: 'flex', gap: 4, overflow: 'hidden', alignItems: 'center' }}>
-        {tags.map((t) => (
-          <span key={t.key} style={{ ...tagStyle, color: t.color, background: `${t.color}18`, flexShrink: 0 }}>
-            {t.label}
-          </span>
-        ))}
+        {tags.map((t) =>
+          'dots' in t ? (
+            <AttendanceDotsTag key="attendance" dots={attDots} />
+          ) : (
+            <span key={t.key} style={{ ...tagStyle, color: t.color, background: `${t.color}18`, flexShrink: 0 }}>
+              {t.label}
+            </span>
+          )
+        )}
       </div>
 
       {/* Arrow — 10% */}
