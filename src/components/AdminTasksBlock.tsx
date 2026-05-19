@@ -84,7 +84,19 @@ export function AdminTasksBlock({ adminId }: Props) {
       <div style={block}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={blockLabel}>Задачі</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={blockLabel}>Задачі</span>
+            {tasks.filter((t) => !t.isCompleted).length > 0 && (
+              <span style={{
+                background: 'var(--color-error)', color: '#fff',
+                borderRadius: '50%', minWidth: 18, height: 18,
+                fontSize: 11, fontWeight: 700, lineHeight: '18px',
+                textAlign: 'center', padding: '0 4px',
+              }}>
+                {tasks.filter((t) => !t.isCompleted).length}
+              </span>
+            )}
+          </div>
           <button onClick={openAdd} style={{ ...iconBtn, color: 'var(--color-primary)' }}>
             <AddOutline style={{ fontSize: 18 }} />
           </button>
