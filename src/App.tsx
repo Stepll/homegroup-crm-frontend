@@ -24,6 +24,7 @@ import { RoomsSettingsPage } from '@/pages/settings/RoomsSettingsPage'
 import { RoomFormPage } from '@/pages/settings/RoomFormPage'
 import { PersonCreatePage } from '@/pages/people/PersonCreatePage'
 import { PersonDetailPage } from '@/pages/people/PersonDetailPage'
+import { PersonActivityPage } from '@/pages/people/PersonActivityPage'
 import { GroupCabinetPage } from '@/pages/cabinet/GroupCabinetPage'
 import { PlanningPage } from '@/pages/cabinet/PlanningPage'
 import { StatsPage } from '@/pages/cabinet/StatsPage'
@@ -55,6 +56,7 @@ export function App() {
             <Route path="people" element={<ProtectedRoute permission="page.people"><PeoplePage /></ProtectedRoute>} />
             <Route path="people/new" element={<ProtectedRoute permission="people.create"><PersonCreatePage /></ProtectedRoute>} />
             <Route path="people/:id" element={<ProtectedRoute permission="people.view"><PersonDetailPage /></ProtectedRoute>} />
+            <Route path="people/:id/activity" element={<ProtectedRoute permission="people.view"><PersonActivityPage /></ProtectedRoute>} />
             <Route path="admins/:id" element={<ProtectedRoute permission="admins.viewProfiles"><AdminProfilePage /></ProtectedRoute>} />
             <Route path="settings" element={<ProtectedRoute permission="page.settings"><SettingsPage /></ProtectedRoute>} />
             <Route path="settings/admins" element={<ProtectedRoute permission="settings.admins"><AdminsPage /></ProtectedRoute>} />

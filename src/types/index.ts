@@ -314,3 +314,14 @@ export interface AttendanceTableResponse {
   meetings: AttendanceTableMeeting[]
   members: AttendanceTableMember[]
 }
+
+export interface PersonActivity {
+  id: number
+  type: 'comment' | 'status_change'
+  content?: string
+  authorId?: number
+  authorName?: string
+  oldStatus?: { id: number; name: string; color: string } | null
+  newStatus?: { id: number; name: string; color: string } | null
+  createdAt: string
+}

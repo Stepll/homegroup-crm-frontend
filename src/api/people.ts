@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Person, CustomField, GroupMember } from '@/types'
+import type { Person, CustomField, GroupMember, PersonActivity } from '@/types'
 
 export const peopleApi = {
   getAll: (search?: string, noGroup?: boolean, includeAdmins?: boolean, myOversight?: boolean) =>
@@ -29,4 +29,10 @@ export const peopleApi = {
 
   deleteCustomField: (personId: number, fieldId: number) =>
     api.delete(`/people/${personId}/custom-fields/${fieldId}`),
+
+  getActivity: (personId: number) =>
+    api.get<PersonActivity[]>(`/people/${personId}/activity`).then((r) => r.data),
+
+  addComment: (personId: number, content: string) =>
+    api.post<PersonActivity>(`/people/${personId}/comments`, { content }).then((r) => r.data),
 }
