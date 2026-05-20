@@ -18,7 +18,7 @@ export function useCabinetData(groupId: number) {
         groupsApi.getCabinet(groupId),
         groupsApi.getEvents(groupId),
         roomsApi.getAll(),
-        groupsApi.getNotifSettings(groupId),
+        groupsApi.getNotifSettings(groupId).catch(() => null),
       ])
       setCabinet(cab)
       setEvents(evts)
