@@ -1,6 +1,8 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { AppOutline, UserOutline, SetOutline } from 'antd-mobile-icons'
 import { useAuth } from '@/store/auth'
+import { useIsDesktop } from '@/hooks/useIsDesktop'
+import { DesktopLayout } from '@/components/DesktopLayout'
 import type { FC } from 'react'
 
 function ProfileIcon() {
@@ -37,6 +39,9 @@ const ALL_TABS: { key: string; title: string; icon: FC; permission?: string }[] 
 ]
 
 export function AppLayout() {
+  const isDesktop = useIsDesktop()
+  if (isDesktop) return <DesktopLayout />
+
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { hasPermission } = useAuth()
