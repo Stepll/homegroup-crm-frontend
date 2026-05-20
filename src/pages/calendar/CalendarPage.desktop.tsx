@@ -399,19 +399,19 @@ export function CalendarPageDesktop() {
   const now = new Date()
   const nowMin = now.getHours() * 60 + now.getMinutes()
 
-  // Mon–Fri of the week
-  const weekDays = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i))
+  // Mon–Sun of the week
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
-  // Header label: "21–25 Тра 2025" or "28 Тра – 1 Чер 2025" (cross-month)
+  // Header label: "21–27 Тра 2025" or "28 Тра – 3 Чер 2025" (cross-month)
   const weekLabel = (() => {
-    const fri = weekDays[4]
+    const sun = weekDays[6]
     const monMonth = weekStart.getMonth()
-    const friMonth = fri.getMonth()
+    const sunMonth = sun.getMonth()
     const year = weekStart.getFullYear()
-    if (monMonth === friMonth) {
-      return `${weekStart.getDate()}–${fri.getDate()} ${UKR_MONTHS_SHORT[monMonth]} ${year}`
+    if (monMonth === sunMonth) {
+      return `${weekStart.getDate()}–${sun.getDate()} ${UKR_MONTHS_SHORT[monMonth]} ${year}`
     }
-    return `${weekStart.getDate()} ${UKR_MONTHS_SHORT[monMonth]} – ${fri.getDate()} ${UKR_MONTHS_SHORT[friMonth]} ${year}`
+    return `${weekStart.getDate()} ${UKR_MONTHS_SHORT[monMonth]} – ${sun.getDate()} ${UKR_MONTHS_SHORT[sunMonth]} ${year}`
   })()
 
   const defaultFormDate = formatDate(weekDays.find((d) => isSameDay(d, today)) ?? weekDays[0])

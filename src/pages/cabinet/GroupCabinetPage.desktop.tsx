@@ -292,7 +292,7 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
           >
             {events.length === 0 ? (
               <Text type="secondary">Немає запланованих подій</Text>
-            ) : events.map((ev) => (
+            ) : <div style={{ maxHeight: 320, overflowY: 'auto' }}>{events.map((ev) => (
               <Flex key={ev.id} align="center" justify="space-between" style={{ padding: '8px 0', borderBottom: '1px solid var(--color-border-light)' }}>
                 <div style={{ flex: 1, background: ev.daysUntil <= 7 ? 'rgba(52,199,89,0.06)' : 'transparent', borderRadius: 6, padding: '2px 6px' }}>
                   <Text strong>{ev.name}</Text>
@@ -315,7 +315,7 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
                   )}
                 </Flex>
               </Flex>
-            ))}
+            ))}</div>}
           </Card>
 
           {/* Org team */}
