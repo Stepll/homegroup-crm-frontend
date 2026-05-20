@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { NavBar, Toast, SpinLoading, Popup, Button, Switch, Dialog } from 'antd-mobile'
 import { attendanceApi } from '@/api/attendance'
+import { usePermissions } from '@/hooks/usePermission'
 import type { AttendanceTableMember, AttendanceTableResponse } from '@/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ export function AttendanceTablePageMobile() {
   const { id } = useParams<{ id: string }>()
   const groupId = Number(id)
   const navigate = useNavigate()
+  const perms = usePermissions(['people.view', 'admins.viewProfiles'])
 
   const [data, setData] = useState<AttendanceTableResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -382,7 +384,13 @@ export function AttendanceTablePageMobile() {
                     gap: 0,
                     padding: '4px 8px 4px 12px',
                   }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.2, maxWidth: NAME_W - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span
+                      onClick={() => {
+                        if (m.userId != null && perms['admins.viewProfiles']) navigate(`/admins/${m.userId}`)
+                        else if (m.personId != null && perms['people.view']) navigate(`/people/${m.personId}`)
+                      }}
+                      style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.2, maxWidth: NAME_W - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: (m.userId != null && perms['admins.viewProfiles']) || (m.personId != null && perms['people.view']) ? 'pointer' : 'default' }}
+                    >
                       {fullName}
                     </span>
                     <span style={{ fontSize: 10, color: rate >= 70 ? '#16a34a' : rate >= 40 ? '#d97706' : 'var(--color-error)' }}>

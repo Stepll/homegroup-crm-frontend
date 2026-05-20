@@ -533,21 +533,25 @@ function MeetingTimeline({ events, meetingStartTime, meetingEndTime, rooms, book
 function OrgMemberRow({ member }: { member: GroupCabinet['orgTeam'][0] }) {
   const navigate = useNavigate()
   const canViewPeople = usePermission('people.view')
+  const canViewAdmins = usePermission('admins.viewProfiles')
   const [open, setOpen] = useState(false)
   const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
 
   return (
     <div style={{ marginTop: 10 }}>
-      <button onClick={() => setOpen((v) => !v)} style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{fullName}</span>
-            {member.role && <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 6, padding: '1px 6px', color: member.role.color, background: `${member.role.color}20` }}>{member.role.name}</span>}
-            <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>{member.overseeCount} під опікою</span>
-          </div>
-          <span style={{ color: 'var(--color-text-tertiary)', fontSize: 14 }}>{open ? <UpOutline /> : <DownOutline />}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+          <span
+            onClick={() => { if (canViewAdmins) navigate(`/admins/${member.id}`) }}
+            style={{ fontSize: 14, fontWeight: 600, color: canViewAdmins ? 'var(--color-primary)' : 'var(--color-text)', cursor: canViewAdmins ? 'pointer' : 'default' }}
+          >{fullName}</span>
+          {member.role && <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 6, padding: '1px 6px', color: member.role.color, background: `${member.role.color}20` }}>{member.role.name}</span>}
+          <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>{member.overseeCount} під опікою</span>
         </div>
-      </button>
+        <button onClick={() => setOpen((v) => !v)} style={{ background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'var(--color-text-tertiary)', fontSize: 14, flexShrink: 0 }}>
+          {open ? <UpOutline /> : <DownOutline />}
+        </button>
+      </div>
       {open && member.oversees.length > 0 && (
         <div style={{ marginTop: 6, paddingLeft: 12, borderLeft: '2px solid var(--color-border-light)' }}>
           {member.oversees.map((p) => (

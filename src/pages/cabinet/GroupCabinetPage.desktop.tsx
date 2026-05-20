@@ -483,18 +483,23 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
 function OrgMemberRowDesktop({ member }: { member: GroupCabinet['orgTeam'][0] }) {
   const navigate = useNavigate()
   const canViewPeople = usePermission('people.view')
+  const canViewAdmins = usePermission('admins.viewProfiles')
   const [open, setOpen] = useState(false)
   const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
 
   return (
     <div style={{ marginBottom: 8 }}>
-      <Flex align="center" justify="space-between" style={{ cursor: 'pointer', padding: '6px 0' }} onClick={() => setOpen((v) => !v)}>
-        <Flex align="center" gap={8} wrap="wrap">
-          <Text strong>{fullName}</Text>
+      <Flex align="center" justify="space-between" style={{ padding: '6px 0' }}>
+        <Flex align="center" gap={8} wrap="wrap" style={{ flex: 1 }}>
+          <Text
+            strong
+            onClick={() => { if (canViewAdmins) navigate(`/admins/${member.id}`) }}
+            style={{ cursor: canViewAdmins ? 'pointer' : 'default', color: canViewAdmins ? 'var(--color-primary)' : undefined }}
+          >{fullName}</Text>
           {member.role && <Tag style={{ background: `${member.role.color}20`, color: member.role.color, border: 'none' }}>{member.role.name}</Tag>}
           <Text type="secondary" style={{ fontSize: 13 }}>{member.overseeCount} під опікою</Text>
         </Flex>
-        {open ? <UpOutlined style={{ color: 'var(--color-text-tertiary)' }} /> : <DownOutlined style={{ color: 'var(--color-text-tertiary)' }} />}
+        <Button type="text" size="small" icon={open ? <UpOutlined /> : <DownOutlined />} onClick={() => setOpen((v) => !v)} style={{ color: 'var(--color-text-tertiary)' }} />
       </Flex>
       {open && (
         <div style={{ paddingLeft: 16, borderLeft: '2px solid var(--color-border-light)', marginTop: 4 }}>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Typography, Space, Modal, Switch, InputNumber, Input, Spin } from 'antd'
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
 import { attendanceApi } from '@/api/attendance'
+import { usePermissions } from '@/hooks/usePermission'
 import type { AttendanceTableMember, AttendanceTableResponse } from '@/types'
 
 const { Title, Text } = Typography
@@ -64,6 +65,7 @@ export function AttendanceTablePageDesktop() {
   const { id } = useParams<{ id: string }>()
   const groupId = Number(id)
   const navigate = useNavigate()
+  const perms = usePermissions(['people.view', 'admins.viewProfiles'])
 
   const [data, setData] = useState<AttendanceTableResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -370,7 +372,13 @@ export function AttendanceTablePageDesktop() {
                     borderRight: '2px solid rgba(0,0,0,0.08)',
                     height: ROW_H,
                   }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: NAME_W - 24 }}>
+                    <span
+                      onClick={() => {
+                        if (m.userId != null && perms['admins.viewProfiles']) navigate(`/admins/${m.userId}`)
+                        else if (m.personId != null && perms['people.view']) navigate(`/people/${m.personId}`)
+                      }}
+                      style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: NAME_W - 24, cursor: (m.userId != null && perms['admins.viewProfiles']) || (m.personId != null && perms['people.view']) ? 'pointer' : 'default' }}
+                    >
                       {fullName}
                     </span>
                     <span style={{ fontSize: 11, color: rate >= 70 ? '#16a34a' : rate >= 40 ? '#d97706' : '#ef4444' }}>
