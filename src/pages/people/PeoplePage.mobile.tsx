@@ -30,6 +30,7 @@ export function PeoplePageMobile() {
 
   const [groupsDrawerVisible, setGroupsDrawerVisible] = useState(false)
   const [tagSettingsVisible, setTagSettingsVisible] = useState(false)
+  const [dotsPopupData, setDotsPopupData] = useState<DotEntry[] | null>(null)
 
   return (
     <div>
@@ -96,6 +97,7 @@ export function PeoplePageMobile() {
                 attDots={attDots[key]}
                 hasArrow={hasArrow}
                 onClick={() => handleItemClick(m)}
+                onExpandDots={(dots) => setDotsPopupData(dots)}
               />
             )
           })}
@@ -137,6 +139,17 @@ export function PeoplePageMobile() {
         settings={tagSettings}
         onChange={updateTagSettings}
       />
+
+      <Popup visible={dotsPopupData !== null} onMaskClick={() => setDotsPopupData(null)} bodyStyle={{ borderRadius: '12px 12px 0 0', padding: '16px 20px 28px' }}>
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Відвідуваність</div>
+        {(dotsPopupData ?? []).map((d, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: DOT_COLORS[d.color], flexShrink: 0 }} />
+            <span style={{ fontSize: 14, color: 'var(--color-text-secondary)', minWidth: 44 }}>{formatDotDate(d.date)}</span>
+            <span style={{ fontSize: 14, color: d.color === 'green' ? '#22C55E' : d.color === 'yellow' ? '#F59E0B' : '#EF4444' }}>{DOT_LABELS[d.color]}</span>
+          </div>
+        ))}
+      </Popup>
     </div>
   )
 }
@@ -169,43 +182,30 @@ function formatDotDate(iso: string) {
   return `${d}.${m}`
 }
 
-function AttendanceDotsTag({ dots }: { dots?: DotEntry[] }) {
-  const [open, setOpen] = useState(false)
+function AttendanceDotsTag({ dots, onExpand }: { dots?: DotEntry[]; onExpand: (dots: DotEntry[]) => void }) {
   const hasData = dots && dots.length > 0
-  const shown = hasData ? dots.slice(0, 5) : []
   return (
-    <>
-      <div
-        onClick={(e) => { e.stopPropagation(); if (hasData) setOpen(true) }}
-        style={{ ...tagStyle, display: 'flex', gap: 4, alignItems: 'center', padding: '4px 8px', background: 'var(--color-bg)', border: '1px solid var(--color-border-light)', flexShrink: 0, cursor: hasData ? 'pointer' : 'default' }}
-      >
-        {hasData
-          ? shown.map((d, i) => (
-              <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: DOT_COLORS[d.color], flexShrink: 0 }} />
-            ))
-          : <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>—</span>
-        }
-      </div>
-      <Popup visible={open} onMaskClick={() => setOpen(false)} bodyStyle={{ borderRadius: '12px 12px 0 0', padding: '16px 20px 28px' }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Відвідуваність</div>
-        {shown.map((d, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: DOT_COLORS[d.color], flexShrink: 0 }} />
-            <span style={{ fontSize: 14, color: 'var(--color-text-secondary)', minWidth: 44 }}>{formatDotDate(d.date)}</span>
-            <span style={{ fontSize: 14, color: d.color === 'green' ? '#22C55E' : d.color === 'yellow' ? '#F59E0B' : '#EF4444' }}>{DOT_LABELS[d.color]}</span>
-          </div>
-        ))}
-      </Popup>
-    </>
+    <div
+      onClick={(e) => { e.stopPropagation(); if (hasData) onExpand(dots) }}
+      style={{ ...tagStyle, display: 'flex', gap: 4, alignItems: 'center', padding: '4px 8px', background: 'var(--color-bg)', border: '1px solid var(--color-border-light)', flexShrink: 0, cursor: hasData ? 'pointer' : 'default' }}
+    >
+      {hasData
+        ? dots.slice(0, 5).map((d, i) => (
+            <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: DOT_COLORS[d.color], flexShrink: 0 }} />
+          ))
+        : <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>—</span>
+      }
+    </div>
   )
 }
 
-function PersonRow({ m, tagSettings, attDots, hasArrow, onClick }: {
+function PersonRow({ m, tagSettings, attDots, hasArrow, onClick, onExpandDots }: {
   m: GroupMember
   tagSettings: TagItem[]
   attDots?: DotEntry[]
   hasArrow: boolean
   onClick: () => void
+  onExpandDots: (dots: DotEntry[]) => void
 }) {
   const fullName = [m.name, m.lastName].filter(Boolean).join(' ')
   const tags = getPersonTags(m, tagSettings)
@@ -221,7 +221,7 @@ function PersonRow({ m, tagSettings, attDots, hasArrow, onClick }: {
       <div style={{ width: '60%', flexShrink: 0, display: 'flex', gap: 4, overflow: 'hidden', alignItems: 'center' }}>
         {tags.map((t) =>
           'dots' in t ? (
-            <AttendanceDotsTag key="attendance" dots={attDots} />
+            <AttendanceDotsTag key="attendance" dots={attDots} onExpand={onExpandDots} />
           ) : (
             <span key={t.key} style={{ ...tagStyle, color: t.color, background: `${t.color}18`, flexShrink: 0 }}>
               {t.label}
