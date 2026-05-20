@@ -55,9 +55,9 @@ function EventBlock({ ev, onClick }: { ev: Laid; onClick: () => void }) {
           {ev.startTime}{ev.endTime ? `–${ev.endTime}` : ''}
         </div>
       )}
-      {height > 44 && ev.roomName && (
+      {height > 44 && ev.room?.name && (
         <div style={{ fontSize: 10, color: `${color}99`, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {ev.roomName}
+          {ev.room.name}
         </div>
       )}
     </button>
@@ -69,7 +69,7 @@ function EventBlock({ ev, onClick }: { ev: Laid; onClick: () => void }) {
         <div>
           <div style={{ fontWeight: 700 }}>{ev.title}</div>
           {ev.startTime && <div>{ev.startTime}{ev.endTime ? `–${ev.endTime}` : ''}</div>}
-          {ev.roomName && <div>{ev.roomName}</div>}
+          {ev.room?.name && <div>{ev.room.name}</div>}
           {ev.homeGroupName && <div>{ev.homeGroupName}</div>}
         </div>
       }

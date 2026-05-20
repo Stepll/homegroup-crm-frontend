@@ -6,7 +6,7 @@ import { peopleApi } from '@/api/people'
 import { usePermission } from '@/hooks/usePermission'
 import type { Person, PersonActivity } from '@/types'
 
-const { Title, Text } = Typography
+const { Title } = Typography
 
 function toDateKey(iso: string) { return iso.slice(0, 10) }
 

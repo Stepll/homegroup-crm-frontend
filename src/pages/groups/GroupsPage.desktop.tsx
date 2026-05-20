@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Table, Typography, Space, Tag, Spin } from 'antd'
+import { Button, Table, Typography, Tag, Spin } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { groupsApi } from '@/api/groups'
 import type { Group } from '@/types'

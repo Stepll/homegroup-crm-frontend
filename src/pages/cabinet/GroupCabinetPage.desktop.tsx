@@ -7,7 +7,7 @@ import { groupsApi } from '@/api/groups'
 import { useAuth } from '@/store/auth'
 import { usePermission, usePermissions } from '@/hooks/usePermission'
 import { useCabinetData, computePrevMeetingDate, formatDateUk, formatBirthday, formatEventDate } from './useCabinetData'
-import type { Group, GroupCabinet, GroupEvent, Room } from '@/types'
+import type { Group, GroupCabinet, GroupEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 const MEETING_DAYS = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'Пʼятниця', 'Субота', 'Неділя']

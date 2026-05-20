@@ -200,7 +200,7 @@ function EventForm({
   }
 
   const handleSave = async () => {
-    if (!isGoogleEvent && !form.title.trim()) return Toast.show({ content: 'Введіть назву', icon: 'fail' })
+    if (!isGoogleEvent && !form.title.trim()) { Toast.show({ content: 'Введіть назву', icon: 'fail' }); return }
     setSaving(true)
     try {
       if (event) await calendarApi.update(event.id, buildPayload())

@@ -74,7 +74,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
   const {
     cabinet, rooms, events, loading, reload,
     busyRoomIds, addEvent, updateEvent, deleteEvent,
-    reschedule, skipMeeting, deletePlan, bookRoom, sendPlan, saveGroupInfo,
+    reschedule, skipMeeting, deletePlan, bookRoom, sendPlan,
   } = useCabinetData(groupId)
 
   const [editVisible, setEditVisible] = useState(false)

@@ -36,7 +36,7 @@ export function HomeGroupFormPageDesktop() {
 
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState<GroupMember[]>([])
-  const [selected, setSelected] = useState<GroupMember | null>(null)
+  const [, setSelected] = useState<GroupMember | null>(null)
   const [searching, setSearching] = useState(false)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
