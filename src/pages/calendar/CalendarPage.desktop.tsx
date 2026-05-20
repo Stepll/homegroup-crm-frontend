@@ -615,7 +615,7 @@ export function CalendarPageDesktop() {
         {/* Sticky header row */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: `${TIME_AXIS_WIDTH}px repeat(5, 1fr)`,
+          gridTemplateColumns: `${TIME_AXIS_WIDTH}px repeat(7, 1fr)`,
           position: 'sticky', top: 0, background: '#fff', zIndex: 10,
           borderBottom: '1px solid rgba(0,0,0,0.07)',
         }}>
