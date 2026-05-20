@@ -63,4 +63,18 @@ export const groupsApi = {
 
   getStatsAll: (period: '1m' | '3m' | '6m') =>
     api.get<GroupStats>('/groups/stats/all', { params: { period } }).then((r) => r.data),
+
+  getNotifSettings: (groupId: number) =>
+    api.get<NotifSettings>(`/groups/${groupId}/notif-settings`).then((r) => r.data),
+
+  updateNotifSettings: (groupId: number, data: NotifSettings) =>
+    api.put<NotifSettings>(`/groups/${groupId}/notif-settings`, data).then((r) => r.data),
+}
+
+export interface NotifSettings {
+  eventSevenDays: boolean
+  eventDay: boolean
+  conflict: boolean
+  conflictResolved: boolean
+  attendanceAsk: boolean
 }

@@ -9,6 +9,14 @@ import type { Group, GroupCabinet, GroupEvent, Room, CabinetCalendarEvent } from
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 
+const NOTIF_ITEMS = [
+  { key: 'eventSevenDays', label: 'Подія за 7 днів',       description: 'Нагадування за тиждень до події' },
+  { key: 'eventDay',       label: 'В день події',           description: 'Нагадування вранці в день події' },
+  { key: 'conflict',       label: 'Накладка у розкладі',    description: 'Якщо час домашки збігається з іншою подією' },
+  { key: 'conflictResolved', label: 'Накладку усунено',     description: 'Коли конфлікт розкладу вирішено' },
+  { key: 'attendanceAsk', label: 'Відмітка присутніх',      description: 'Запит через годину після початку домашки' },
+]
+
 // ── Group selector ────────────────────────────────────────────────────────────
 
 function GroupSelectorMobile() {
@@ -75,6 +83,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
     cabinet, rooms, events, loading, reload,
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, skipMeeting, deletePlan, bookRoom, sendPlan,
+    notifSettings, updateNotifSettings,
   } = useCabinetData(groupId)
 
   const [editVisible, setEditVisible] = useState(false)
@@ -363,6 +372,25 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
             </div>
           </div>
         </div>
+
+        {/* Telegram notifications */}
+        {notifSettings && (
+          <div style={{ ...block, padding: '14px 16px' }}>
+            <SectionLabel>Сповіщення Telegram</SectionLabel>
+            {NOTIF_ITEMS.map(({ key, label, description }) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+                <div style={{ flex: 1, marginRight: 12 }}>
+                  <div style={{ fontSize: 14, color: 'var(--color-text)', fontWeight: 500 }}>{label}</div>
+                  <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2 }}>{description}</div>
+                </div>
+                <Switch
+                  checked={notifSettings[key as keyof typeof notifSettings]}
+                  onChange={(val) => updateNotifSettings({ ...notifSettings, [key]: val })}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Edit event popup */}

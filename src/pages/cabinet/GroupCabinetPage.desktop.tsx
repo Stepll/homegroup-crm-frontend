@@ -12,6 +12,14 @@ import type { Group, GroupCabinet, GroupEvent } from '@/types'
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 const MEETING_DAYS = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'Пʼятниця', 'Субота', 'Неділя']
 
+const NOTIF_ITEMS = [
+  { key: 'eventSevenDays', label: 'Подія за 7 днів',        description: 'Нагадування у Telegram-групу за тиждень до події' },
+  { key: 'eventDay',       label: 'В день події',            description: 'Нагадування вранці в день події' },
+  { key: 'conflict',       label: 'Накладка у розкладі',     description: 'Сповіщення, якщо час домашки збігається з іншою подією' },
+  { key: 'conflictResolved', label: 'Накладку усунено',      description: 'Сповіщення, коли конфлікт розкладу вирішено' },
+  { key: 'attendanceAsk', label: 'Відмітка присутніх',       description: 'Запит через годину після початку домашки' },
+]
+
 const { Text } = Typography
 
 // ── Group selector ────────────────────────────────────────────────────────────
@@ -83,6 +91,7 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
     cabinet, rooms, events, loading, reload,
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, bookRoom, sendPlan, saveGroupInfo, deletePlan,
+    notifSettings, updateNotifSettings,
   } = useCabinetData(groupId)
 
   const [editGroupVisible, setEditGroupVisible] = useState(false)
@@ -258,6 +267,25 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
               <Col span={8}><Statistic title="Всього учасників" value={stats.totalMembers} valueStyle={{ fontSize: 20 }} /></Col>
             </Row>
           </Card>
+
+          {/* Telegram notifications */}
+          {notifSettings && (
+            <Card title="Сповіщення Telegram" style={{ ...cardStyle, marginTop: 16 }}>
+              {NOTIF_ITEMS.map(({ key, label, description }) => (
+                <Flex key={key} justify="space-between" align="center" style={{ padding: '8px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+                  <div>
+                    <Text style={{ fontSize: 14 }}>{label}</Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>{description}</Text>
+                  </div>
+                  <Switch
+                    checked={notifSettings[key as keyof typeof notifSettings]}
+                    onChange={(val) => updateNotifSettings({ ...notifSettings, [key]: val })}
+                  />
+                </Flex>
+              ))}
+            </Card>
+          )}
         </Col>
 
         {/* Right column */}

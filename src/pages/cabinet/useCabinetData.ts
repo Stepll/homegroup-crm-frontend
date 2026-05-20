@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { groupsApi } from '@/api/groups'
+import type { NotifSettings } from '@/api/groups'
 import { planningApi } from '@/api/planning'
 import { roomsApi } from '@/api/calendar'
 import type { GroupCabinet, GroupEvent, Room } from '@/types'
@@ -9,17 +10,20 @@ export function useCabinetData(groupId: number) {
   const [rooms, setRooms] = useState<Room[]>([])
   const [events, setEvents] = useState<GroupEvent[]>([])
   const [loading, setLoading] = useState(true)
+  const [notifSettings, setNotifSettings] = useState<NotifSettings | null>(null)
 
   const load = async () => {
     try {
-      const [cab, evts, rms] = await Promise.all([
+      const [cab, evts, rms, notif] = await Promise.all([
         groupsApi.getCabinet(groupId),
         groupsApi.getEvents(groupId),
         roomsApi.getAll(),
+        groupsApi.getNotifSettings(groupId),
       ])
       setCabinet(cab)
       setEvents(evts)
       setRooms(rms)
+      setNotifSettings(notif)
     } finally {
       setLoading(false)
     }
@@ -74,6 +78,11 @@ export function useCabinetData(groupId: number) {
     await planningApi.sendPlanToTelegram(groupId, date)
   }
 
+  const updateNotifSettings = async (settings: NotifSettings) => {
+    const updated = await groupsApi.updateNotifSettings(groupId, settings)
+    setNotifSettings(updated)
+  }
+
   const saveGroupInfo = async (patch: {
     name: string
     meetingDay?: string
@@ -103,6 +112,8 @@ export function useCabinetData(groupId: number) {
     bookRoom,
     sendPlan,
     saveGroupInfo,
+    notifSettings,
+    updateNotifSettings,
   }
 }
 
