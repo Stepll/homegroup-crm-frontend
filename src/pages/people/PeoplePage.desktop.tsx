@@ -3,6 +3,7 @@ import { Table, Input, Button, Tag, Space, Select, Tooltip, Flex } from 'antd'
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { usePeoplePage } from './usePeoplePage'
+import type { DotEntry } from './usePeoplePage'
 import type { GroupMember } from '@/types'
 
 const DOT_COLORS: Record<'green' | 'red' | 'yellow', string> = {
@@ -141,23 +142,28 @@ export function PeoplePageDesktop() {
             width: 130,
             render: (_: unknown, m: GroupMember) => {
               const key = m.isAdmin ? `u_${m.userId}` : `p_${m.id}`
-              const dots: ('green' | 'red' | 'yellow')[] =
-                attDots[key] ?? Array(5).fill('red')
+              const dots: DotEntry[] = attDots[key] ?? []
+              if (dots.length === 0) return <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>—</span>
               return (
-                <Flex gap={3} align="center">
-                  {dots.slice(0, 5).map((c, i) => (
-                    <Tooltip key={i} title={c === 'green' ? 'Присутній' : c === 'yellow' ? 'Скасовано' : 'Відсутній'}>
-                      <div
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: 3,
-                          background: DOT_COLORS[c],
-                          flexShrink: 0,
-                        }}
-                      />
-                    </Tooltip>
-                  ))}
+                <Flex gap={4} align="center">
+                  {dots.slice(0, 5).map((d, i) => {
+                    const [, mo, day] = d.date.split('-')
+                    const label = d.color === 'green' ? 'Присутній' : d.color === 'yellow' ? 'Скасовано' : 'Відсутній'
+                    return (
+                      <Tooltip key={i} title={`${day}.${mo} — ${label}`}>
+                        <div
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            background: DOT_COLORS[d.color],
+                            flexShrink: 0,
+                            cursor: 'default',
+                          }}
+                        />
+                      </Tooltip>
+                    )
+                  })}
                 </Flex>
               )
             },

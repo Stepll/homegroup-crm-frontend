@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavBar, SearchBar, Button, Empty, SpinLoading, Popup, Checkbox } from 'antd-mobile'
 import { usePeoplePage, TAG_LABELS } from './usePeoplePage'
-import type { TagItem } from './usePeoplePage'
+import type { TagItem, DotEntry } from './usePeoplePage'
 import type { GroupMember } from '@/types'
 
 export function PeoplePageMobile() {
@@ -162,22 +162,48 @@ function getPersonTags(m: GroupMember, settings: TagItem[]): TagData[] {
 }
 
 const DOT_COLORS: Record<'green' | 'red' | 'yellow', string> = { green: '#22C55E', red: '#EF4444', yellow: '#F59E0B' }
+const DOT_LABELS: Record<'green' | 'red' | 'yellow', string> = { green: 'Присутній', red: 'Відсутній', yellow: 'Скасовано' }
 
-function AttendanceDotsTag({ dots }: { dots?: ('green' | 'red' | 'yellow')[] }) {
-  const resolved: ('green' | 'red' | 'yellow')[] = (dots && dots.length > 0 ? dots : Array(5).fill('red') as ('green' | 'red' | 'yellow')[]).slice(0, 5)
+function formatDotDate(iso: string) {
+  const [, m, d] = iso.split('-')
+  return `${d}.${m}`
+}
+
+function AttendanceDotsTag({ dots }: { dots?: DotEntry[] }) {
+  const [open, setOpen] = useState(false)
+  const hasData = dots && dots.length > 0
+  const shown = hasData ? dots.slice(0, 5) : []
   return (
-    <div style={{ ...tagStyle, display: 'flex', gap: 3, alignItems: 'center', padding: '4px 7px', background: 'var(--color-bg)', border: '1px solid var(--color-border-light)', flexShrink: 0 }}>
-      {resolved.map((c, i) => (
-        <div key={i} style={{ width: 7, height: 7, borderRadius: 2, background: DOT_COLORS[c], flexShrink: 0 }} />
-      ))}
-    </div>
+    <>
+      <div
+        onClick={(e) => { e.stopPropagation(); if (hasData) setOpen(true) }}
+        style={{ ...tagStyle, display: 'flex', gap: 4, alignItems: 'center', padding: '4px 8px', background: 'var(--color-bg)', border: '1px solid var(--color-border-light)', flexShrink: 0, cursor: hasData ? 'pointer' : 'default' }}
+      >
+        {hasData
+          ? shown.map((d, i) => (
+              <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: DOT_COLORS[d.color], flexShrink: 0 }} />
+            ))
+          : <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>—</span>
+        }
+      </div>
+      <Popup visible={open} onMaskClick={() => setOpen(false)} bodyStyle={{ borderRadius: '12px 12px 0 0', padding: '16px 20px 28px' }}>
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Відвідуваність</div>
+        {shown.map((d, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: DOT_COLORS[d.color], flexShrink: 0 }} />
+            <span style={{ fontSize: 14, color: 'var(--color-text-secondary)', minWidth: 44 }}>{formatDotDate(d.date)}</span>
+            <span style={{ fontSize: 14, color: d.color === 'green' ? '#22C55E' : d.color === 'yellow' ? '#F59E0B' : '#EF4444' }}>{DOT_LABELS[d.color]}</span>
+          </div>
+        ))}
+      </Popup>
+    </>
   )
 }
 
 function PersonRow({ m, tagSettings, attDots, hasArrow, onClick }: {
   m: GroupMember
   tagSettings: TagItem[]
-  attDots?: ('green' | 'red' | 'yellow')[]
+  attDots?: DotEntry[]
   hasArrow: boolean
   onClick: () => void
 }) {

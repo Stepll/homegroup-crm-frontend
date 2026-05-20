@@ -41,7 +41,8 @@ export function saveTagSettings(settings: TagItem[]) {
   localStorage.setItem('people-tag-settings', JSON.stringify(settings))
 }
 
-export type AttDots = Record<string, ('green' | 'red' | 'yellow')[]>
+export type DotEntry = { color: 'green' | 'red' | 'yellow'; date: string }
+export type AttDots = Record<string, DotEntry[]>
 
 export function usePeoplePage() {
   const navigate = useNavigate()
@@ -96,17 +97,17 @@ export function usePeoplePage() {
               : `u_${rec.userId}_${rec.date}`
           recordMap.set(k, rec.wasPresent)
         }
+        const sortedDates = [...r.dates].reverse()
         for (const person of people.filter((p) => p.primaryGroupId === gid)) {
           const key = person.isAdmin ? `u_${person.userId}` : `p_${person.id}`
-          const dots: ('green' | 'red' | 'yellow')[] = [...r.dates].reverse().map((date: string) => {
-            if (cancelledSet.has(date)) return 'yellow'
+          const dots: DotEntry[] = sortedDates.map((date: string) => {
+            if (cancelledSet.has(date)) return { color: 'yellow', date }
             const recKey = person.isAdmin
               ? `u_${person.userId}_${date}`
               : `p_${person.id}_${date}`
             const wasPresent = recordMap.get(recKey)
-            return wasPresent === true ? 'green' : 'red'
+            return { color: wasPresent === true ? 'green' : 'red', date }
           })
-          while (dots.length < 5) dots.push('red')
           map[key] = dots.slice(0, 5)
         }
       }
