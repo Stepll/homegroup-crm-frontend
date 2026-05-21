@@ -116,6 +116,7 @@ export interface GroupMember {
   userId?: number
   roleTag?: { name: string; color: string } | null
   oversightUserName?: string | null
+  joinedAt?: string | null
 }
 
 export interface CabinetCalendarEvent {

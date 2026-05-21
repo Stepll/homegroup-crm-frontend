@@ -81,7 +81,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
     'planning.edit', 'planning.sendToTelegram',
   ])
   const {
-    cabinet, rooms, events, needs, loading, reload,
+    cabinet, rooms, events, needs, members, loading, reload,
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, skipMeeting, deletePlan, bookRoom, sendPlan,
     notifSettings, updateNotifSettings,
@@ -503,6 +503,15 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
           }
         </div>
 
+        {/* Block 8: Members */}
+        <div style={{ ...block, padding: '14px 16px' }}>
+          <SectionLabel>Члени групи</SectionLabel>
+          {members.length === 0
+            ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає членів</span>
+            : members.map((m) => <MemberRowMobile key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`} member={m} navigate={navigate} />)
+          }
+        </div>
+
         {/* Stats */}
         <div style={block}>
           <div style={{ padding: '14px 0' }}>
@@ -775,6 +784,43 @@ function MeetingTimeline({ events, meetingStartTime, meetingEndTime, rooms, book
         )
       })}
     </div>
+  )
+}
+
+// ── Member row ────────────────────────────────────────────────────────────────
+
+function MemberRowMobile({ member, navigate }: { member: import('@/types').GroupMember; navigate: ReturnType<typeof useNavigate> }) {
+  const [actionVisible, setActionVisible] = useState(false)
+  const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
+  const joinedDate = member.joinedAt
+    ? new Date(member.joinedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+        <div style={{ flex: 1, minWidth: 0 }} onClick={() => navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-primary)' }}>{fullName}</span>
+            {member.isAdmin && member.roleTag && (
+              <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 4, background: `${member.roleTag.color}20`, color: member.roleTag.color }}>{member.roleTag.name}</span>
+            )}
+          </div>
+          {joinedDate && <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2 }}>з {joinedDate}</div>}
+        </div>
+        <button onClick={() => setActionVisible(true)} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--color-text-tertiary)', padding: '4px 8px', cursor: 'pointer' }}>•••</button>
+      </div>
+      <ActionSheet
+        visible={actionVisible}
+        onClose={() => setActionVisible(false)}
+        actions={[
+          { text: 'Переглянути', key: 'history' },
+          { text: 'Налаштувати дату початку', key: 'join-date' },
+          { text: 'Перевести на іншу домашку', key: 'transfer' },
+          { text: 'Вилучити з домашки', key: 'remove', danger: true },
+        ]}
+      />
+    </>
   )
 }
 

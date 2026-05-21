@@ -314,12 +314,6 @@ export function PersonDetailPageDesktop() {
             </Select>
           </div>
           <div><div style={labelStyle}>Адреса</div><Input value={draftAddress} onChange={(e) => setDraftAddress(e.target.value)} /></div>
-          <div>
-            <div style={labelStyle}>Домашня група</div>
-            <Select value={draftGroup ?? undefined} onChange={(v) => setDraftGroup(v ?? null)} style={{ width: '100%' }} allowClear placeholder="— не вибрано —">
-              {groups.map((g) => <Select.Option key={g.id} value={g.id}>{g.name}</Select.Option>)}
-            </Select>
-          </div>
         </div>
       </Modal>
 

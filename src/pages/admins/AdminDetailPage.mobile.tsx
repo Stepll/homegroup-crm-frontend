@@ -411,26 +411,6 @@ export function AdminDetailPageMobile() {
           </div>
         </div>
 
-        {/* Block 7: Primary group */}
-        <div style={block}>
-          <EditableField
-            label="Рідна домашка"
-            display={admin.primaryGroupName ?? ''}
-            onSave={async (v) => {
-              const group = groups.find((g) => g.name === v)
-              await save({ primaryGroupId: group?.id ?? undefined })
-            }}
-            renderEditor={(_, onChange) => (
-              <select defaultValue={admin.primaryGroupId ?? ''}
-                onChange={(e) => { const g = groups.find((g) => g.id === Number(e.target.value)); onChange(g?.name ?? '') }}
-                style={nativeSelect}>
-                <option value="">— не вибрано —</option>
-                {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-              </select>
-            )}
-          />
-        </div>
-
         {/* Block 8: Visible groups */}
         <div style={{ ...block, padding: '12px 16px' }}>
           <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 10, fontWeight: 500 }}>Видимі домашки</div>

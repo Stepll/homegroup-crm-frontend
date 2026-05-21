@@ -88,7 +88,7 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
     'attendance.record', 'planning.view', 'planning.sendToTelegram',
   ])
   const {
-    cabinet, rooms, events, needs, loading, reload,
+    cabinet, rooms, events, needs, members, loading, reload,
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, bookRoom, sendPlan, saveGroupInfo, deletePlan,
     notifSettings, updateNotifSettings,
@@ -426,6 +426,14 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
               : orgTeam.map((member) => <OrgMemberRowDesktop key={member.id} member={member} />)
             }
           </Card>
+
+          {/* Members */}
+          <Card title="Члени групи" style={{ ...cardStyle, marginTop: 16 }}>
+            {members.length === 0
+              ? <Text type="secondary">Немає членів</Text>
+              : members.map((m) => <MemberRowDesktop key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`} member={m} navigate={navigate} />)
+            }
+          </Card>
         </Col>
       </Row>
 
@@ -671,6 +679,45 @@ function OrgMemberRowDesktop({ member }: { member: GroupCabinet['orgTeam'][0] })
         </div>
       )}
     </div>
+  )
+}
+
+// ── Member row ────────────────────────────────────────────────────────────────
+
+function MemberRowDesktop({ member, navigate }: { member: import('@/types').GroupMember; navigate: ReturnType<typeof useNavigate> }) {
+  const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
+  const joinedDate = member.joinedAt
+    ? new Date(member.joinedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
+
+  const menuItems = [
+    { key: 'history', label: 'Переглянути' },
+    { key: 'join-date', label: 'Налаштувати дату початку' },
+    { key: 'transfer', label: 'Перевести на іншу домашку' },
+    { key: 'remove', label: 'Вилучити з домашки', danger: true },
+  ]
+
+  return (
+    <Flex align="center" justify="space-between" style={{ padding: '7px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+      <Flex align="center" gap={8} style={{ flex: 1, minWidth: 0 }}>
+        <div>
+          <Flex align="center" gap={6}>
+            <Text
+              strong
+              onClick={() => navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)}
+              style={{ cursor: 'pointer', color: 'var(--color-primary)' }}
+            >{fullName}</Text>
+            {member.isAdmin && member.roleTag && (
+              <Tag style={{ background: `${member.roleTag.color}20`, color: member.roleTag.color, border: 'none', fontSize: 11 }}>{member.roleTag.name}</Tag>
+            )}
+          </Flex>
+          {joinedDate && <Text type="secondary" style={{ fontSize: 12 }}>з {joinedDate}</Text>}
+        </div>
+      </Flex>
+      <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+        <Button type="text" size="small" style={{ color: 'var(--color-text-tertiary)' }}>•••</Button>
+      </Dropdown>
+    </Flex>
   )
 }
 

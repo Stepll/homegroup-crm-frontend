@@ -185,15 +185,6 @@ export function AdminDetailPageDesktop() {
           </Card>
 
           <Card title="Домашні групи" style={{ marginBottom: 16 }}>
-            <div style={labelStyle}>Рідна домашка</div>
-            <Select
-              style={{ width: '100%', marginBottom: 12 }}
-              value={admin.primaryGroupId}
-              onChange={(v) => save({ primaryGroupId: v ?? undefined })}
-              allowClear
-              options={groups.map((g) => ({ label: g.name, value: g.id }))}
-              placeholder="— не вибрано —"
-            />
             <div style={labelStyle}>Видимі домашки</div>
             <Select
               mode="multiple"

@@ -457,12 +457,6 @@ export function PersonDetailPageMobile() {
         <FormField label="Адреса">
           <Input value={draftAddress} onChange={setDraftAddress} placeholder="Адреса" />
         </FormField>
-        <FormField label="Домашня група">
-          <select value={draftGroup ?? ''} onChange={(e) => setDraftGroup(e.target.value ? Number(e.target.value) : null)} style={nativeSelect}>
-            <option value="">— не вибрано —</option>
-            {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-        </FormField>
       </PopupForm>
 
       {/* ── Popup: Комунікація ── */}

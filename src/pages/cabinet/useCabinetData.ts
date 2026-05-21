@@ -3,30 +3,33 @@ import { groupsApi } from '@/api/groups'
 import type { NotifSettings } from '@/api/groups'
 import { planningApi } from '@/api/planning'
 import { roomsApi } from '@/api/calendar'
-import type { GroupCabinet, GroupEvent, GroupNeed, Room } from '@/types'
+import type { GroupCabinet, GroupEvent, GroupMember, GroupNeed, Room } from '@/types'
 
 export function useCabinetData(groupId: number) {
   const [cabinet, setCabinet] = useState<GroupCabinet | null>(null)
   const [rooms, setRooms] = useState<Room[]>([])
   const [events, setEvents] = useState<GroupEvent[]>([])
   const [needs, setNeeds] = useState<GroupNeed[]>([])
+  const [members, setMembers] = useState<GroupMember[]>([])
   const [loading, setLoading] = useState(true)
   const [notifSettings, setNotifSettings] = useState<NotifSettings | null>(null)
 
   const load = async () => {
     try {
-      const [cab, evts, rms, notif, nds] = await Promise.all([
+      const [cab, evts, rms, notif, nds, mbs] = await Promise.all([
         groupsApi.getCabinet(groupId),
         groupsApi.getEvents(groupId),
         roomsApi.getAll(),
         groupsApi.getNotifSettings(groupId).catch(() => null),
         groupsApi.getNeeds(groupId),
+        groupsApi.getMembers(groupId),
       ])
       setCabinet(cab)
       setEvents(evts)
       setRooms(rms)
       setNotifSettings(notif)
       setNeeds(nds)
+      setMembers(mbs)
     } finally {
       setLoading(false)
     }
@@ -119,6 +122,7 @@ export function useCabinetData(groupId: number) {
     rooms,
     events,
     needs,
+    members,
     loading,
     reload: load,
     busyRoomIds,
