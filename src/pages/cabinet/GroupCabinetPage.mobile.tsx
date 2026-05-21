@@ -346,6 +346,13 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
                   style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
                   onClick={async () => {
                     if (!nextMeetingDate) return
+                    const confirmed = await Dialog.confirm({
+                      title: 'Надіслати план у Telegram?',
+                      content: 'План буде надіслано в Telegram-групу домашки.',
+                      confirmText: 'Надіслати',
+                      cancelText: 'Скасувати',
+                    })
+                    if (!confirmed) return
                     setSendingPlan(true)
                     try { await sendPlan(nextMeetingDate); Toast.show({ content: 'План надіслано в Telegram', icon: 'success' }) }
                     catch { Toast.show({ content: 'Помилка надсилання', icon: 'fail' }) }

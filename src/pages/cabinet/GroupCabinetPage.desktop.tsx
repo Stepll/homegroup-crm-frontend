@@ -241,10 +241,18 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
               {perms['planning.sendToTelegram'] && (
                 <Button size="small" type="primary" loading={sendingPlan}
                   disabled={!hasPlanForNextMeeting || !group.telegramGroupId}
-                  onClick={async () => {
+                  onClick={() => {
                     if (!nextMeetingDate) return
-                    setSendingPlan(true)
-                    try { await sendPlan(nextMeetingDate) } finally { setSendingPlan(false) }
+                    Modal.confirm({
+                      title: 'Надіслати план у Telegram?',
+                      content: 'План буде надіслано в Telegram-групу домашки.',
+                      okText: 'Надіслати',
+                      cancelText: 'Скасувати',
+                      onOk: async () => {
+                        setSendingPlan(true)
+                        try { await sendPlan(nextMeetingDate) } finally { setSendingPlan(false) }
+                      },
+                    })
                   }}>Повідомити про план</Button>
               )}
             </Flex>
