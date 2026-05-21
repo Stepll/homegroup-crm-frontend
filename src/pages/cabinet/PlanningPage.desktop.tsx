@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Button, Input, Typography, Space, Card, Modal, Select, Spin } from 'antd'
+import { Button, Input, Typography, Space, Card, Modal, AutoComplete, Spin } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, UpOutlined, DownOutlined, EditOutlined, CheckOutlined, SaveOutlined } from '@ant-design/icons'
 import { planningApi } from '@/api/planning'
 import { groupsApi } from '@/api/groups'
@@ -77,16 +77,13 @@ function BlockCard({ block, index, total, orgTeam, defaultEditing, onChange, onD
           onChange={(e) => onChange({ info: e.target.value })}
           placeholder="Додаткова інформація"
         />
-        <Select
+        <AutoComplete
           value={block.responsible || undefined}
           onChange={(v) => onChange({ responsible: v ?? '' })}
-          showSearch
-          allowClear
+          options={filtered.map((m) => ({ label: m.name, value: m.name }))}
           placeholder="Відповідальний"
           style={{ width: '100%' }}
-          filterOption={(input, option) => (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())}
-          options={filtered.map((m) => ({ label: m.name, value: m.name }))}
-          onSearch={(v) => onChange({ responsible: v })}
+          allowClear
         />
       </Space>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
