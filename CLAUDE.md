@@ -22,7 +22,9 @@ src/
     people.ts             — peopleApi.getAll повертає GroupMember[] з параметрами
                             includeAdmins?, myOversight?; update приймає всі розширені поля
     groups.ts             — groupsApi (CRUD, members, custom fields, cabinet,
-                            events, setNextMeetingDate, skipMeeting, getStats, getStatsAll)
+                            events, setNextMeetingDate, skipMeeting, getStats, getStatsAll,
+                            getNeeds, addNeed, updateNeed, deleteNeed,
+                            getNotifSettings, updateNotifSettings)
     roles.ts              — rolesApi
     attendance.ts         — attendanceApi (getByGroup, getSummary, record, getMeta, saveMeta)
     personStatuses.ts     — personStatusesApi (getAll, create, update, delete)
@@ -75,7 +77,8 @@ src/
       AttendancePage.tsx         — card-based toggle, admins + persons, guest count + info
     cabinet/
       GroupCabinetPage.tsx       — кабінет домашки: наступна зустріч, відвідуваність,
-                                   події, орг команда, церковний календар, статистика
+                                   події, потреби, орг команда, церковний календар, статистика
+      useCabinetData.ts          — хук: cabinet, events, needs, rooms, notifSettings + CRUD actions
       PlanningPage.tsx           — планування зустрічі: блоки (view/edit mode),
                                    шаблони, минулі плани
       StatsPage.tsx              — статистика: summary, chart, person ranking, meetings
@@ -143,10 +146,14 @@ src/
       - Конфлікти тільки з Recurring/Global/Google подіями (не з іншими HomeGroup)
   - Блок 3: присутність + кнопка відмітити
   - Блок 4: birthday events (якщо є)
-  - Блок 5: орг команда (OrgMemberRow: ім'я + тег ролі + кількість під опікою, collapse з navigate до /people/:id)
-  - Блок 6: найближчі події (зелений фон якщо ≤7 днів)
-  - Блок 7: церковний календар (зелений фон якщо ≤7 днів)
+  - Блок 5: найближчі події групи (зелений фон якщо ≤7 днів)
+  - Блок 6: потреби (GroupNeed) — статус-тег з dropdown/ActionSheet, олівчик і урна
+    - Кнопка "З групи" (mobile) або Select (desktop) → вибір члена групи → заповнює ім'я + personId/userId
+    - Якщо прив'язано до Person/User → ім'я на картці є посиланням → /people/:id або /admins/:id
+    - Статуси: active (синій) | answered (зелений) | irrelevant (сірий)
+  - Блок 7: орг команда (OrgMemberRow: ім'я + тег ролі + кількість під опікою, collapse з navigate до /people/:id)
   - Блок 8: статистика + "Деталі →" → `/cabinet/:id/stats`
+  - Блок 9: Telegram сповіщення (Switch toggles, notifSettings з API)
 
 ### AttendancePage
 - Card-based toggle (зелений = присутній, сірий = відсутній)
@@ -315,8 +322,12 @@ GroupCabinet: {
   hasPlanForNextMeeting: boolean
 }
 
-GroupEvent: { id, name, month, day, daysUntil }
+GroupEvent: { id, name, month, day, year?, daysUntil }
 ChurchEvent: { id, name, month, day, daysUntil }
+
+GroupNeed: { id, subjectName, description,
+             status: 'active' | 'answered' | 'irrelevant',
+             createdAt, personId?: number | null, userId?: number | null }
 
 PlanBlock: { id?, order, time, title, info, responsible }
 MeetingPlan: { id, homeGroupId, meetingDate, appliedTemplateName?, blocks[], updatedAt }
@@ -418,6 +429,11 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
 - [x] ProfilePage — зміна пароля через setMyPassword → /admins/me/set-password (без settings.admins)
 - [x] PeoplePage — стрілочки і навігація conditional на people.view / admins.viewProfiles
 - [x] PersonDetailPage — "Комунікація" прихований без people.viewSensitive; adminsApi.getAll() graceful 403
+- [x] GroupCabinetPage — блок "Потреби" (GroupNeed CRUD):
+      статус-тег з dropdown (desktop: antd Dropdown; mobile: ActionSheet)
+      "З групи" picker (mobile) / antd Select з showSearch (desktop) — lazy-load членів групи
+      вибір члена → заповнює ім'я + зберігає personId/userId
+      якщо прив'язано → ім'я = клікабельне посилання на /people/:id або /admins/:id
 
 ## TODO
 - [ ] Pull-to-refresh
