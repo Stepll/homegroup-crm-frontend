@@ -110,8 +110,16 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
   const [rescheduleForm] = Form.useForm()
   const [addNeedVisible, setAddNeedVisible] = useState(false)
   const [editingNeed, setEditingNeed] = useState<GroupNeed | null>(null)
+  const [addNeedPersonId, setAddNeedPersonId] = useState<number | null>(null)
+  const [addNeedUserId, setAddNeedUserId] = useState<number | null>(null)
+  const [groupMembersForNeeds, setGroupMembersForNeeds] = useState<import('@/types').GroupMember[]>([])
   const [addNeedForm] = Form.useForm()
   const [editNeedForm] = Form.useForm()
+
+  const loadMembersForNeeds = async () => {
+    if (groupMembersForNeeds.length > 0) return
+    try { setGroupMembersForNeeds(await groupsApi.getMembers(groupId)) } catch { /* ignore */ }
+  }
   const [editGroupForm] = Form.useForm()
 
   if (loading || !cabinet) return (
@@ -370,11 +378,20 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
                   <div key={need.id} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-border-light)', background: 'var(--color-bg)' }}>
                     <Flex align="flex-start" justify="space-between" gap={8}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <Text strong style={{ display: 'block', marginBottom: 2 }}>{need.subjectName}</Text>
+                        {(need.personId || need.userId) ? (
+                          <a
+                            onClick={() => navigate(need.personId ? `/people/${need.personId}` : `/admins/${need.userId}`)}
+                            style={{ fontWeight: 600, display: 'block', marginBottom: 2, cursor: 'pointer' }}
+                          >
+                            {need.subjectName} →
+                          </a>
+                        ) : (
+                          <Text strong style={{ display: 'block', marginBottom: 2 }}>{need.subjectName}</Text>
+                        )}
                         <Text type="secondary" style={{ fontSize: 13 }}>{need.description}</Text>
                       </div>
                       <Flex align="center" gap={4} style={{ flexShrink: 0 }}>
-                        <NeedStatusDropdown need={need} onUpdate={(status) => updateNeed(need.id, need.subjectName, need.description, status)} />
+                        <NeedStatusDropdown need={need} onUpdate={(status) => updateNeed(need.id, need.subjectName, need.description, status, need.personId, need.userId)} />
                         {perms['groups.events.manage'] && (
                           <>
                             <Button size="small" type="text" icon={<EditOutlined />}
@@ -433,12 +450,34 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
       </Modal>
 
       {/* Add need modal */}
-      <Modal title="Нова потреба" open={addNeedVisible} onCancel={() => setAddNeedVisible(false)} footer={null}>
+      <Modal title="Нова потреба" open={addNeedVisible}
+        onCancel={() => setAddNeedVisible(false)}
+        afterOpenChange={(open) => { if (open) loadMembersForNeeds() }}
+        footer={null}>
         <Form form={addNeedForm} layout="vertical" onFinish={async (vals) => {
-          await addNeed(vals.subjectName.trim(), vals.description.trim())
-          setAddNeedVisible(false)
+          await addNeed(vals.subjectName.trim(), vals.description.trim(), addNeedPersonId, addNeedUserId)
+          setAddNeedVisible(false); setAddNeedPersonId(null); setAddNeedUserId(null)
         }}>
-          <Form.Item name="subjectName" label="Імʼя людини" rules={[{ required: true }]}><Input autoFocus placeholder="Ім'я" /></Form.Item>
+          <Form.Item label="Вибрати з групи" style={{ marginBottom: 8 }}>
+            <Select
+              showSearch allowClear placeholder="Знайти члена групи..."
+              filterOption={(input, opt) => (opt?.label as string ?? '').toLowerCase().includes(input.toLowerCase())}
+              options={groupMembersForNeeds.map((m) => ({
+                value: m.isAdmin ? `u${m.userId}` : `p${m.id}`,
+                label: [m.name, m.lastName].filter(Boolean).join(' ') + (m.isAdmin ? ' (адмін)' : ''),
+              }))}
+              onChange={(val) => {
+                if (!val) { setAddNeedPersonId(null); setAddNeedUserId(null); return }
+                const member = groupMembersForNeeds.find((m) => (m.isAdmin ? `u${m.userId}` : `p${m.id}`) === val)
+                if (!member) return
+                const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
+                addNeedForm.setFieldValue('subjectName', fullName)
+                setAddNeedPersonId(member.isAdmin ? null : member.id)
+                setAddNeedUserId(member.isAdmin ? (member.userId ?? null) : null)
+              }}
+            />
+          </Form.Item>
+          <Form.Item name="subjectName" label="Або введіть ім'я вручну" rules={[{ required: true }]}><Input autoFocus placeholder="Ім'я" /></Form.Item>
           <Form.Item name="description" label="Потреба" rules={[{ required: true }]}><Input.TextArea rows={3} placeholder="Опис потреби" /></Form.Item>
           <Flex justify="flex-end" gap={8}>
             <Button onClick={() => setAddNeedVisible(false)}>Скасувати</Button>
@@ -448,12 +487,39 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
       </Modal>
 
       {/* Edit need modal */}
-      <Modal title="Редагувати потребу" open={!!editingNeed} onCancel={() => setEditingNeed(null)} footer={null}>
+      <Modal title="Редагувати потребу" open={!!editingNeed}
+        onCancel={() => setEditingNeed(null)}
+        afterOpenChange={(open) => { if (open) loadMembersForNeeds() }}
+        footer={null}>
         <Form form={editNeedForm} layout="vertical" onFinish={async (vals) => {
           if (!editingNeed) return
-          await updateNeed(editingNeed.id, vals.subjectName.trim(), vals.description.trim(), editingNeed.status)
+          const personId = editingNeed.personId ?? null
+          const userId = editingNeed.userId ?? null
+          await updateNeed(editingNeed.id, vals.subjectName.trim(), vals.description.trim(), editingNeed.status, personId, userId)
           setEditingNeed(null)
         }}>
+          <Form.Item label="Змінити прив'язку до члена групи" style={{ marginBottom: 8 }}>
+            <Select
+              showSearch allowClear
+              placeholder="Знайти члена групи..."
+              defaultValue={editingNeed ? (editingNeed.personId ? `p${editingNeed.personId}` : editingNeed.userId ? `u${editingNeed.userId}` : undefined) : undefined}
+              filterOption={(input, opt) => (opt?.label as string ?? '').toLowerCase().includes(input.toLowerCase())}
+              options={groupMembersForNeeds.map((m) => ({
+                value: m.isAdmin ? `u${m.userId}` : `p${m.id}`,
+                label: [m.name, m.lastName].filter(Boolean).join(' ') + (m.isAdmin ? ' (адмін)' : ''),
+              }))}
+              onChange={(val) => {
+                if (!val) {
+                  setEditingNeed((n) => n ? { ...n, personId: null, userId: null } : n); return
+                }
+                const member = groupMembersForNeeds.find((m) => (m.isAdmin ? `u${m.userId}` : `p${m.id}`) === val)
+                if (!member) return
+                const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
+                editNeedForm.setFieldValue('subjectName', fullName)
+                setEditingNeed((n) => n ? { ...n, personId: member.isAdmin ? null : member.id, userId: member.isAdmin ? (member.userId ?? null) : null } : n)
+              }}
+            />
+          </Form.Item>
           <Form.Item name="subjectName" label="Імʼя людини" rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="description" label="Потреба" rules={[{ required: true }]}><Input.TextArea rows={3} /></Form.Item>
           <Flex justify="flex-end" gap={8}>

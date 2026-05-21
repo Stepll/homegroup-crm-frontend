@@ -177,6 +177,8 @@ export interface GroupNeed {
   description: string
   status: 'active' | 'answered' | 'irrelevant'
   createdAt: string
+  personId?: number | null
+  userId?: number | null
 }
 
 export interface CalendarOccurrence {

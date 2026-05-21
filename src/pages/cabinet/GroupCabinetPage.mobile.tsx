@@ -5,7 +5,8 @@ import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteO
 import { useAuth } from '@/store/auth'
 import { usePermission, usePermissions } from '@/hooks/usePermission'
 import { useCabinetData, computePrevMeetingDate, formatDateUk, formatBirthday, formatEventDate } from './useCabinetData'
-import type { Group, GroupCabinet, GroupEvent, GroupNeed, Room, CabinetCalendarEvent } from '@/types'
+import { groupsApi } from '@/api/groups'
+import type { Group, GroupCabinet, GroupEvent, GroupMember, GroupNeed, Room, CabinetCalendarEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 
@@ -109,13 +110,22 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
   const [addNeedVisible, setAddNeedVisible] = useState(false)
   const [newNeedSubject, setNewNeedSubject] = useState('')
   const [newNeedDesc, setNewNeedDesc] = useState('')
+  const [newNeedPersonId, setNewNeedPersonId] = useState<number | null>(null)
+  const [newNeedUserId, setNewNeedUserId] = useState<number | null>(null)
   const [addingNeed, setAddingNeed] = useState(false)
   const [editNeedVisible, setEditNeedVisible] = useState(false)
   const [editingNeed, setEditingNeed] = useState<GroupNeed | null>(null)
   const [editNeedSubject, setEditNeedSubject] = useState('')
   const [editNeedDesc, setEditNeedDesc] = useState('')
+  const [editNeedPersonId, setEditNeedPersonId] = useState<number | null>(null)
+  const [editNeedUserId, setEditNeedUserId] = useState<number | null>(null)
   const [savingNeed, setSavingNeed] = useState(false)
   const [needStatusPickerId, setNeedStatusPickerId] = useState<number | null>(null)
+  const [memberPickerVisible, setMemberPickerVisible] = useState(false)
+  const [memberPickerTarget, setMemberPickerTarget] = useState<'add' | 'edit'>('add')
+  const [memberSearch, setMemberSearch] = useState('')
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([])
+  const [membersLoading, setMembersLoading] = useState(false)
 
   const handleAddEvent = async () => {
     if (!newEventName.trim() || !newEventDate) return
@@ -181,22 +191,55 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
     setBookingLoading(false)
   }
 
+  const openMemberPicker = async (target: 'add' | 'edit') => {
+    setMemberPickerTarget(target)
+    setMemberSearch('')
+    setMemberPickerVisible(true)
+    if (groupMembers.length === 0) {
+      setMembersLoading(true)
+      try { setGroupMembers(await groupsApi.getMembers(groupId)) }
+      catch { /* ignore */ }
+      setMembersLoading(false)
+    }
+  }
+
+  const handleMemberSelect = (member: GroupMember) => {
+    const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
+    if (memberPickerTarget === 'add') {
+      setNewNeedSubject(fullName)
+      setNewNeedPersonId(member.isAdmin ? null : member.id)
+      setNewNeedUserId(member.isAdmin ? (member.userId ?? null) : null)
+    } else {
+      setEditNeedSubject(fullName)
+      setEditNeedPersonId(member.isAdmin ? null : member.id)
+      setEditNeedUserId(member.isAdmin ? (member.userId ?? null) : null)
+    }
+    setMemberPickerVisible(false)
+  }
+
   const handleAddNeed = async () => {
     if (!newNeedSubject.trim() || !newNeedDesc.trim()) return
     setAddingNeed(true)
-    try { await addNeed(newNeedSubject.trim(), newNeedDesc.trim()); setAddNeedVisible(false); setNewNeedSubject(''); setNewNeedDesc('') }
-    catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
+    try {
+      await addNeed(newNeedSubject.trim(), newNeedDesc.trim(), newNeedPersonId, newNeedUserId)
+      setAddNeedVisible(false); setNewNeedSubject(''); setNewNeedDesc(''); setNewNeedPersonId(null); setNewNeedUserId(null)
+    } catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
     setAddingNeed(false)
   }
 
   const openEditNeed = (need: GroupNeed) => {
-    setEditingNeed(need); setEditNeedSubject(need.subjectName); setEditNeedDesc(need.description); setEditNeedVisible(true)
+    setEditingNeed(need)
+    setEditNeedSubject(need.subjectName)
+    setEditNeedDesc(need.description)
+    setEditNeedPersonId(need.personId ?? null)
+    setEditNeedUserId(need.userId ?? null)
+    setEditNeedVisible(true)
   }
 
   const handleUpdateNeed = async () => {
     if (!editingNeed || !editNeedSubject.trim() || !editNeedDesc.trim()) return
     setSavingNeed(true)
-    try { await updateNeed(editingNeed.id, editNeedSubject.trim(), editNeedDesc.trim(), editingNeed.status); setEditNeedVisible(false) }
+    try { await updateNeed(editingNeed.id, editNeedSubject.trim(), editNeedDesc.trim(), editingNeed.status, editNeedPersonId, editNeedUserId); setEditNeedVisible(false) }
     catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
     setSavingNeed(false)
   }
@@ -209,7 +252,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
   }
 
   const handleNeedStatusChange = async (need: GroupNeed, status: string) => {
-    try { await updateNeed(need.id, need.subjectName, need.description, status) }
+    try { await updateNeed(need.id, need.subjectName, need.description, status, need.personId, need.userId) }
     catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
   }
 
@@ -408,7 +451,16 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
                 <div key={need.id} style={{ padding: '10px 10px', borderRadius: 10, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-light)' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{need.subjectName}</div>
+                      {(need.personId || need.userId) ? (
+                        <button
+                          onClick={() => need.personId ? navigate(`/people/${need.personId}`) : navigate(`/admins/${need.userId}`)}
+                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'var(--color-primary)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', maxWidth: '100%', textAlign: 'left' }}
+                        >
+                          {need.subjectName} →
+                        </button>
+                      ) : (
+                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{need.subjectName}</div>
+                      )}
                       <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>{need.description}</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, marginLeft: 4 }}>
@@ -570,7 +622,19 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
       {/* Add need popup */}
       <Popup visible={addNeedVisible} onMaskClick={() => setAddNeedVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Нова потреба</div>
-        <FormField label="Імʼя людини"><Input value={newNeedSubject} onChange={setNewNeedSubject} placeholder="Ім'я" autoFocus /></FormField>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>Імʼя людини</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ flex: 1, ...inputWrap }}><Input value={newNeedSubject} onChange={(v) => { setNewNeedSubject(v); setNewNeedPersonId(null); setNewNeedUserId(null) }} placeholder="Ім'я або введіть вручну" /></div>
+            <Button size="small" fill="outline" onClick={() => openMemberPicker('add')} style={{ flexShrink: 0, '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}>З групи</Button>
+          </div>
+          {(newNeedPersonId || newNeedUserId) && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span>✓ Прив'язано до профілю</span>
+              <button onClick={() => { setNewNeedPersonId(null); setNewNeedUserId(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--color-text-tertiary)', padding: 0 }}>× скасувати</button>
+            </div>
+          )}
+        </div>
         <FormField label="Потреба"><Input value={newNeedDesc} onChange={setNewNeedDesc} placeholder="Опис потреби" /></FormField>
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <Button block loading={addingNeed} onClick={handleAddNeed} style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Додати</Button>
@@ -581,11 +645,61 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
       {/* Edit need popup */}
       <Popup visible={editNeedVisible} onMaskClick={() => setEditNeedVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Редагувати потребу</div>
-        <FormField label="Імʼя людини"><Input value={editNeedSubject} onChange={setEditNeedSubject} placeholder="Ім'я" autoFocus /></FormField>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>Імʼя людини</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ flex: 1, ...inputWrap }}><Input value={editNeedSubject} onChange={(v) => { setEditNeedSubject(v); setEditNeedPersonId(null); setEditNeedUserId(null) }} placeholder="Ім'я" /></div>
+            <Button size="small" fill="outline" onClick={() => openMemberPicker('edit')} style={{ flexShrink: 0, '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}>З групи</Button>
+          </div>
+          {(editNeedPersonId || editNeedUserId) && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span>✓ Прив'язано до профілю</span>
+              <button onClick={() => { setEditNeedPersonId(null); setEditNeedUserId(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--color-text-tertiary)', padding: 0 }}>× скасувати</button>
+            </div>
+          )}
+        </div>
         <FormField label="Потреба"><Input value={editNeedDesc} onChange={setEditNeedDesc} placeholder="Опис потреби" /></FormField>
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <Button block loading={savingNeed} onClick={handleUpdateNeed} style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Зберегти</Button>
           <Button block fill="outline" onClick={() => setEditNeedVisible(false)}>Скасувати</Button>
+        </div>
+      </Popup>
+
+      {/* Member picker popup */}
+      <Popup visible={memberPickerVisible} onMaskClick={() => setMemberPickerVisible(false)} bodyStyle={{ padding: '20px 0 0', borderRadius: '16px 16px 0 0', maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '0 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 16, fontWeight: 700 }}>Вибрати з групи</span>
+          <button onClick={() => setMemberPickerVisible(false)} style={{ ...iconBtn, fontSize: 18, color: 'var(--color-text-tertiary)' }}>×</button>
+        </div>
+        <div style={{ padding: '0 16px 10px' }}>
+          <div style={inputWrap}><Input value={memberSearch} onChange={setMemberSearch} placeholder="Пошук..." clearable /></div>
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 16 }}>
+          {membersLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><SpinLoading color="primary" /></div>
+          ) : (
+            groupMembers
+              .filter((m) => {
+                const q = memberSearch.toLowerCase()
+                return !q || [m.name, m.lastName].filter(Boolean).join(' ').toLowerCase().includes(q)
+              })
+              .map((member) => {
+                const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
+                return (
+                  <button key={member.isAdmin ? `u${member.userId}` : `p${member.id}`}
+                    onClick={() => handleMemberSelect(member)}
+                    style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, textAlign: 'left' }}>
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+                      {fullName[0]?.toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{fullName}</div>
+                      {member.isAdmin && <div style={{ fontSize: 11, color: 'var(--color-primary)', fontWeight: 600 }}>Адмін</div>}
+                    </div>
+                  </button>
+                )
+              })
+          )}
         </div>
       </Popup>
 

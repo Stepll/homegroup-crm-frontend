@@ -73,10 +73,10 @@ export const groupsApi = {
   getNeeds: (groupId: number) =>
     api.get<GroupNeed[]>(`/groups/${groupId}/needs`).then((r) => r.data),
 
-  addNeed: (groupId: number, data: { subjectName: string; description: string }) =>
+  addNeed: (groupId: number, data: { subjectName: string; description: string; personId?: number | null; userId?: number | null }) =>
     api.post<GroupNeed>(`/groups/${groupId}/needs`, data).then((r) => r.data),
 
-  updateNeed: (groupId: number, needId: number, data: { subjectName: string; description: string; status: string }) =>
+  updateNeed: (groupId: number, needId: number, data: { subjectName: string; description: string; status: string; personId?: number | null; userId?: number | null }) =>
     api.put<GroupNeed>(`/groups/${groupId}/needs/${needId}`, data).then((r) => r.data),
 
   deleteNeed: (groupId: number, needId: number) =>

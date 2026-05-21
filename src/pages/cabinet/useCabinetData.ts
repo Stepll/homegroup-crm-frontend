@@ -86,13 +86,13 @@ export function useCabinetData(groupId: number) {
     setNotifSettings(updated)
   }
 
-  const addNeed = async (subjectName: string, description: string) => {
-    const need = await groupsApi.addNeed(groupId, { subjectName, description })
+  const addNeed = async (subjectName: string, description: string, personId?: number | null, userId?: number | null) => {
+    const need = await groupsApi.addNeed(groupId, { subjectName, description, personId, userId })
     setNeeds((prev) => [need, ...prev])
   }
 
-  const updateNeed = async (id: number, subjectName: string, description: string, status: string) => {
-    const updated = await groupsApi.updateNeed(groupId, id, { subjectName, description, status })
+  const updateNeed = async (id: number, subjectName: string, description: string, status: string, personId?: number | null, userId?: number | null) => {
+    const updated = await groupsApi.updateNeed(groupId, id, { subjectName, description, status, personId, userId })
     setNeeds((prev) => prev.map((n) => (n.id === updated.id ? updated : n)))
   }
 
