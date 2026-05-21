@@ -268,7 +268,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
     hasPlanForNextMeeting, nextMeetingRoomId, nextMeetingEvents, nextMeetingConflicts } = cabinet
 
   const attendancePct = lastAttendance ? Math.round(lastAttendance.present * 100 / (lastAttendance.total || 1)) : null
-  const attendanceDate = lastMeetingDate ?? computePrevMeetingDate(group.meetingDay)
+  const attendanceDate = cabinet?.prevScheduledMeetingDate ?? lastMeetingDate ?? computePrevMeetingDate(group.meetingDay)
   const bookedRoom = rooms.find((r) => r.id === nextMeetingRoomId)
   const hasConflicts = (nextMeetingConflicts?.length ?? 0) > 0
 

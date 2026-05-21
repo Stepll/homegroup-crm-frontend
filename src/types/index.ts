@@ -143,6 +143,7 @@ export interface GroupCabinet {
   }
   nextMeetingDate?: string
   lastMeetingDate?: string
+  prevScheduledMeetingDate?: string
   lastAttendance?: { present: number; total: number }
   upcomingEvents: { personId: number; fullName: string; dateOfBirth: string; daysUntil: number }[]
   orgTeam: {
