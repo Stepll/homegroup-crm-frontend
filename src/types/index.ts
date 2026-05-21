@@ -171,6 +171,14 @@ export interface GroupEvent {
   daysUntil: number
 }
 
+export interface GroupNeed {
+  id: number
+  subjectName: string
+  description: string
+  status: 'active' | 'answered' | 'irrelevant'
+  createdAt: string
+}
+
 export interface CalendarOccurrence {
   eventId: number
   title: string

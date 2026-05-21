@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Group, GroupCabinet, GroupCustomField, GroupEvent, GroupStats, GroupMember } from '@/types'
+import type { Group, GroupCabinet, GroupCustomField, GroupEvent, GroupNeed, GroupStats, GroupMember } from '@/types'
 
 export const groupsApi = {
   getAll: () => api.get<Group[]>('/groups').then((r) => r.data),
@@ -69,6 +69,18 @@ export const groupsApi = {
 
   updateNotifSettings: (groupId: number, data: NotifSettings) =>
     api.put<NotifSettings>(`/groups/${groupId}/notif-settings`, data).then((r) => r.data),
+
+  getNeeds: (groupId: number) =>
+    api.get<GroupNeed[]>(`/groups/${groupId}/needs`).then((r) => r.data),
+
+  addNeed: (groupId: number, data: { subjectName: string; description: string }) =>
+    api.post<GroupNeed>(`/groups/${groupId}/needs`, data).then((r) => r.data),
+
+  updateNeed: (groupId: number, needId: number, data: { subjectName: string; description: string; status: string }) =>
+    api.put<GroupNeed>(`/groups/${groupId}/needs/${needId}`, data).then((r) => r.data),
+
+  deleteNeed: (groupId: number, needId: number) =>
+    api.delete(`/groups/${groupId}/needs/${needId}`),
 }
 
 export interface NotifSettings {

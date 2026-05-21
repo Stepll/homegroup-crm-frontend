@@ -3,27 +3,30 @@ import { groupsApi } from '@/api/groups'
 import type { NotifSettings } from '@/api/groups'
 import { planningApi } from '@/api/planning'
 import { roomsApi } from '@/api/calendar'
-import type { GroupCabinet, GroupEvent, Room } from '@/types'
+import type { GroupCabinet, GroupEvent, GroupNeed, Room } from '@/types'
 
 export function useCabinetData(groupId: number) {
   const [cabinet, setCabinet] = useState<GroupCabinet | null>(null)
   const [rooms, setRooms] = useState<Room[]>([])
   const [events, setEvents] = useState<GroupEvent[]>([])
+  const [needs, setNeeds] = useState<GroupNeed[]>([])
   const [loading, setLoading] = useState(true)
   const [notifSettings, setNotifSettings] = useState<NotifSettings | null>(null)
 
   const load = async () => {
     try {
-      const [cab, evts, rms, notif] = await Promise.all([
+      const [cab, evts, rms, notif, nds] = await Promise.all([
         groupsApi.getCabinet(groupId),
         groupsApi.getEvents(groupId),
         roomsApi.getAll(),
         groupsApi.getNotifSettings(groupId).catch(() => null),
+        groupsApi.getNeeds(groupId),
       ])
       setCabinet(cab)
       setEvents(evts)
       setRooms(rms)
       setNotifSettings(notif)
+      setNeeds(nds)
     } finally {
       setLoading(false)
     }
@@ -83,6 +86,21 @@ export function useCabinetData(groupId: number) {
     setNotifSettings(updated)
   }
 
+  const addNeed = async (subjectName: string, description: string) => {
+    const need = await groupsApi.addNeed(groupId, { subjectName, description })
+    setNeeds((prev) => [need, ...prev])
+  }
+
+  const updateNeed = async (id: number, subjectName: string, description: string, status: string) => {
+    const updated = await groupsApi.updateNeed(groupId, id, { subjectName, description, status })
+    setNeeds((prev) => prev.map((n) => (n.id === updated.id ? updated : n)))
+  }
+
+  const deleteNeed = async (id: number) => {
+    await groupsApi.deleteNeed(groupId, id)
+    setNeeds((prev) => prev.filter((n) => n.id !== id))
+  }
+
   const saveGroupInfo = async (patch: {
     name: string
     meetingDay?: string
@@ -100,6 +118,7 @@ export function useCabinetData(groupId: number) {
     cabinet,
     rooms,
     events,
+    needs,
     loading,
     reload: load,
     busyRoomIds,
@@ -114,6 +133,9 @@ export function useCabinetData(groupId: number) {
     saveGroupInfo,
     notifSettings,
     updateNotifSettings,
+    addNeed,
+    updateNeed,
+    deleteNeed,
   }
 }
 

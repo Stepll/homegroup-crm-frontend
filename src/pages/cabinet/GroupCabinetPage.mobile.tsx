@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button, Dialog, Switch } from 'antd-mobile'
+import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button, Dialog, Switch, ActionSheet } from 'antd-mobile'
 import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteOutline } from 'antd-mobile-icons'
 import { useAuth } from '@/store/auth'
 import { usePermission, usePermissions } from '@/hooks/usePermission'
 import { useCabinetData, computePrevMeetingDate, formatDateUk, formatBirthday, formatEventDate } from './useCabinetData'
-import type { Group, GroupCabinet, GroupEvent, Room, CabinetCalendarEvent } from '@/types'
+import type { Group, GroupCabinet, GroupEvent, GroupNeed, Room, CabinetCalendarEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 
@@ -80,10 +80,11 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
     'planning.edit', 'planning.sendToTelegram',
   ])
   const {
-    cabinet, rooms, events, loading, reload,
+    cabinet, rooms, events, needs, loading, reload,
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, skipMeeting, deletePlan, bookRoom, sendPlan,
     notifSettings, updateNotifSettings,
+    addNeed, updateNeed, deleteNeed,
   } = useCabinetData(groupId)
 
   const [editVisible, setEditVisible] = useState(false)
@@ -104,6 +105,17 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
   const [autoBook, setAutoBook] = useState(false)
   const [bookingLoading, setBookingLoading] = useState(false)
   const [sendingPlan, setSendingPlan] = useState(false)
+
+  const [addNeedVisible, setAddNeedVisible] = useState(false)
+  const [newNeedSubject, setNewNeedSubject] = useState('')
+  const [newNeedDesc, setNewNeedDesc] = useState('')
+  const [addingNeed, setAddingNeed] = useState(false)
+  const [editNeedVisible, setEditNeedVisible] = useState(false)
+  const [editingNeed, setEditingNeed] = useState<GroupNeed | null>(null)
+  const [editNeedSubject, setEditNeedSubject] = useState('')
+  const [editNeedDesc, setEditNeedDesc] = useState('')
+  const [savingNeed, setSavingNeed] = useState(false)
+  const [needStatusPickerId, setNeedStatusPickerId] = useState<number | null>(null)
 
   const handleAddEvent = async () => {
     if (!newEventName.trim() || !newEventDate) return
@@ -167,6 +179,38 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
       Toast.show({ content: selectedRoomId ? 'Кімнату заброньовано' : 'Бронювання скасовано', icon: 'success' })
     } catch { Toast.show({ content: 'Помилка бронювання', icon: 'fail' }) }
     setBookingLoading(false)
+  }
+
+  const handleAddNeed = async () => {
+    if (!newNeedSubject.trim() || !newNeedDesc.trim()) return
+    setAddingNeed(true)
+    try { await addNeed(newNeedSubject.trim(), newNeedDesc.trim()); setAddNeedVisible(false); setNewNeedSubject(''); setNewNeedDesc('') }
+    catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
+    setAddingNeed(false)
+  }
+
+  const openEditNeed = (need: GroupNeed) => {
+    setEditingNeed(need); setEditNeedSubject(need.subjectName); setEditNeedDesc(need.description); setEditNeedVisible(true)
+  }
+
+  const handleUpdateNeed = async () => {
+    if (!editingNeed || !editNeedSubject.trim() || !editNeedDesc.trim()) return
+    setSavingNeed(true)
+    try { await updateNeed(editingNeed.id, editNeedSubject.trim(), editNeedDesc.trim(), editingNeed.status); setEditNeedVisible(false) }
+    catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
+    setSavingNeed(false)
+  }
+
+  const handleDeleteNeed = async (id: number) => {
+    const ok = await Dialog.confirm({ title: 'Видалити потребу?', confirmText: 'Видалити', cancelText: 'Скасувати' })
+    if (!ok) return
+    try { await deleteNeed(id) }
+    catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
+  }
+
+  const handleNeedStatusChange = async (need: GroupNeed, status: string) => {
+    try { await updateNeed(need.id, need.subjectName, need.description, status) }
+    catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
   }
 
   if (loading || !cabinet) return (
@@ -348,7 +392,49 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
           )}
         </div>
 
-        {/* Block 6: Org team */}
+        {/* Block 6: Needs */}
+        <div style={{ ...block, padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <SectionLabel>Потреби</SectionLabel>
+            {perms['groups.events.manage'] && (
+              <button onClick={() => setAddNeedVisible(true)} style={{ ...iconBtn, color: 'var(--color-primary)' }}><AddOutline style={{ fontSize: 18 }} /></button>
+            )}
+          </div>
+          {needs.length === 0 ? (
+            <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', display: 'block' }}>Немає потреб</span>
+          ) : (
+            <div style={{ maxHeight: 280, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {needs.map((need) => (
+                <div key={need.id} style={{ padding: '10px 10px', borderRadius: 10, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-light)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{need.subjectName}</div>
+                      <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.4 }}>{need.description}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, marginLeft: 4 }}>
+                      {perms['groups.events.manage'] && (
+                        <>
+                          <button onClick={() => openEditNeed(need)} style={{ ...iconBtn, color: 'var(--color-primary)', padding: 2 }}><EditSOutline style={{ fontSize: 15 }} /></button>
+                          <button onClick={() => handleDeleteNeed(need.id)} style={{ ...iconBtn, color: 'var(--color-error)', padding: 2 }}><DeleteOutline style={{ fontSize: 15 }} /></button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      onClick={() => setNeedStatusPickerId(need.id)}
+                      style={{ ...needStatusStyle(need.status), cursor: 'pointer', border: 'none' }}
+                    >
+                      {NEED_STATUS_LABEL[need.status]}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Block 7: Org team */}
         <div style={{ ...block, padding: '14px 16px' }}>
           <SectionLabel>Орг команда</SectionLabel>
           {orgTeam.length === 0
@@ -480,6 +566,45 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
           })()}
         </div>
       </Popup>
+
+      {/* Add need popup */}
+      <Popup visible={addNeedVisible} onMaskClick={() => setAddNeedVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Нова потреба</div>
+        <FormField label="Імʼя людини"><Input value={newNeedSubject} onChange={setNewNeedSubject} placeholder="Ім'я" autoFocus /></FormField>
+        <FormField label="Потреба"><Input value={newNeedDesc} onChange={setNewNeedDesc} placeholder="Опис потреби" /></FormField>
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <Button block loading={addingNeed} onClick={handleAddNeed} style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Додати</Button>
+          <Button block fill="outline" onClick={() => setAddNeedVisible(false)}>Скасувати</Button>
+        </div>
+      </Popup>
+
+      {/* Edit need popup */}
+      <Popup visible={editNeedVisible} onMaskClick={() => setEditNeedVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Редагувати потребу</div>
+        <FormField label="Імʼя людини"><Input value={editNeedSubject} onChange={setEditNeedSubject} placeholder="Ім'я" autoFocus /></FormField>
+        <FormField label="Потреба"><Input value={editNeedDesc} onChange={setEditNeedDesc} placeholder="Опис потреби" /></FormField>
+        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+          <Button block loading={savingNeed} onClick={handleUpdateNeed} style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Зберегти</Button>
+          <Button block fill="outline" onClick={() => setEditNeedVisible(false)}>Скасувати</Button>
+        </div>
+      </Popup>
+
+      {/* Need status action sheet */}
+      <ActionSheet
+        visible={needStatusPickerId !== null}
+        onClose={() => setNeedStatusPickerId(null)}
+        cancelText="Скасувати"
+        actions={[
+          { text: 'Активна', key: 'active', description: 'Потреба актуальна' },
+          { text: 'Отримана відповідь', key: 'answered', description: 'Молитва або потреба виконана', bold: true },
+          { text: 'Не актуальна', key: 'irrelevant', description: 'Більше не потрібно' },
+        ]}
+        onAction={(action) => {
+          const need = needs.find((n) => n.id === needStatusPickerId)
+          if (need) handleNeedStatusChange(need, action.key as string)
+          setNeedStatusPickerId(null)
+        }}
+      />
 
       {/* Edit group popup */}
       <EditGroupPopupMobile group={group} visible={editVisible} onClose={() => setEditVisible(false)} onSaved={() => { setEditVisible(false); reload() }} />
@@ -652,3 +777,20 @@ const inputWrap: React.CSSProperties = { background: '#F9FAFB', borderRadius: 'v
 const iconBtn: React.CSSProperties = { background: 'none', border: 'none', padding: 4, cursor: 'pointer', color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center' }
 const nativeSelect: React.CSSProperties = { width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: 15, color: 'var(--color-text)' }
 const tagStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, borderRadius: 6, padding: '2px 7px' }
+
+const NEED_STATUS_LABEL: Record<string, string> = {
+  active: 'Активна',
+  answered: 'Отримана відповідь',
+  irrelevant: 'Не актуальна',
+}
+
+const NEED_STATUS_COLORS: Record<string, { color: string; bg: string }> = {
+  active:     { color: '#2563EB', bg: '#EFF6FF' },
+  answered:   { color: '#16A34A', bg: '#F0FDF4' },
+  irrelevant: { color: '#6B7280', bg: '#F3F4F6' },
+}
+
+function needStatusStyle(status: string): React.CSSProperties {
+  const { color, bg } = NEED_STATUS_COLORS[status] ?? NEED_STATUS_COLORS.active
+  return { fontSize: 11, fontWeight: 600, borderRadius: 6, padding: '3px 8px', color, background: bg }
+}

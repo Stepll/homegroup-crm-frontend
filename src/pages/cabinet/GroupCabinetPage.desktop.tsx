@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, Card, Spin, Empty, Modal, Form, Input, Select, TimePicker, Tag, Row, Col, Statistic, Typography, Flex, Alert, Divider, Switch } from 'antd'
+import { Button, Card, Dropdown, Spin, Empty, Modal, Form, Input, Select, TimePicker, Tag, Row, Col, Statistic, Typography, Flex, Alert, Divider, Switch } from 'antd'
 import { EditOutlined, PlusOutlined, DeleteOutlined, RightOutlined, DownOutlined, UpOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { groupsApi } from '@/api/groups'
 import { useAuth } from '@/store/auth'
 import { usePermission, usePermissions } from '@/hooks/usePermission'
 import { useCabinetData, computePrevMeetingDate, formatDateUk, formatBirthday, formatEventDate } from './useCabinetData'
-import type { Group, GroupCabinet, GroupEvent } from '@/types'
+import type { Group, GroupCabinet, GroupEvent, GroupNeed } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 const MEETING_DAYS = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'Пʼятниця', 'Субота', 'Неділя']
@@ -88,10 +88,11 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
     'attendance.record', 'planning.view', 'planning.sendToTelegram',
   ])
   const {
-    cabinet, rooms, events, loading, reload,
+    cabinet, rooms, events, needs, loading, reload,
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, bookRoom, sendPlan, saveGroupInfo, deletePlan,
     notifSettings, updateNotifSettings,
+    addNeed, updateNeed, deleteNeed,
   } = useCabinetData(groupId)
 
   const [editGroupVisible, setEditGroupVisible] = useState(false)
@@ -107,6 +108,10 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
   const [addEventForm] = Form.useForm()
   const [editEventForm] = Form.useForm()
   const [rescheduleForm] = Form.useForm()
+  const [addNeedVisible, setAddNeedVisible] = useState(false)
+  const [editingNeed, setEditingNeed] = useState<GroupNeed | null>(null)
+  const [addNeedForm] = Form.useForm()
+  const [editNeedForm] = Form.useForm()
   const [editGroupForm] = Form.useForm()
 
   if (loading || !cabinet) return (
@@ -346,6 +351,49 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
             ))}</div>}
           </Card>
 
+          {/* Needs */}
+          <Card
+            title="Потреби"
+            style={{ ...cardStyle, marginTop: 16 }}
+            extra={perms['groups.events.manage'] && (
+              <Button size="small" icon={<PlusOutlined />} type="primary" ghost
+                onClick={() => { addNeedForm.resetFields(); setAddNeedVisible(true) }}>
+                Додати
+              </Button>
+            )}
+          >
+            {needs.length === 0 ? (
+              <Text type="secondary">Немає потреб</Text>
+            ) : (
+              <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {needs.map((need) => (
+                  <div key={need.id} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid var(--color-border-light)', background: 'var(--color-bg)' }}>
+                    <Flex align="flex-start" justify="space-between" gap={8}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Text strong style={{ display: 'block', marginBottom: 2 }}>{need.subjectName}</Text>
+                        <Text type="secondary" style={{ fontSize: 13 }}>{need.description}</Text>
+                      </div>
+                      <Flex align="center" gap={4} style={{ flexShrink: 0 }}>
+                        <NeedStatusDropdown need={need} onUpdate={(status) => updateNeed(need.id, need.subjectName, need.description, status)} />
+                        {perms['groups.events.manage'] && (
+                          <>
+                            <Button size="small" type="text" icon={<EditOutlined />}
+                              onClick={() => { setEditingNeed(need); editNeedForm.setFieldsValue({ subjectName: need.subjectName, description: need.description }) }} />
+                            <Button size="small" type="text" danger icon={<DeleteOutlined />}
+                              onClick={() => Modal.confirm({
+                                title: 'Видалити потребу?', okText: 'Видалити', okType: 'danger', cancelText: 'Скасувати',
+                                onOk: () => deleteNeed(need.id),
+                              })} />
+                          </>
+                        )}
+                      </Flex>
+                    </Flex>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
           {/* Org team */}
           <Card title="Орг команда" style={{ ...cardStyle, marginTop: 16 }}>
             {orgTeam.length === 0
@@ -379,6 +427,37 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
           <Form.Item name="telegramGroupId" label="ID групи в Telegram"><Input placeholder="-1001234567890" /></Form.Item>
           <Flex justify="flex-end" gap={8}>
             <Button onClick={() => setEditGroupVisible(false)}>Скасувати</Button>
+            <Button type="primary" htmlType="submit">Зберегти</Button>
+          </Flex>
+        </Form>
+      </Modal>
+
+      {/* Add need modal */}
+      <Modal title="Нова потреба" open={addNeedVisible} onCancel={() => setAddNeedVisible(false)} footer={null}>
+        <Form form={addNeedForm} layout="vertical" onFinish={async (vals) => {
+          await addNeed(vals.subjectName.trim(), vals.description.trim())
+          setAddNeedVisible(false)
+        }}>
+          <Form.Item name="subjectName" label="Імʼя людини" rules={[{ required: true }]}><Input autoFocus placeholder="Ім'я" /></Form.Item>
+          <Form.Item name="description" label="Потреба" rules={[{ required: true }]}><Input.TextArea rows={3} placeholder="Опис потреби" /></Form.Item>
+          <Flex justify="flex-end" gap={8}>
+            <Button onClick={() => setAddNeedVisible(false)}>Скасувати</Button>
+            <Button type="primary" htmlType="submit">Додати</Button>
+          </Flex>
+        </Form>
+      </Modal>
+
+      {/* Edit need modal */}
+      <Modal title="Редагувати потребу" open={!!editingNeed} onCancel={() => setEditingNeed(null)} footer={null}>
+        <Form form={editNeedForm} layout="vertical" onFinish={async (vals) => {
+          if (!editingNeed) return
+          await updateNeed(editingNeed.id, vals.subjectName.trim(), vals.description.trim(), editingNeed.status)
+          setEditingNeed(null)
+        }}>
+          <Form.Item name="subjectName" label="Імʼя людини" rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item name="description" label="Потреба" rules={[{ required: true }]}><Input.TextArea rows={3} /></Form.Item>
+          <Flex justify="flex-end" gap={8}>
+            <Button onClick={() => setEditingNeed(null)}>Скасувати</Button>
             <Button type="primary" htmlType="submit">Зберегти</Button>
           </Flex>
         </Form>
@@ -515,6 +594,24 @@ function OrgMemberRowDesktop({ member }: { member: GroupCabinet['orgTeam'][0] })
         </div>
       )}
     </div>
+  )
+}
+
+// ── Need status dropdown ──────────────────────────────────────────────────────
+
+const NEED_STATUS_CONFIG = {
+  active:     { label: 'Активна',            color: 'blue'    },
+  answered:   { label: 'Отримана відповідь', color: 'green'   },
+  irrelevant: { label: 'Не актуальна',       color: 'default' },
+} as const
+
+function NeedStatusDropdown({ need, onUpdate }: { need: GroupNeed; onUpdate: (status: string) => void }) {
+  const cfg = NEED_STATUS_CONFIG[need.status as keyof typeof NEED_STATUS_CONFIG] ?? NEED_STATUS_CONFIG.active
+  const items = Object.entries(NEED_STATUS_CONFIG).map(([key, val]) => ({ key, label: val.label }))
+  return (
+    <Dropdown menu={{ items, onClick: ({ key }) => onUpdate(key) }} trigger={['click']}>
+      <Tag color={cfg.color} style={{ cursor: 'pointer', userSelect: 'none' }}>{cfg.label} ▾</Tag>
+    </Dropdown>
   )
 }
 
