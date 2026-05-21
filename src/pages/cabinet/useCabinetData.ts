@@ -57,8 +57,8 @@ export function useCabinetData(groupId: number) {
     setEvents((prev) => prev.filter((e) => e.id !== id))
   }
 
-  const reschedule = async (date: string, oldDate?: string) => {
-    await groupsApi.setNextMeetingDate(groupId, date, oldDate)
+  const reschedule = async (date: string, oldDate?: string, time?: string) => {
+    await groupsApi.setNextMeetingDate(groupId, date, oldDate, time)
     await load()
   }
 

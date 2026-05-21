@@ -100,6 +100,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
   const [savingEvent, setSavingEvent] = useState(false)
   const [rescheduleVisible, setRescheduleVisible] = useState(false)
   const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleTime, setRescheduleTime] = useState('')
   const [rescheduling, setRescheduling] = useState(false)
   const [roomPickerVisible, setRoomPickerVisible] = useState(false)
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
@@ -139,7 +140,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
   const handleReschedule = async () => {
     if (!rescheduleDate) return
     setRescheduling(true)
-    try { await reschedule(rescheduleDate, nextMeetingDate ?? undefined); setRescheduleVisible(false) }
+    try { await reschedule(rescheduleDate, nextMeetingDate ?? undefined, rescheduleTime || undefined); setRescheduleVisible(false) }
     catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
     setRescheduling(false)
   }
@@ -333,7 +334,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {perms['groups.nextMeeting.manage'] && (
                 <Button size="mini" fill="outline" style={{ '--border-color': 'var(--color-border)', '--text-color': 'var(--color-text-secondary)' } as React.CSSProperties}
-                  onClick={() => { setRescheduleDate(nextMeetingDate ?? ''); setRescheduleVisible(true) }}>Перенести</Button>
+                  onClick={() => { setRescheduleDate(nextMeetingDate ?? ''); setRescheduleTime(group.meetingTime ?? ''); setRescheduleVisible(true) }}>Перенести</Button>
               )}
               {perms['groups.nextMeeting.manage'] && (
                 <Button size="mini" fill="outline" disabled={!nextMeetingDate}
@@ -556,7 +557,10 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
       {/* Reschedule popup */}
       <Popup visible={rescheduleVisible} onMaskClick={() => setRescheduleVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Перенести домашку</div>
-        <FormField label="Нова дата"><input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1 }}><FormField label="Нова дата"><input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField></div>
+          <div style={{ width: 110 }}><FormField label="Час початку"><input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField></div>
+        </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
           <Button block loading={rescheduling} onClick={handleReschedule} style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Перенести</Button>
           <Button block fill="outline" onClick={() => setRescheduleVisible(false)}>Назад</Button>

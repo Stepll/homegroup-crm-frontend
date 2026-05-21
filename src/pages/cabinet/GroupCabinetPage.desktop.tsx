@@ -233,7 +233,7 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
 
             <Flex gap={8} wrap="wrap">
               {perms['groups.nextMeeting.manage'] && (
-                <Button size="small" onClick={() => { rescheduleForm.setFieldsValue({ date: nextMeetingDate ?? '' }); setRescheduleVisible(true) }}>Перенести</Button>
+                <Button size="small" onClick={() => { rescheduleForm.setFieldsValue({ date: nextMeetingDate ?? '', time: group.meetingTime ? dayjs(group.meetingTime, 'HH:mm') : null }); setRescheduleVisible(true) }}>Перенести</Button>
               )}
               {perms['groups.nextMeeting.manage'] && (
                 <Button size="small" danger disabled={!nextMeetingDate} onClick={handleSkipMeeting}>Скасувати</Button>
@@ -565,10 +565,13 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
       {/* Reschedule modal */}
       <Modal title="Перенести домашку" open={rescheduleVisible} onCancel={() => setRescheduleVisible(false)} footer={null}>
         <Form form={rescheduleForm} layout="vertical" onFinish={async (vals) => {
-          await reschedule(vals.date, nextMeetingDate ?? undefined)
+          await reschedule(vals.date, nextMeetingDate ?? undefined, vals.time ? vals.time.format('HH:mm') : undefined)
           setRescheduleVisible(false)
         }}>
-          <Form.Item name="date" label="Нова дата" rules={[{ required: true }]}><input type="date" style={nativeDateStyle} /></Form.Item>
+          <Row gutter={12}>
+            <Col span={14}><Form.Item name="date" label="Нова дата" rules={[{ required: true }]}><input type="date" style={nativeDateStyle} /></Form.Item></Col>
+            <Col span={10}><Form.Item name="time" label="Час початку"><TimePicker format="HH:mm" style={{ width: '100%' }} /></Form.Item></Col>
+          </Row>
           <Flex justify="flex-end" gap={8}>
             <Button onClick={() => setRescheduleVisible(false)}>Скасувати</Button>
             <Button type="primary" htmlType="submit">Перенести</Button>
