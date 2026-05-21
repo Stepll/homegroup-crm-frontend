@@ -557,10 +557,6 @@ const nativeInput: React.CSSProperties = {
   width: '100%', border: 'none', outline: 'none', background: 'transparent',
   fontSize: 15, color: 'var(--color-text)',
 }
-const nativeSelect: React.CSSProperties = {
-  width: '100%', border: 'none', outline: 'none',
-  background: 'transparent', fontSize: 15, color: 'var(--color-text)',
-}
 const iconBtn: React.CSSProperties = {
   background: 'none', border: 'none', padding: 4, cursor: 'pointer',
   color: 'var(--color-text-tertiary)', display: 'flex', alignItems: 'center', fontSize: 16,
