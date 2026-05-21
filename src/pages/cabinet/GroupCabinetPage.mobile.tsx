@@ -348,7 +348,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
                     if (!nextMeetingDate) return
                     const confirmed = await Dialog.confirm({
                       title: 'Надіслати план у Telegram?',
-                      content: 'План буде надіслано в Telegram-групу домашки.',
+                      content: 'План буде надіслано в Telegram-групу адмінів домашки.',
                       confirmText: 'Надіслати',
                       cancelText: 'Скасувати',
                     })

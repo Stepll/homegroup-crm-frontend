@@ -245,7 +245,7 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
                     if (!nextMeetingDate) return
                     Modal.confirm({
                       title: 'Надіслати план у Telegram?',
-                      content: 'План буде надіслано в Telegram-групу домашки.',
+                      content: 'План буде надіслано в Telegram-групу адмінів домашки.',
                       okText: 'Надіслати',
                       cancelText: 'Скасувати',
                       onOk: async () => {
