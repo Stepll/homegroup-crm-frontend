@@ -361,12 +361,13 @@ export function AttendanceTablePageMobile() {
               })}
             </div>
 
-            {/* ── MEMBER ROWS ── */}
-            {members.map((m, rowIdx) => {
+            {/* ── MEMBER ROWS — active first, former at bottom ── */}
+            {[...members].sort((a, b) => (a.leftAt ? 1 : 0) - (b.leftAt ? 1 : 0)).map((m, rowIdx) => {
               const key = memberKey(m)
               const att = current.attendance[key] ?? {}
               const fullName = [m.name, m.lastName].filter(Boolean).join(' ')
               const rate = m.attendanceRate
+              const isFormer = !!m.leftAt
               return (
                 <div
                   key={key}
@@ -385,13 +386,14 @@ export function AttendanceTablePageMobile() {
                     alignItems: 'flex-start',
                     gap: 0,
                     padding: '4px 8px 4px 12px',
+                    borderRight: isFormer ? '2px solid #FECACA' : undefined,
                   }}>
                     <span
                       onClick={() => {
                         if (m.userId != null && perms['admins.viewProfiles']) navigate(`/admins/${m.userId}`)
                         else if (m.personId != null && perms['people.view']) navigate(`/people/${m.personId}`)
                       }}
-                      style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.2, maxWidth: NAME_W - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: (m.userId != null && perms['admins.viewProfiles']) || (m.personId != null && perms['people.view']) ? 'pointer' : 'default' }}
+                      style={{ fontSize: 12, fontWeight: 600, color: isFormer ? '#DC2626' : 'var(--color-text)', lineHeight: 1.2, maxWidth: NAME_W - 20, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: (m.userId != null && perms['admins.viewProfiles']) || (m.personId != null && perms['people.view']) ? 'pointer' : 'default' }}
                     >
                       {fullName}
                     </span>

@@ -353,12 +353,13 @@ export function AttendanceTablePageDesktop() {
               })}
             </div>
 
-            {/* ── MEMBER ROWS ── */}
-            {members.map((m, rowIdx) => {
+            {/* ── MEMBER ROWS — active first, former at bottom ── */}
+            {[...members].sort((a, b) => (a.leftAt ? 1 : 0) - (b.leftAt ? 1 : 0)).map((m, rowIdx) => {
               const key = memberKey(m)
               const att = current.attendance[key] ?? {}
               const fullName = [m.name, m.lastName].filter(Boolean).join(' ')
               const rate = m.attendanceRate
+              const isFormer = !!m.leftAt
               return (
                 <div key={key} style={{
                   display: 'flex',
@@ -371,7 +372,7 @@ export function AttendanceTablePageDesktop() {
                     display: 'flex', flexDirection: 'column', justifyContent: 'center',
                     padding: '4px 10px 4px 14px',
                     background: rowIdx % 2 === 0 ? '#fff' : '#fafafa',
-                    borderRight: '2px solid rgba(0,0,0,0.08)',
+                    borderRight: `2px solid ${isFormer ? '#FECACA' : 'rgba(0,0,0,0.08)'}`,
                     height: ROW_H,
                   }}>
                     <span
@@ -379,7 +380,7 @@ export function AttendanceTablePageDesktop() {
                         if (m.userId != null && perms['admins.viewProfiles']) navigate(`/admins/${m.userId}`)
                         else if (m.personId != null && perms['people.view']) navigate(`/people/${m.personId}`)
                       }}
-                      style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: NAME_W - 24, cursor: (m.userId != null && perms['admins.viewProfiles']) || (m.personId != null && perms['people.view']) ? 'pointer' : 'default' }}
+                      style={{ fontSize: 13, fontWeight: 600, color: isFormer ? '#DC2626' : 'rgba(0,0,0,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: NAME_W - 24, cursor: (m.userId != null && perms['admins.viewProfiles']) || (m.personId != null && perms['people.view']) ? 'pointer' : 'default' }}
                     >
                       {fullName}
                     </span>
