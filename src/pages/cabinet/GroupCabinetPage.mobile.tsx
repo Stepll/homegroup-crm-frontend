@@ -188,7 +188,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
     })
     if (!ok) return
     try {
-      await removeMemberFromGroup(member.id, null)
+      await removeMemberFromGroup(member.id)
       Toast.show({ content: 'Вилучено', icon: 'success' })
     } catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
   }

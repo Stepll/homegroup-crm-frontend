@@ -184,7 +184,7 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
       title: `Вилучити ${fullName} з домашки?`,
       content: 'Людина більше не буде прив\'язана до жодної домашки.',
       okText: 'Вилучити', okType: 'danger', cancelText: 'Скасувати',
-      onOk: () => removeMemberFromGroup(member.id, null),
+      onOk: () => removeMemberFromGroup(member.id),
     })
   }
 

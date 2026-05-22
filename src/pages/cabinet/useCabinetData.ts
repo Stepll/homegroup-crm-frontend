@@ -128,7 +128,7 @@ export function useCabinetData(groupId: number) {
     await load()
   }
 
-  const removeMemberFromGroup = async (personId: number | null, _userId: number | null) => {
+  const removeMemberFromGroup = async (personId: number | null) => {
     if (personId !== null) await groupsApi.removeMember(groupId, personId)
     // For admins there's no separate remove endpoint — transfer handles it; but direct removal isn't a common flow
     setMembers((prev) => prev.map((m) => {
