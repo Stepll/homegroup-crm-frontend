@@ -81,6 +81,24 @@ export const groupsApi = {
 
   deleteNeed: (groupId: number, needId: number) =>
     api.delete(`/groups/${groupId}/needs/${needId}`),
+
+  setMemberJoinedAt: (groupId: number, data: { personId?: number | null; userId?: number | null; joinedAt: string }) =>
+    api.patch(`/groups/${groupId}/members/joined-at`, data),
+
+  getMemberHistory: (groupId: number) =>
+    api.get<GroupMemberHistoryItem[]>(`/groups/${groupId}/members/history`).then((r) => r.data),
+}
+
+export interface GroupMemberHistoryItem {
+  id: number
+  personId: number | null
+  personName: string | null
+  userId: number | null
+  userName: string | null
+  homeGroupId: number
+  homeGroupName: string
+  joinedAt: string
+  leftAt: string | null
 }
 
 export interface NotifSettings {

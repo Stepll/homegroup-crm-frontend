@@ -85,7 +85,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, skipMeeting, deletePlan, bookRoom, sendPlan,
     notifSettings, updateNotifSettings,
-    addNeed, updateNeed, deleteNeed,
+    addNeed, updateNeed, deleteNeed, setMemberJoinedAt,
   } = useCabinetData(groupId)
 
   const [editVisible, setEditVisible] = useState(false)
@@ -122,6 +122,10 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
   const [editNeedUserId, setEditNeedUserId] = useState<number | null>(null)
   const [savingNeed, setSavingNeed] = useState(false)
   const [needStatusPickerId, setNeedStatusPickerId] = useState<number | null>(null)
+  const [joinDateMember, setJoinDateMember] = useState<GroupMember | null>(null)
+  const [joinDateValue, setJoinDateValue] = useState('')
+  const [savingJoinDate, setSavingJoinDate] = useState(false)
+
   const [memberPickerVisible, setMemberPickerVisible] = useState(false)
   const [memberPickerTarget, setMemberPickerTarget] = useState<'add' | 'edit'>('add')
   const [memberSearch, setMemberSearch] = useState('')
@@ -544,7 +548,17 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
           {members.length === 0
             ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає членів</span>
             : <div style={{ maxHeight: 360, overflowY: 'auto' }}>
-                {members.map((m) => <MemberRowMobile key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`} member={m} navigate={navigate} />)}
+                {members.map((m) => (
+                  <MemberRowMobile
+                    key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`}
+                    member={m}
+                    navigate={navigate}
+                    onSetJoinDate={(member) => {
+                      setJoinDateMember(member)
+                      setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
+                    }}
+                  />
+                ))}
               </div>
           }
         </div>
@@ -742,6 +756,38 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
         }}
       />
 
+      {/* Set join date popup */}
+      <Popup visible={!!joinDateMember} onMaskClick={() => setJoinDateMember(null)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Налаштувати дату початку</div>
+        {joinDateMember && (
+          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16 }}>
+            {[joinDateMember.name, joinDateMember.lastName].filter(Boolean).join(' ')}
+          </div>
+        )}
+        <FormField label="Дата приєднання">
+          <input type="date" value={joinDateValue} onChange={(e) => setJoinDateValue(e.target.value)} style={{ ...nativeSelect, padding: 0 }} />
+        </FormField>
+        <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+          <Button block loading={savingJoinDate}
+            style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
+            onClick={async () => {
+              if (!joinDateMember || !joinDateValue) return
+              setSavingJoinDate(true)
+              try {
+                await setMemberJoinedAt(
+                  joinDateMember.isAdmin ? null : joinDateMember.id,
+                  joinDateMember.isAdmin ? (joinDateMember.userId ?? null) : null,
+                  joinDateValue,
+                )
+                setJoinDateMember(null)
+                Toast.show({ content: 'Дату збережено', icon: 'success' })
+              } catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
+              setSavingJoinDate(false)
+            }}>Зберегти</Button>
+          <Button block fill="outline" onClick={() => setJoinDateMember(null)}>Скасувати</Button>
+        </div>
+      </Popup>
+
       {/* Edit group popup */}
       <EditGroupPopupMobile group={group} visible={editVisible} onClose={() => setEditVisible(false)} onSaved={() => { setEditVisible(false); reload() }} />
     </div>
@@ -791,7 +837,11 @@ function MeetingTimeline({ events, meetingStartTime, meetingEndTime, rooms, book
 
 // ── Member row ────────────────────────────────────────────────────────────────
 
-function MemberRowMobile({ member, navigate }: { member: import('@/types').GroupMember; navigate: ReturnType<typeof useNavigate> }) {
+function MemberRowMobile({ member, navigate, onSetJoinDate }: {
+  member: import('@/types').GroupMember
+  navigate: ReturnType<typeof useNavigate>
+  onSetJoinDate: (member: import('@/types').GroupMember) => void
+}) {
   const [actionVisible, setActionVisible] = useState(false)
   const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
   const joinedDate = member.joinedAt
@@ -817,12 +867,18 @@ function MemberRowMobile({ member, navigate }: { member: import('@/types').Group
       <ActionSheet
         visible={actionVisible}
         onClose={() => setActionVisible(false)}
+        cancelText="Скасувати"
         actions={[
-          { text: 'Переглянути', key: 'history' },
+          { text: 'Переглянути', key: 'view' },
           { text: 'Налаштувати дату початку', key: 'join-date' },
           { text: 'Перевести на іншу домашку', key: 'transfer' },
           { text: 'Вилучити з домашки', key: 'remove', danger: true },
         ]}
+        onAction={(action) => {
+          setActionVisible(false)
+          if (action.key === 'view') navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)
+          if (action.key === 'join-date') onSetJoinDate(member)
+        }}
       />
     </>
   )

@@ -92,7 +92,7 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, bookRoom, sendPlan, saveGroupInfo, deletePlan,
     notifSettings, updateNotifSettings,
-    addNeed, updateNeed, deleteNeed,
+    addNeed, updateNeed, deleteNeed, setMemberJoinedAt,
   } = useCabinetData(groupId)
 
   const [editGroupVisible, setEditGroupVisible] = useState(false)
@@ -120,6 +120,10 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
     if (groupMembersForNeeds.length > 0) return
     try { setGroupMembersForNeeds(await groupsApi.getMembers(groupId)) } catch { /* ignore */ }
   }
+  const [joinDateMember, setJoinDateMember] = useState<import('@/types').GroupMember | null>(null)
+  const [joinDateValue, setJoinDateValue] = useState('')
+  const [savingJoinDate, setSavingJoinDate] = useState(false)
+
   const [editGroupForm] = Form.useForm()
 
   if (loading || !cabinet) return (
@@ -313,7 +317,17 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
             {members.length === 0
               ? <Text type="secondary">Немає членів</Text>
               : <div style={{ maxHeight: 360, overflowY: 'auto' }}>
-                  {members.map((m) => <MemberRowDesktop key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`} member={m} navigate={navigate} />)}
+                  {members.map((m) => (
+                    <MemberRowDesktop
+                      key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`}
+                      member={m}
+                      navigate={navigate}
+                      onSetJoinDate={(member) => {
+                        setJoinDateMember(member)
+                        setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
+                      }}
+                    />
+                  ))}
                 </div>
             }
           </Card>
@@ -597,6 +611,50 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
         </Form>
       </Modal>
 
+      {/* Set join date modal */}
+      <Modal
+        title="Налаштувати дату початку"
+        open={!!joinDateMember}
+        onCancel={() => setJoinDateMember(null)}
+        footer={null}
+        width={360}
+      >
+        {joinDateMember && (
+          <>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+              {[joinDateMember.name, joinDateMember.lastName].filter(Boolean).join(' ')}
+            </Text>
+            <Form layout="vertical" onFinish={async () => {
+              if (!joinDateValue) return
+              setSavingJoinDate(true)
+              try {
+                await setMemberJoinedAt(
+                  joinDateMember.isAdmin ? null : joinDateMember.id,
+                  joinDateMember.isAdmin ? (joinDateMember.userId ?? null) : null,
+                  joinDateValue,
+                )
+                setJoinDateMember(null)
+              } finally {
+                setSavingJoinDate(false)
+              }
+            }}>
+              <Form.Item label="Дата приєднання">
+                <input
+                  type="date"
+                  value={joinDateValue}
+                  onChange={(e) => setJoinDateValue(e.target.value)}
+                  style={nativeDateStyle}
+                />
+              </Form.Item>
+              <Flex justify="flex-end" gap={8}>
+                <Button onClick={() => setJoinDateMember(null)}>Скасувати</Button>
+                <Button type="primary" htmlType="submit" loading={savingJoinDate}>Зберегти</Button>
+              </Flex>
+            </Form>
+          </>
+        )}
+      </Modal>
+
       {/* Room picker modal */}
       <Modal title={`Бронювання кімнати${nextMeetingDate ? ` — ${formatDateUk(nextMeetingDate)}` : ''}`}
         open={roomDrawerVisible} onCancel={() => setRoomDrawerVisible(false)} footer={null} width={480}>
@@ -686,18 +744,27 @@ function OrgMemberRowDesktop({ member }: { member: GroupCabinet['orgTeam'][0] })
 
 // ── Member row ────────────────────────────────────────────────────────────────
 
-function MemberRowDesktop({ member, navigate }: { member: import('@/types').GroupMember; navigate: ReturnType<typeof useNavigate> }) {
+function MemberRowDesktop({ member, navigate, onSetJoinDate }: {
+  member: import('@/types').GroupMember
+  navigate: ReturnType<typeof useNavigate>
+  onSetJoinDate: (member: import('@/types').GroupMember) => void
+}) {
   const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
   const joinedDate = member.joinedAt
     ? new Date(member.joinedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })
     : null
 
   const menuItems = [
-    { key: 'history', label: 'Переглянути' },
+    { key: 'view', label: 'Переглянути' },
     { key: 'join-date', label: 'Налаштувати дату початку' },
     { key: 'transfer', label: 'Перевести на іншу домашку' },
     { key: 'remove', label: 'Вилучити з домашки', danger: true },
   ]
+
+  const handleMenuClick = ({ key }: { key: string }) => {
+    if (key === 'view') navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)
+    if (key === 'join-date') onSetJoinDate(member)
+  }
 
   return (
     <Flex align="center" gap={8} style={{ padding: '7px 0', borderBottom: '1px solid var(--color-border-light)' }}>
@@ -715,7 +782,7 @@ function MemberRowDesktop({ member, navigate }: { member: import('@/types').Grou
         ? <Text type="secondary" style={{ fontSize: 12, flexShrink: 0, minWidth: 90, textAlign: 'right' }}>з {joinedDate}</Text>
         : <span style={{ minWidth: 90 }} />
       }
-      <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+      <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} trigger={['click']}>
         <Button type="text" size="small" style={{ color: 'var(--color-text-tertiary)', flexShrink: 0 }}>•••</Button>
       </Dropdown>
     </Flex>

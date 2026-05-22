@@ -104,6 +104,15 @@ export function useCabinetData(groupId: number) {
     setNeeds((prev) => prev.filter((n) => n.id !== id))
   }
 
+  const setMemberJoinedAt = async (personId: number | null, userId: number | null, date: string) => {
+    await groupsApi.setMemberJoinedAt(groupId, { personId, userId, joinedAt: date })
+    setMembers((prev) => prev.map((m) => {
+      if (personId !== null && !m.isAdmin && m.id === personId) return { ...m, joinedAt: date }
+      if (userId !== null && m.isAdmin && m.userId === userId) return { ...m, joinedAt: date }
+      return m
+    }))
+  }
+
   const saveGroupInfo = async (patch: {
     name: string
     meetingDay?: string
@@ -140,6 +149,7 @@ export function useCabinetData(groupId: number) {
     addNeed,
     updateNeed,
     deleteNeed,
+    setMemberJoinedAt,
   }
 }
 
