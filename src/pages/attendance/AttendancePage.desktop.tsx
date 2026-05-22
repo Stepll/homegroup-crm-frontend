@@ -59,7 +59,7 @@ export function AttendancePageDesktop() {
   const [meetingDates, setMeetingDates] = useState<string[]>([initialDate])
 
   useEffect(() => {
-    groupsApi.getMembers(Number(id)).then((m) => setMembers(m)).finally(() => setLoading(false))
+    groupsApi.getMembers(Number(id)).then((m) => setMembers(m.filter(member => !member.isFormer))).finally(() => setLoading(false))
   }, [id])
 
   useEffect(() => {

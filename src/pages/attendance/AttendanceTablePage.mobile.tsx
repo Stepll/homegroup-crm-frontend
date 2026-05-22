@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { NavBar, Toast, SpinLoading, Popup, Button, Switch, Dialog } from 'antd-mobile'
 import { attendanceApi } from '@/api/attendance'
@@ -362,13 +362,19 @@ export function AttendanceTablePageMobile() {
             </div>
 
             {/* ── MEMBER ROWS — active first, former at bottom ── */}
-            {[...members].sort((a, b) => (a.leftAt ? 1 : 0) - (b.leftAt ? 1 : 0)).map((m, rowIdx) => {
+            {(() => {
+              const sorted = [...members].sort((a, b) => (a.leftAt ? 1 : 0) - (b.leftAt ? 1 : 0))
+              const firstFormerIdx = sorted.findIndex(m => !!m.leftAt)
+              return sorted.map((m, rowIdx) => {
               const key = memberKey(m)
               const att = current.attendance[key] ?? {}
               const fullName = [m.name, m.lastName].filter(Boolean).join(' ')
               const rate = m.attendanceRate
               const isFormer = !!m.leftAt
+              const showDivider = rowIdx === firstFormerIdx && firstFormerIdx > 0
               return (
+                <React.Fragment key={key}>
+                  {showDivider && <div style={{ height: 3, background: '#111827' }} />}
                 <div
                   key={key}
                   style={{
@@ -413,8 +419,10 @@ export function AttendanceTablePageMobile() {
                     return <button key={date} onClick={() => toggleCell(key, date)} style={attendanceCell(CELL_W, att[date])} />
                   })}
                 </div>
+                </React.Fragment>
               )
-            })}
+              })
+            })()}
 
           </div>
         </div>

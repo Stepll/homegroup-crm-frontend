@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Typography, Space, Modal, Switch, InputNumber, Input, Spin } from 'antd'
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
@@ -354,14 +354,20 @@ export function AttendanceTablePageDesktop() {
             </div>
 
             {/* ── MEMBER ROWS — active first, former at bottom ── */}
-            {[...members].sort((a, b) => (a.leftAt ? 1 : 0) - (b.leftAt ? 1 : 0)).map((m, rowIdx) => {
+            {(() => {
+              const sorted = [...members].sort((a, b) => (a.leftAt ? 1 : 0) - (b.leftAt ? 1 : 0))
+              const firstFormerIdx = sorted.findIndex(m => !!m.leftAt)
+              return sorted.map((m, rowIdx) => {
               const key = memberKey(m)
               const att = current.attendance[key] ?? {}
               const fullName = [m.name, m.lastName].filter(Boolean).join(' ')
               const rate = m.attendanceRate
               const isFormer = !!m.leftAt
+              const showDivider = rowIdx === firstFormerIdx && firstFormerIdx > 0
               return (
-                <div key={key} style={{
+                <React.Fragment key={key}>
+                  {showDivider && <div style={{ height: 3, background: '#111827' }} />}
+                <div style={{
                   display: 'flex',
                   borderBottom: '1px solid rgba(0,0,0,0.04)',
                   background: rowIdx % 2 === 0 ? '#fff' : '#fafafa',
@@ -410,8 +416,10 @@ export function AttendanceTablePageDesktop() {
                     )
                   })}
                 </div>
+                </React.Fragment>
               )
-            })}
+              })
+            })()}
 
           </div>
         </div>
