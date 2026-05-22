@@ -113,6 +113,30 @@ export function useCabinetData(groupId: number) {
     }))
   }
 
+  const setMemberLeftAt = async (personId: number | null, userId: number | null, date: string) => {
+    await groupsApi.setMemberLeftAt(groupId, { personId, userId, leftAt: date })
+    setMembers((prev) => prev.map((m) => {
+      if (personId !== null && !m.isAdmin && m.id === personId) return { ...m, leftAt: date }
+      if (userId !== null && m.isAdmin && m.userId === userId) return { ...m, leftAt: date }
+      return m
+    }))
+  }
+
+  const transferMember = async (personId: number | null, userId: number | null, toGroupId: number) => {
+    await groupsApi.transferMember(groupId, { personId, userId, toGroupId })
+    // Reload to reflect the member moving groups
+    await load()
+  }
+
+  const removeMemberFromGroup = async (personId: number | null, userId: number | null) => {
+    if (personId !== null) await groupsApi.removeMember(groupId, personId)
+    // For admins there's no separate remove endpoint — transfer handles it; but direct removal isn't a common flow
+    setMembers((prev) => prev.map((m) => {
+      if (personId !== null && !m.isAdmin && m.id === personId) return { ...m, isFormer: true, leftAt: new Date().toISOString() }
+      return m
+    }))
+  }
+
   const saveGroupInfo = async (patch: {
     name: string
     meetingDay?: string
@@ -150,6 +174,9 @@ export function useCabinetData(groupId: number) {
     updateNeed,
     deleteNeed,
     setMemberJoinedAt,
+    setMemberLeftAt,
+    transferMember,
+    removeMemberFromGroup,
   }
 }
 

@@ -6,7 +6,7 @@ import { useAuth } from '@/store/auth'
 import { usePermission, usePermissions } from '@/hooks/usePermission'
 import { useCabinetData, computePrevMeetingDate, formatDateUk, formatBirthday, formatEventDate } from './useCabinetData'
 import { groupsApi } from '@/api/groups'
-import type { Group, GroupCabinet, GroupEvent, GroupMember, GroupNeed, Room, CabinetCalendarEvent } from '@/types'
+import type { Group, GroupCabinet, GroupEvent, GroupMember, GroupNeed, Room, CabinetCalendarEvent, TimelineEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 
@@ -85,7 +85,8 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, skipMeeting, deletePlan, bookRoom, sendPlan,
     notifSettings, updateNotifSettings,
-    addNeed, updateNeed, deleteNeed, setMemberJoinedAt,
+    addNeed, updateNeed, deleteNeed,
+    setMemberJoinedAt, setMemberLeftAt, transferMember, removeMemberFromGroup,
   } = useCabinetData(groupId)
 
   const [editVisible, setEditVisible] = useState(false)
@@ -125,6 +126,72 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
   const [joinDateMember, setJoinDateMember] = useState<GroupMember | null>(null)
   const [joinDateValue, setJoinDateValue] = useState('')
   const [savingJoinDate, setSavingJoinDate] = useState(false)
+
+  const [leftDateMember, setLeftDateMember] = useState<GroupMember | null>(null)
+  const [leftDateValue, setLeftDateValue] = useState('')
+  const [savingLeftDate, setSavingLeftDate] = useState(false)
+
+  const [transferTarget, setTransferTarget] = useState<GroupMember | null>(null)
+  const [allGroups, setAllGroups] = useState<Group[]>([])
+  const [transferToGroupId, setTransferToGroupId] = useState<number | null>(null)
+  const [transferring, setTransferring] = useState(false)
+
+  const [historyMember, setHistoryMember] = useState<GroupMember | null>(null)
+  const [historyEvents, setHistoryEvents] = useState<TimelineEvent[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  const handleViewHistory = async (member: GroupMember) => {
+    setHistoryMember(member)
+    setHistoryLoading(true)
+    setHistoryEvents([])
+    try {
+      const events = member.isAdmin
+        ? await groupsApi.getAdminMemberTimeline(groupId, member.userId!)
+        : await groupsApi.getMemberTimeline(groupId, member.id)
+      setHistoryEvents(events)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  const handleOpenTransfer = async (member: GroupMember) => {
+    setTransferTarget(member)
+    setTransferToGroupId(null)
+    if (allGroups.length === 0) {
+      const gs = await import('@/api/groups').then(({ groupsApi: api }) => api.getAll())
+      setAllGroups(gs.filter((g) => g.id !== groupId))
+    }
+  }
+
+  const handleConfirmTransfer = async () => {
+    if (!transferTarget || !transferToGroupId) return
+    setTransferring(true)
+    try {
+      await transferMember(
+        transferTarget.isAdmin ? null : transferTarget.id,
+        transferTarget.isAdmin ? (transferTarget.userId ?? null) : null,
+        transferToGroupId,
+      )
+      setTransferTarget(null)
+      Toast.show({ content: 'Переведено', icon: 'success' })
+    } catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
+    setTransferring(false)
+  }
+
+  const handleRemoveMember = async (member: GroupMember) => {
+    const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
+    const ok = await Dialog.confirm({
+      title: `Вилучити ${fullName} з домашки?`,
+      content: 'Людина більше не буде прив\'язана до жодної домашки.',
+      confirmText: 'Вилучити',
+      cancelText: 'Скасувати',
+    })
+    if (!ok) return
+    try {
+      await removeMemberFromGroup(member.id, null)
+      Toast.show({ content: 'Вилучено', icon: 'success' })
+    } catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
+  }
 
   const [memberPickerVisible, setMemberPickerVisible] = useState(false)
   const [memberPickerTarget, setMemberPickerTarget] = useState<'add' | 'edit'>('add')
@@ -550,13 +617,20 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
             : <div style={{ maxHeight: 360, overflowY: 'auto' }}>
                 {members.map((m) => (
                   <MemberRowMobile
-                    key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`}
+                    key={`${m.isAdmin ? 'u' : 'p'}-${m.isAdmin ? m.userId : m.id}`}
                     member={m}
                     navigate={navigate}
+                    onViewHistory={handleViewHistory}
                     onSetJoinDate={(member) => {
                       setJoinDateMember(member)
                       setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
                     }}
+                    onSetLeftDate={(member) => {
+                      setLeftDateMember(member)
+                      setLeftDateValue(member.leftAt ? member.leftAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
+                    }}
+                    onTransfer={handleOpenTransfer}
+                    onRemove={handleRemoveMember}
                   />
                 ))}
               </div>
@@ -788,6 +862,88 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
         </div>
       </Popup>
 
+      {/* Set left date popup */}
+      <Popup visible={!!leftDateMember} onMaskClick={() => setLeftDateMember(null)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Налаштувати дату виходу</div>
+        {leftDateMember && (
+          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16 }}>
+            {[leftDateMember.name, leftDateMember.lastName].filter(Boolean).join(' ')}
+          </div>
+        )}
+        <FormField label="Дата виходу">
+          <input type="date" value={leftDateValue} onChange={(e) => setLeftDateValue(e.target.value)} style={{ ...nativeSelect, padding: 0 }} />
+        </FormField>
+        <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+          <Button block loading={savingLeftDate}
+            style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}
+            onClick={async () => {
+              if (!leftDateMember || !leftDateValue) return
+              setSavingLeftDate(true)
+              try {
+                await setMemberLeftAt(
+                  leftDateMember.isAdmin ? null : leftDateMember.id,
+                  leftDateMember.isAdmin ? (leftDateMember.userId ?? null) : null,
+                  leftDateValue,
+                )
+                setLeftDateMember(null)
+                Toast.show({ content: 'Дату збережено', icon: 'success' })
+              } catch { Toast.show({ content: 'Помилка', icon: 'fail' }) }
+              setSavingLeftDate(false)
+            }}>Зберегти</Button>
+          <Button block fill="outline" onClick={() => setLeftDateMember(null)}>Скасувати</Button>
+        </div>
+      </Popup>
+
+      {/* Transfer member popup */}
+      <Popup visible={!!transferTarget} onMaskClick={() => setTransferTarget(null)} bodyStyle={{ borderRadius: '16px 16px 0 0', maxHeight: '70vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '20px 20px 12px' }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Перевести на іншу домашку</div>
+          {transferTarget && (
+            <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+              {[transferTarget.name, transferTarget.lastName].filter(Boolean).join(' ')}
+            </div>
+          )}
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {allGroups.map((g) => (
+            <button key={g.id} onClick={() => setTransferToGroupId(g.id)}
+              style={{ width: '100%', textAlign: 'left', padding: '12px 20px', background: transferToGroupId === g.id ? `${g.color}12` : 'none', border: 'none', borderBottom: '1px solid var(--color-border-light)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: g.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 14, fontWeight: transferToGroupId === g.id ? 600 : 400, color: 'var(--color-text)' }}>{g.name}</span>
+              {transferToGroupId === g.id && <span style={{ marginLeft: 'auto', color: g.color, fontSize: 16 }}>✓</span>}
+            </button>
+          ))}
+        </div>
+        <div style={{ padding: '12px 20px', display: 'flex', gap: 8 }}>
+          <Button block loading={transferring} disabled={!transferToGroupId} onClick={handleConfirmTransfer}
+            style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Перевести</Button>
+          <Button block fill="outline" onClick={() => setTransferTarget(null)}>Скасувати</Button>
+        </div>
+      </Popup>
+
+      {/* Member history popup */}
+      <Popup visible={!!historyMember} onMaskClick={() => setHistoryMember(null)} bodyStyle={{ borderRadius: '16px 16px 0 0', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '20px 20px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Історія</div>
+            {historyMember && <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>{[historyMember.name, historyMember.lastName].filter(Boolean).join(' ')}</div>}
+          </div>
+          <button onClick={() => setHistoryMember(null)} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--color-text-tertiary)', cursor: 'pointer', padding: 4, lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1, padding: '8px 20px 24px' }}>
+          {historyLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><SpinLoading color="primary" /></div>
+          ) : historyEvents.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--color-text-tertiary)', textAlign: 'center', padding: 24 }}>Немає записів</div>
+          ) : (
+            <div style={{ position: 'relative', paddingLeft: 28 }}>
+              <div style={{ position: 'absolute', left: 8, top: 6, bottom: 6, width: 2, background: 'var(--color-border-light)' }} />
+              {historyEvents.map((ev, idx) => <MobileTimelineItem key={idx} event={ev} />)}
+            </div>
+          )}
+        </div>
+      </Popup>
+
       {/* Edit group popup */}
       <EditGroupPopupMobile group={group} visible={editVisible} onClose={() => setEditVisible(false)} onSaved={() => { setEditVisible(false); reload() }} />
     </div>
@@ -837,50 +993,112 @@ function MeetingTimeline({ events, meetingStartTime, meetingEndTime, rooms, book
 
 // ── Member row ────────────────────────────────────────────────────────────────
 
-function MemberRowMobile({ member, navigate, onSetJoinDate }: {
-  member: import('@/types').GroupMember
+function MemberRowMobile({ member, navigate, onViewHistory, onSetJoinDate, onSetLeftDate, onTransfer, onRemove }: {
+  member: GroupMember
   navigate: ReturnType<typeof useNavigate>
-  onSetJoinDate: (member: import('@/types').GroupMember) => void
+  onViewHistory: (member: GroupMember) => void
+  onSetJoinDate: (member: GroupMember) => void
+  onSetLeftDate: (member: GroupMember) => void
+  onTransfer: (member: GroupMember) => void
+  onRemove: (member: GroupMember) => void
 }) {
   const [actionVisible, setActionVisible] = useState(false)
   const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
   const joinedDate = member.joinedAt
     ? new Date(member.joinedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
     : null
+  const leftDate = member.leftAt
+    ? new Date(member.leftAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+    : null
+
+  const actions = member.isFormer
+    ? [
+        { text: 'Переглянути', key: 'view' },
+        { text: 'Налаштувати дату початку', key: 'join-date' },
+        { text: 'Налаштувати дату виходу', key: 'left-date' },
+        { text: 'Історія', key: 'history' },
+      ]
+    : [
+        { text: 'Переглянути', key: 'view' },
+        { text: 'Налаштувати дату початку', key: 'join-date' },
+        { text: 'Перевести на іншу домашку', key: 'transfer' },
+        ...(!member.isAdmin ? [{ text: 'Вилучити з домашки', key: 'remove', danger: true as const }] : []),
+      ]
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--color-border-light)', opacity: member.isFormer ? 0.6 : 1 }}>
         <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}
           onClick={() => navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fullName}</span>
-          {member.isAdmin && member.roleTag && (
+          <span style={{ fontSize: 15, fontWeight: 600, color: member.isFormer ? 'var(--color-text-secondary)' : 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fullName}</span>
+          {member.isFormer && (
+            <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, background: '#F3F4F6', color: '#6B7280', flexShrink: 0 }}>колишній</span>
+          )}
+          {!member.isFormer && member.isAdmin && member.roleTag && (
             <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 4, background: `${member.roleTag.color}20`, color: member.roleTag.color, flexShrink: 0 }}>{member.roleTag.name}</span>
           )}
         </div>
-        {joinedDate
-          ? <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)', flexShrink: 0 }}>з {joinedDate}</span>
-          : <span style={{ width: 40, flexShrink: 0 }} />
-        }
+        <div style={{ flexShrink: 0 }}>
+          {member.isFormer && leftDate
+            ? <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>до {leftDate}</span>
+            : joinedDate
+              ? <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>з {joinedDate}</span>
+              : <span style={{ width: 40, display: 'inline-block' }} />
+          }
+        </div>
         <button onClick={() => setActionVisible(true)} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--color-text-tertiary)', padding: '4px 4px', cursor: 'pointer', flexShrink: 0 }}>•••</button>
       </div>
       <ActionSheet
         visible={actionVisible}
         onClose={() => setActionVisible(false)}
         cancelText="Скасувати"
-        actions={[
-          { text: 'Переглянути', key: 'view' },
-          { text: 'Налаштувати дату початку', key: 'join-date' },
-          { text: 'Перевести на іншу домашку', key: 'transfer' },
-          { text: 'Вилучити з домашки', key: 'remove', danger: true },
-        ]}
+        actions={actions}
         onAction={(action) => {
           setActionVisible(false)
           if (action.key === 'view') navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)
           if (action.key === 'join-date') onSetJoinDate(member)
+          if (action.key === 'left-date') onSetLeftDate(member)
+          if (action.key === 'transfer') onTransfer(member)
+          if (action.key === 'remove') onRemove(member)
+          if (action.key === 'history') onViewHistory(member)
         }}
       />
     </>
+  )
+}
+
+// ── Mobile timeline item ──────────────────────────────────────────────────────
+
+const TIMELINE_DOT_COLORS: Record<string, string> = {
+  group_joined:     '#16A34A',
+  group_left:       '#DC2626',
+  status_change:    '#2563EB',
+  oversight_change: '#7C3AED',
+}
+
+function MobileTimelineItem({ event }: { event: TimelineEvent }) {
+  const color = TIMELINE_DOT_COLORS[event.type] ?? '#9CA3AF'
+  const date = new Date(event.date).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  let label = ''
+  if (event.type === 'group_joined') {
+    label = event.groupName ? `Приєднався до «${event.groupName}»` : 'Приєднався до групи'
+  } else if (event.type === 'group_left') {
+    label = event.groupName ? `Вийшов з «${event.groupName}»` : 'Вийшов з групи'
+  } else if (event.type === 'status_change') {
+    if (event.oldStatusName && event.statusName) label = `Статус: ${event.oldStatusName} → ${event.statusName}`
+    else if (event.statusName) label = `Статус: ${event.statusName}`
+    else label = 'Статус змінено'
+  } else if (event.type === 'oversight_change') {
+    label = event.oversightName ? `Опікун: ${event.oversightName}` : 'Опікун знятий'
+  }
+
+  return (
+    <div style={{ position: 'relative', paddingLeft: 24, marginBottom: 20 }}>
+      <div style={{ position: 'absolute', left: 2, top: 4, width: 12, height: 12, borderRadius: '50%', background: color, border: '2px solid #fff', boxShadow: `0 0 0 2px ${color}50` }} />
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', lineHeight: 1.4 }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 2 }}>{date}</div>
+    </div>
   )
 }
 

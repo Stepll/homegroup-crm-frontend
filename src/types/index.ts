@@ -117,6 +117,22 @@ export interface GroupMember {
   roleTag?: { name: string; color: string } | null
   oversightUserName?: string | null
   joinedAt?: string | null
+  isFormer?: boolean
+  leftAt?: string | null
+}
+
+export interface TimelineEvent {
+  type: 'group_joined' | 'group_left' | 'status_change' | 'oversight_change'
+  date: string
+  groupId?: number | null
+  groupName?: string | null
+  groupColor?: string | null
+  statusName?: string | null
+  statusColor?: string | null
+  oldStatusName?: string | null
+  oldStatusColor?: string | null
+  oversightName?: string | null
+  oldOversightName?: string | null
 }
 
 export interface CabinetCalendarEvent {

@@ -85,6 +85,18 @@ export const groupsApi = {
   setMemberJoinedAt: (groupId: number, data: { personId?: number | null; userId?: number | null; joinedAt: string }) =>
     api.patch(`/groups/${groupId}/members/joined-at`, data),
 
+  setMemberLeftAt: (groupId: number, data: { personId?: number | null; userId?: number | null; leftAt: string }) =>
+    api.patch(`/groups/${groupId}/members/left-at`, data),
+
+  transferMember: (groupId: number, data: { personId?: number | null; userId?: number | null; toGroupId: number }) =>
+    api.post(`/groups/${groupId}/members/transfer`, data),
+
+  getMemberTimeline: (groupId: number, personId: number) =>
+    api.get<import('@/types').TimelineEvent[]>(`/groups/${groupId}/members/timeline/${personId}`).then((r) => r.data),
+
+  getAdminMemberTimeline: (groupId: number, userId: number) =>
+    api.get<import('@/types').TimelineEvent[]>(`/groups/${groupId}/members/admin-timeline/${userId}`).then((r) => r.data),
+
   getMemberHistory: (groupId: number) =>
     api.get<GroupMemberHistoryItem[]>(`/groups/${groupId}/members/history`).then((r) => r.data),
 }

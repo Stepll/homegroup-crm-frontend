@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, Card, Dropdown, Spin, Empty, Modal, Form, Input, Select, TimePicker, Tag, Row, Col, Statistic, Typography, Flex, Alert, Divider, Switch } from 'antd'
+import { Button, Card, Drawer, Dropdown, Spin, Empty, Modal, Form, Input, Select, TimePicker, Tag, Row, Col, Statistic, Typography, Flex, Alert, Divider, Switch, Timeline } from 'antd'
 import { EditOutlined, PlusOutlined, DeleteOutlined, RightOutlined, DownOutlined, UpOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { groupsApi } from '@/api/groups'
 import { useAuth } from '@/store/auth'
 import { usePermission, usePermissions } from '@/hooks/usePermission'
 import { useCabinetData, computePrevMeetingDate, formatDateUk, formatBirthday, formatEventDate } from './useCabinetData'
-import type { Group, GroupCabinet, GroupEvent, GroupNeed } from '@/types'
+import type { Group, GroupCabinet, GroupEvent, GroupMember, GroupNeed, TimelineEvent } from '@/types'
 
 const ADMIN_ROLES = ['SuperAdmin', 'Admin']
 const MEETING_DAYS = ['Понеділок', 'Вівторок', 'Середа', 'Четвер', 'Пʼятниця', 'Субота', 'Неділя']
@@ -92,7 +92,8 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
     busyRoomIds, addEvent, updateEvent, deleteEvent,
     reschedule, bookRoom, sendPlan, saveGroupInfo, deletePlan,
     notifSettings, updateNotifSettings,
-    addNeed, updateNeed, deleteNeed, setMemberJoinedAt,
+    addNeed, updateNeed, deleteNeed,
+    setMemberJoinedAt, setMemberLeftAt, transferMember, removeMemberFromGroup,
   } = useCabinetData(groupId)
 
   const [editGroupVisible, setEditGroupVisible] = useState(false)
@@ -120,9 +121,72 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
     if (groupMembersForNeeds.length > 0) return
     try { setGroupMembersForNeeds(await groupsApi.getMembers(groupId)) } catch { /* ignore */ }
   }
-  const [joinDateMember, setJoinDateMember] = useState<import('@/types').GroupMember | null>(null)
+  const [joinDateMember, setJoinDateMember] = useState<GroupMember | null>(null)
   const [joinDateValue, setJoinDateValue] = useState('')
   const [savingJoinDate, setSavingJoinDate] = useState(false)
+
+  const [leftDateMember, setLeftDateMember] = useState<GroupMember | null>(null)
+  const [leftDateValue, setLeftDateValue] = useState('')
+  const [savingLeftDate, setSavingLeftDate] = useState(false)
+
+  const [transferTarget, setTransferTarget] = useState<GroupMember | null>(null)
+  const [allGroups, setAllGroups] = useState<Group[]>([])
+  const [transferToGroupId, setTransferToGroupId] = useState<number | null>(null)
+  const [transferring, setTransferring] = useState(false)
+
+  const [historyMember, setHistoryMember] = useState<GroupMember | null>(null)
+  const [historyEvents, setHistoryEvents] = useState<TimelineEvent[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  const handleViewHistory = async (member: GroupMember) => {
+    setHistoryMember(member)
+    setHistoryLoading(true)
+    setHistoryEvents([])
+    try {
+      const events = member.isAdmin
+        ? await groupsApi.getAdminMemberTimeline(groupId, member.userId!)
+        : await groupsApi.getMemberTimeline(groupId, member.id)
+      setHistoryEvents(events)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  const handleOpenTransfer = async (member: GroupMember) => {
+    setTransferTarget(member)
+    setTransferToGroupId(null)
+    if (allGroups.length === 0) {
+      const groups = await groupsApi.getAll()
+      setAllGroups(groups.filter((g) => g.id !== groupId))
+    } else {
+      setAllGroups((prev) => prev.filter((g) => g.id !== groupId))
+    }
+  }
+
+  const handleConfirmTransfer = async () => {
+    if (!transferTarget || !transferToGroupId) return
+    setTransferring(true)
+    try {
+      await transferMember(
+        transferTarget.isAdmin ? null : transferTarget.id,
+        transferTarget.isAdmin ? (transferTarget.userId ?? null) : null,
+        transferToGroupId,
+      )
+      setTransferTarget(null)
+    } finally {
+      setTransferring(false)
+    }
+  }
+
+  const handleRemoveMember = (member: GroupMember) => {
+    const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
+    Modal.confirm({
+      title: `Вилучити ${fullName} з домашки?`,
+      content: 'Людина більше не буде прив\'язана до жодної домашки.',
+      okText: 'Вилучити', okType: 'danger', cancelText: 'Скасувати',
+      onOk: () => removeMemberFromGroup(member.id, null),
+    })
+  }
 
   const [editGroupForm] = Form.useForm()
 
@@ -322,10 +386,17 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
                       key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`}
                       member={m}
                       navigate={navigate}
+                      onViewHistory={handleViewHistory}
                       onSetJoinDate={(member) => {
                         setJoinDateMember(member)
                         setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
                       }}
+                      onSetLeftDate={(member) => {
+                        setLeftDateMember(member)
+                        setLeftDateValue(member.leftAt ? member.leftAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
+                      }}
+                      onTransfer={handleOpenTransfer}
+                      onRemove={handleRemoveMember}
                     />
                   ))}
                 </div>
@@ -611,6 +682,86 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
         </Form>
       </Modal>
 
+      {/* History drawer */}
+      <Drawer
+        title={historyMember ? `Історія — ${[historyMember.name, historyMember.lastName].filter(Boolean).join(' ')}` : 'Історія'}
+        open={!!historyMember}
+        onClose={() => setHistoryMember(null)}
+        width={420}
+      >
+        {historyLoading
+          ? <Flex justify="center" style={{ padding: 40 }}><Spin /></Flex>
+          : historyEvents.length === 0
+            ? <Text type="secondary">Немає записів</Text>
+            : <Timeline items={historyEvents.map((e) => ({
+                color: TIMELINE_COLORS[e.type] ?? '#9CA3AF',
+                children: <TimelineEventLabel event={e} />,
+              }))} />
+        }
+      </Drawer>
+
+      {/* Transfer modal */}
+      <Modal
+        title={transferTarget ? `Перевести — ${[transferTarget.name, transferTarget.lastName].filter(Boolean).join(' ')}` : 'Перевести'}
+        open={!!transferTarget}
+        onCancel={() => setTransferTarget(null)}
+        onOk={handleConfirmTransfer}
+        okText="Перевести"
+        cancelText="Скасувати"
+        okButtonProps={{ loading: transferring, disabled: !transferToGroupId }}
+        width={400}
+      >
+        <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>Оберіть домашку для переведення:</Text>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Оберіть домашку..."
+          value={transferToGroupId ?? undefined}
+          onChange={setTransferToGroupId}
+          options={allGroups.map((g) => ({ value: g.id, label: g.name }))}
+          showSearch
+          filterOption={(input, opt) => (opt?.label as string ?? '').toLowerCase().includes(input.toLowerCase())}
+        />
+      </Modal>
+
+      {/* Left date modal */}
+      <Modal
+        title="Налаштувати дату кінця"
+        open={!!leftDateMember}
+        onCancel={() => setLeftDateMember(null)}
+        footer={null}
+        width={360}
+      >
+        {leftDateMember && (
+          <>
+            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+              {[leftDateMember.name, leftDateMember.lastName].filter(Boolean).join(' ')}
+            </Text>
+            <Form layout="vertical" onFinish={async () => {
+              if (!leftDateValue) return
+              setSavingLeftDate(true)
+              try {
+                await setMemberLeftAt(
+                  leftDateMember.isAdmin ? null : leftDateMember.id,
+                  leftDateMember.isAdmin ? (leftDateMember.userId ?? null) : null,
+                  leftDateValue,
+                )
+                setLeftDateMember(null)
+              } finally {
+                setSavingLeftDate(false)
+              }
+            }}>
+              <Form.Item label="Дата виходу">
+                <input type="date" value={leftDateValue} onChange={(e) => setLeftDateValue(e.target.value)} style={nativeDateStyle} />
+              </Form.Item>
+              <Flex justify="flex-end" gap={8}>
+                <Button onClick={() => setLeftDateMember(null)}>Скасувати</Button>
+                <Button type="primary" htmlType="submit" loading={savingLeftDate}>Зберегти</Button>
+              </Flex>
+            </Form>
+          </>
+        )}
+      </Modal>
+
       {/* Set join date modal */}
       <Modal
         title="Налаштувати дату початку"
@@ -744,43 +895,60 @@ function OrgMemberRowDesktop({ member }: { member: GroupCabinet['orgTeam'][0] })
 
 // ── Member row ────────────────────────────────────────────────────────────────
 
-function MemberRowDesktop({ member, navigate, onSetJoinDate }: {
-  member: import('@/types').GroupMember
+function MemberRowDesktop({ member, navigate, onViewHistory, onSetJoinDate, onSetLeftDate, onTransfer, onRemove }: {
+  member: GroupMember
   navigate: ReturnType<typeof useNavigate>
-  onSetJoinDate: (member: import('@/types').GroupMember) => void
+  onViewHistory: (m: GroupMember) => void
+  onSetJoinDate: (m: GroupMember) => void
+  onSetLeftDate: (m: GroupMember) => void
+  onTransfer: (m: GroupMember) => void
+  onRemove: (m: GroupMember) => void
 }) {
   const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
-  const joinedDate = member.joinedAt
-    ? new Date(member.joinedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })
-    : null
+  const dateLabel = member.isFormer
+    ? (member.leftAt ? `виб. ${new Date(member.leftAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}` : null)
+    : (member.joinedAt ? `з ${new Date(member.joinedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' })}` : null)
 
-  const menuItems = [
-    { key: 'view', label: 'Переглянути' },
-    { key: 'join-date', label: 'Налаштувати дату початку' },
-    { key: 'transfer', label: 'Перевести на іншу домашку' },
-    { key: 'remove', label: 'Вилучити з домашки', danger: true },
-  ]
+  const menuItems = member.isFormer
+    ? [
+        { key: 'view', label: 'Переглянути' },
+        { key: 'history', label: 'Історія' },
+        { key: 'join-date', label: 'Налаштувати дату початку' },
+        { key: 'left-date', label: 'Налаштувати дату кінця' },
+      ]
+    : [
+        { key: 'view', label: 'Переглянути' },
+        { key: 'history', label: 'Історія' },
+        { key: 'join-date', label: 'Налаштувати дату початку' },
+        { key: 'transfer', label: 'Перевести на іншу домашку' },
+        ...(!member.isAdmin ? [{ key: 'remove', label: 'Вилучити з домашки', danger: true }] : []),
+      ]
 
   const handleMenuClick = ({ key }: { key: string }) => {
     if (key === 'view') navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)
+    if (key === 'history') onViewHistory(member)
     if (key === 'join-date') onSetJoinDate(member)
+    if (key === 'left-date') onSetLeftDate(member)
+    if (key === 'transfer') onTransfer(member)
+    if (key === 'remove') onRemove(member)
   }
 
   return (
-    <Flex align="center" gap={8} style={{ padding: '7px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+    <Flex align="center" gap={8} style={{ padding: '7px 0', borderBottom: '1px solid var(--color-border-light)', opacity: member.isFormer ? 0.6 : 1 }}>
       <Flex align="center" gap={6} style={{ flex: 1, minWidth: 0 }}>
         <Text
-          strong
+          strong={!member.isFormer}
           onClick={() => navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)}
-          style={{ cursor: 'pointer', color: 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          style={{ cursor: 'pointer', color: member.isFormer ? 'var(--color-text-secondary)' : 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
         >{fullName}</Text>
         {member.isAdmin && member.roleTag && (
           <Tag style={{ background: `${member.roleTag.color}20`, color: member.roleTag.color, border: 'none', fontSize: 11, flexShrink: 0 }}>{member.roleTag.name}</Tag>
         )}
+        {member.isFormer && <Tag style={{ border: 'none', background: '#F3F4F6', color: '#6B7280', fontSize: 10, flexShrink: 0 }}>колишній</Tag>}
       </Flex>
-      {joinedDate
-        ? <Text type="secondary" style={{ fontSize: 12, flexShrink: 0, minWidth: 90, textAlign: 'right' }}>з {joinedDate}</Text>
-        : <span style={{ minWidth: 90 }} />
+      {dateLabel
+        ? <Text type="secondary" style={{ fontSize: 12, flexShrink: 0, minWidth: 110, textAlign: 'right' }}>{dateLabel}</Text>
+        : <span style={{ minWidth: 110 }} />
       }
       <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} trigger={['click']}>
         <Button type="text" size="small" style={{ color: 'var(--color-text-tertiary)', flexShrink: 0 }}>•••</Button>
@@ -805,6 +973,57 @@ function NeedStatusDropdown({ need, onUpdate }: { need: GroupNeed; onUpdate: (st
       <Tag color={cfg.color} style={{ cursor: 'pointer', userSelect: 'none' }}>{cfg.label} ▾</Tag>
     </Dropdown>
   )
+}
+
+// ── Timeline helpers ──────────────────────────────────────────────────────────
+
+const TIMELINE_COLORS: Record<string, string> = {
+  group_joined:    '#16A34A',
+  group_left:      '#DC2626',
+  status_change:   '#2563EB',
+  oversight_change:'#7C3AED',
+}
+
+function TimelineEventLabel({ event }: { event: TimelineEvent }) {
+  const { Text } = Typography
+  const date = new Date(event.date).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  if (event.type === 'group_joined') return (
+    <div>
+      <Text strong>Приєднався до «{event.groupName}»</Text>
+      <br /><Text type="secondary" style={{ fontSize: 12 }}>{date}</Text>
+    </div>
+  )
+  if (event.type === 'group_left') return (
+    <div>
+      <Text strong>Покинув «{event.groupName}»</Text>
+      <br /><Text type="secondary" style={{ fontSize: 12 }}>{date}</Text>
+    </div>
+  )
+  if (event.type === 'status_change') return (
+    <div>
+      <Text strong>Статус змінено</Text>
+      {event.oldStatusName && <> <Text type="secondary">{event.oldStatusName}</Text> <Text>→</Text></>}
+      {event.statusName && (
+        <Tag style={{ background: `${event.statusColor ?? '#888'}20`, color: event.statusColor ?? '#888', border: 'none', marginLeft: 4 }}>{event.statusName}</Tag>
+      )}
+      <br /><Text type="secondary" style={{ fontSize: 12 }}>{date}</Text>
+    </div>
+  )
+  if (event.type === 'oversight_change') {
+    const added = event.oversightName && !event.oldOversightName
+    const removed = !event.oversightName && event.oldOversightName
+    const changed = event.oversightName && event.oldOversightName
+    return (
+      <div>
+        {added && <Text strong>Призначено опікуна: {event.oversightName}</Text>}
+        {removed && <Text strong>Знято опікуна: {event.oldOversightName}</Text>}
+        {changed && <Text strong>Опікун: {event.oldOversightName} → {event.oversightName}</Text>}
+        <br /><Text type="secondary" style={{ fontSize: 12 }}>{date}</Text>
+      </div>
+    )
+  }
+  return <Text>{date}</Text>
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
