@@ -503,15 +503,6 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
           }
         </div>
 
-        {/* Block 8: Members */}
-        <div style={{ ...block, padding: '14px 16px' }}>
-          <SectionLabel>Члени групи</SectionLabel>
-          {members.length === 0
-            ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає членів</span>
-            : members.map((m) => <MemberRowMobile key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`} member={m} navigate={navigate} />)
-          }
-        </div>
-
         {/* Stats */}
         <div style={block}>
           <div style={{ padding: '14px 0' }}>
@@ -546,6 +537,17 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
             ))}
           </div>
         )}
+
+        {/* Block 8: Members — bottom of page */}
+        <div style={{ ...block, padding: '14px 16px' }}>
+          <SectionLabel>Члени групи</SectionLabel>
+          {members.length === 0
+            ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає членів</span>
+            : <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+                {members.map((m) => <MemberRowMobile key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`} member={m} navigate={navigate} />)}
+              </div>
+          }
+        </div>
       </div>
 
       {/* Edit event popup */}
@@ -793,22 +795,24 @@ function MemberRowMobile({ member, navigate }: { member: import('@/types').Group
   const [actionVisible, setActionVisible] = useState(false)
   const fullName = [member.name, member.lastName].filter(Boolean).join(' ')
   const joinedDate = member.joinedAt
-    ? new Date(member.joinedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(member.joinedAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
     : null
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--color-border-light)' }}>
-        <div style={{ flex: 1, minWidth: 0 }} onClick={() => navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-primary)' }}>{fullName}</span>
-            {member.isAdmin && member.roleTag && (
-              <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 4, background: `${member.roleTag.color}20`, color: member.roleTag.color }}>{member.roleTag.name}</span>
-            )}
-          </div>
-          {joinedDate && <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2 }}>з {joinedDate}</div>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--color-border-light)' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}
+          onClick={() => navigate(member.isAdmin ? `/admins/${member.userId}` : `/people/${member.id}`)}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fullName}</span>
+          {member.isAdmin && member.roleTag && (
+            <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 4, background: `${member.roleTag.color}20`, color: member.roleTag.color, flexShrink: 0 }}>{member.roleTag.name}</span>
+          )}
         </div>
-        <button onClick={() => setActionVisible(true)} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--color-text-tertiary)', padding: '4px 8px', cursor: 'pointer' }}>•••</button>
+        {joinedDate
+          ? <span style={{ fontSize: 12, color: 'var(--color-text-tertiary)', flexShrink: 0 }}>з {joinedDate}</span>
+          : <span style={{ width: 40, flexShrink: 0 }} />
+        }
+        <button onClick={() => setActionVisible(true)} style={{ background: 'none', border: 'none', fontSize: 18, color: 'var(--color-text-tertiary)', padding: '4px 4px', cursor: 'pointer', flexShrink: 0 }}>•••</button>
       </div>
       <ActionSheet
         visible={actionVisible}
