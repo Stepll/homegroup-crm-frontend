@@ -376,32 +376,54 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
             </Card>
           )}
 
-          {/* Members */}
-          <Card title="Члени групи" style={{ ...cardStyle, marginTop: 16 }}>
-            {members.length === 0
-              ? <Text type="secondary">Немає членів</Text>
-              : <div style={{ maxHeight: 360, overflowY: 'auto' }}>
-                  {members.map((m) => (
+          {/* Active members */}
+          {(() => {
+            const activeMembers = members.filter((m) => !m.isFormer)
+            return (
+              <Card title="Члени групи" style={{ ...cardStyle, marginTop: 16 }}>
+                {activeMembers.length === 0
+                  ? <Text type="secondary">Немає членів</Text>
+                  : <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+                      {activeMembers.map((m) => (
+                        <MemberRowDesktop
+                          key={`${m.isAdmin ? 'u' : 'p'}-${m.isAdmin ? m.userId : m.id}`}
+                          member={m}
+                          navigate={navigate}
+                          onViewHistory={handleViewHistory}
+                          onSetJoinDate={(member) => { setJoinDateMember(member); setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10)) }}
+                          onSetLeftDate={(member) => { setLeftDateMember(member); setLeftDateValue(member.leftAt ? member.leftAt.slice(0, 10) : new Date().toISOString().slice(0, 10)) }}
+                          onTransfer={handleOpenTransfer}
+                          onRemove={handleRemoveMember}
+                        />
+                      ))}
+                    </div>
+                }
+              </Card>
+            )
+          })()}
+
+          {/* Former members */}
+          {members.some((m) => m.isFormer) && (() => {
+            const formerMembers = members.filter((m) => m.isFormer)
+            return (
+              <Card title={`Минулі члени (${formerMembers.length})`} style={{ ...cardStyle, marginTop: 16 }}>
+                <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                  {formerMembers.map((m) => (
                     <MemberRowDesktop
-                      key={`${m.isAdmin ? 'u' : 'p'}-${m.id}`}
+                      key={`${m.isAdmin ? 'u' : 'p'}-${m.isAdmin ? m.userId : m.id}`}
                       member={m}
                       navigate={navigate}
                       onViewHistory={handleViewHistory}
-                      onSetJoinDate={(member) => {
-                        setJoinDateMember(member)
-                        setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
-                      }}
-                      onSetLeftDate={(member) => {
-                        setLeftDateMember(member)
-                        setLeftDateValue(member.leftAt ? member.leftAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
-                      }}
+                      onSetJoinDate={(member) => { setJoinDateMember(member); setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10)) }}
+                      onSetLeftDate={(member) => { setLeftDateMember(member); setLeftDateValue(member.leftAt ? member.leftAt.slice(0, 10) : new Date().toISOString().slice(0, 10)) }}
                       onTransfer={handleOpenTransfer}
                       onRemove={handleRemoveMember}
                     />
                   ))}
                 </div>
-            }
-          </Card>
+              </Card>
+            )
+          })()}
         </Col>
 
         {/* Right column */}

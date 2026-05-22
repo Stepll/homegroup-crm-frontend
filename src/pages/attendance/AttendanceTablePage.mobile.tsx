@@ -343,8 +343,10 @@ export function AttendanceTablePageMobile() {
                 const isCancelled = current.meetings[date]?.isCancelled ?? false
                 const count = isCancelled ? null : members.reduce((n, m) => {
                   const key = memberKey(m)
-                  if (!(date in (current.attendance[key] ?? {}))) return n
-                  return n + (current.attendance[key][date] ? 1 : 0)
+                  const att = current.attendance[key] ?? {}
+                  if (!(date in att)) return n
+                  if (date < m.joinedAt || (!!m.leftAt && date > m.leftAt)) return n
+                  return n + (att[date] ? 1 : 0)
                 }, 0)
                 return (
                   <div key={date} style={{
@@ -401,19 +403,12 @@ export function AttendanceTablePageMobile() {
                   {/* Attendance cells */}
                   {dates.map((date) => {
                     const isCancelled = current.meetings[date]?.isCancelled ?? false
-
-                    if (isCancelled) {
-                      return <div key={date} style={disabledCell(CELL_W, true)} />
-                    }
-
-                    const present = att[date] ?? false
-                    return (
-                      <button
-                        key={date}
-                        onClick={() => toggleCell(key, date)}
-                        style={attendanceCell(CELL_W, present)}
-                      />
-                    )
+                    if (isCancelled) return <div key={date} style={disabledCell(CELL_W, true)} />
+                    const outsidePeriod = date < m.joinedAt || (!!m.leftAt && date > m.leftAt)
+                    if (outsidePeriod) return <div key={date} style={disabledCell(CELL_W, false)} />
+                    const hasData = date in att
+                    if (!hasData) return <button key={date} onClick={() => toggleCell(key, date)} style={noDataCell(CELL_W)} />
+                    return <button key={date} onClick={() => toggleCell(key, date)} style={attendanceCell(CELL_W, att[date])} />
                   })}
                 </div>
               )
@@ -568,9 +563,24 @@ function disabledCell(w: number, isCancelled: boolean): React.CSSProperties {
     width: w,
     minWidth: w,
     flexShrink: 0,
-    background: isCancelled ? '#FEF9C3' : '#F3F4F6',
-    borderLeft: '1px solid var(--color-border-light)',
+    background: isCancelled ? '#FEF9C3' : '#E5E7EB',
+    borderLeft: `1px solid ${isCancelled ? '#FDE68A' : '#D1D5DB'}`,
     borderBottom: '1px solid var(--color-border-light)',
+  }
+}
+
+function noDataCell(w: number): React.CSSProperties {
+  return {
+    width: w,
+    minWidth: w,
+    flexShrink: 0,
+    background: '#F3F4F6',
+    border: 'none',
+    borderLeft: '1px solid #E5E7EB',
+    borderBottom: '1px solid var(--color-border-light)',
+    cursor: 'pointer',
+    WebkitTapHighlightColor: 'transparent',
+    outline: 'none',
   }
 }
 

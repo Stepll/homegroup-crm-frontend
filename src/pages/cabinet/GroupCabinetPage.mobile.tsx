@@ -609,33 +609,56 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
           </div>
         )}
 
-        {/* Block 8: Members — bottom of page */}
-        <div style={{ ...block, padding: '14px 16px' }}>
-          <SectionLabel>Члени групи</SectionLabel>
-          {members.length === 0
-            ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає членів</span>
-            : <div style={{ maxHeight: 360, overflowY: 'auto' }}>
-                {members.map((m) => (
+        {/* Block 8: Active members */}
+        {(() => {
+          const activeMembers = members.filter((m) => !m.isFormer)
+          return (
+            <div style={{ ...block, padding: '14px 16px' }}>
+              <SectionLabel>Члени групи</SectionLabel>
+              {activeMembers.length === 0
+                ? <span style={{ fontSize: 13, color: 'var(--color-text-tertiary)', marginTop: 8, display: 'block' }}>Немає членів</span>
+                : <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+                    {activeMembers.map((m) => (
+                      <MemberRowMobile
+                        key={`${m.isAdmin ? 'u' : 'p'}-${m.isAdmin ? m.userId : m.id}`}
+                        member={m}
+                        navigate={navigate}
+                        onViewHistory={handleViewHistory}
+                        onSetJoinDate={(member) => { setJoinDateMember(member); setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10)) }}
+                        onSetLeftDate={(member) => { setLeftDateMember(member); setLeftDateValue(member.leftAt ? member.leftAt.slice(0, 10) : new Date().toISOString().slice(0, 10)) }}
+                        onTransfer={handleOpenTransfer}
+                        onRemove={handleRemoveMember}
+                      />
+                    ))}
+                  </div>
+              }
+            </div>
+          )
+        })()}
+
+        {/* Block 9: Former members */}
+        {members.some((m) => m.isFormer) && (() => {
+          const formerMembers = members.filter((m) => m.isFormer)
+          return (
+            <div style={{ ...block, padding: '14px 16px' }}>
+              <SectionLabel>Минулі члени ({formerMembers.length})</SectionLabel>
+              <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                {formerMembers.map((m) => (
                   <MemberRowMobile
                     key={`${m.isAdmin ? 'u' : 'p'}-${m.isAdmin ? m.userId : m.id}`}
                     member={m}
                     navigate={navigate}
                     onViewHistory={handleViewHistory}
-                    onSetJoinDate={(member) => {
-                      setJoinDateMember(member)
-                      setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
-                    }}
-                    onSetLeftDate={(member) => {
-                      setLeftDateMember(member)
-                      setLeftDateValue(member.leftAt ? member.leftAt.slice(0, 10) : new Date().toISOString().slice(0, 10))
-                    }}
+                    onSetJoinDate={(member) => { setJoinDateMember(member); setJoinDateValue(member.joinedAt ? member.joinedAt.slice(0, 10) : new Date().toISOString().slice(0, 10)) }}
+                    onSetLeftDate={(member) => { setLeftDateMember(member); setLeftDateValue(member.leftAt ? member.leftAt.slice(0, 10) : new Date().toISOString().slice(0, 10)) }}
                     onTransfer={handleOpenTransfer}
                     onRemove={handleRemoveMember}
                   />
                 ))}
               </div>
-          }
-        </div>
+            </div>
+          )
+        })()}
       </div>
 
       {/* Edit event popup */}

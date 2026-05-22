@@ -333,6 +333,7 @@ export interface AttendanceTableMember {
   name: string
   lastName: string | null
   joinedAt: string
+  leftAt?: string | null
   attendanceRate: number
   attendance: Record<string, boolean>
 }

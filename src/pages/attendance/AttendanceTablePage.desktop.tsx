@@ -333,8 +333,10 @@ export function AttendanceTablePageDesktop() {
                 const isCancelled = current.meetings[date]?.isCancelled ?? false
                 const count = isCancelled ? null : members.reduce((n, m) => {
                   const key = memberKey(m)
-                  if (!(date in (current.attendance[key] ?? {}))) return n
-                  return n + (current.attendance[key][date] ? 1 : 0)
+                  const att = current.attendance[key] ?? {}
+                  if (!(date in att)) return n
+                  if (date < m.joinedAt || (!!m.leftAt && date > m.leftAt)) return n
+                  return n + (att[date] ? 1 : 0)
                 }, 0)
                 return (
                   <div key={date} style={{
@@ -389,27 +391,21 @@ export function AttendanceTablePageDesktop() {
                   {dates.map((date) => {
                     const isCancelled = current.meetings[date]?.isCancelled ?? false
                     if (isCancelled) {
+                      return <div key={date} style={{ width: CELL_W, minWidth: CELL_W, height: ROW_H, flexShrink: 0, background: '#FEF9C3', borderLeft: '1px solid #FDE68A' }} />
+                    }
+                    const outsidePeriod = date < m.joinedAt || (!!m.leftAt && date > m.leftAt)
+                    if (outsidePeriod) {
+                      return <div key={date} style={{ width: CELL_W, minWidth: CELL_W, height: ROW_H, flexShrink: 0, background: '#E5E7EB', borderLeft: '1px solid #D1D5DB' }} />
+                    }
+                    const hasData = date in att
+                    if (!hasData) {
                       return (
-                        <div key={date} style={{
-                          width: CELL_W, minWidth: CELL_W, height: ROW_H, flexShrink: 0,
-                          background: '#FEF9C3', borderLeft: '1px solid #FDE68A',
-                        }} />
+                        <button key={date} onClick={() => toggleCell(key, date)} style={{ width: CELL_W, minWidth: CELL_W, height: ROW_H, flexShrink: 0, background: '#F3F4F6', border: 'none', borderLeft: '1px solid #E5E7EB', cursor: 'pointer', outline: 'none' }} />
                       )
                     }
-                    const present = att[date] ?? false
+                    const present = att[date]
                     return (
-                      <button
-                        key={date}
-                        onClick={() => toggleCell(key, date)}
-                        style={{
-                          width: CELL_W, minWidth: CELL_W, height: ROW_H, flexShrink: 0,
-                          background: present ? '#DCFCE7' : '#FEE2E2',
-                          border: 'none',
-                          borderLeft: `1px solid ${present ? '#BBF7D0' : '#FECACA'}`,
-                          cursor: 'pointer', outline: 'none',
-                          transition: 'background 0.1s',
-                        }}
-                      />
+                      <button key={date} onClick={() => toggleCell(key, date)} style={{ width: CELL_W, minWidth: CELL_W, height: ROW_H, flexShrink: 0, background: present ? '#DCFCE7' : '#FEE2E2', border: 'none', borderLeft: `1px solid ${present ? '#BBF7D0' : '#FECACA'}`, cursor: 'pointer', outline: 'none', transition: 'background 0.1s' }} />
                     )
                   })}
                 </div>
