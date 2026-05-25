@@ -35,12 +35,11 @@ export function AttendancePageMobile() {
 
   useEffect(() => {
     const initDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
-    const summaryP = attendanceApi.getSummary(Number(id)).catch(() => [] as { meetingDate: string }[])
+    const datesP = attendanceApi.getMeetingDates(Number(id)).catch(() => [] as string[])
     const groupP = groupsApi.getById(Number(id)).catch(() => null)
-    Promise.all([summaryP, groupP]).then(([summary, group]) => {
-      const fromSummary = summary.map((s) => s.meetingDate)
+    Promise.all([datesP, groupP]).then(([fromDb, group]) => {
       const generated = generateMeetingDates(group?.meetingDay, 8, initDate)
-      const merged = Array.from(new Set([...fromSummary, ...generated, initDate]))
+      const merged = Array.from(new Set([...fromDb, ...generated, initDate]))
         .sort((a, b) => b.localeCompare(a))
       setMeetingDates(merged)
     })

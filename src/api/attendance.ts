@@ -14,6 +14,9 @@ export const attendanceApi = {
   getSummary: (groupId: number) =>
     api.get<AttendanceSummary[]>('/attendance/summary', { params: { groupId } }).then((r) => r.data),
 
+  getMeetingDates: (groupId: number) =>
+    api.get<string[]>('/attendance/dates', { params: { groupId } }).then((r) => r.data),
+
   record: (data: { homeGroupId: number; meetingDate: string; entries: { personId?: number; userId?: number; wasPresent: boolean; notes?: string }[] }) =>
     api.post('/attendance', data),
 
