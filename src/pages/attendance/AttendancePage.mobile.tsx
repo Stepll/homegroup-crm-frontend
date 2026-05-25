@@ -4,6 +4,7 @@ import { NavBar, Button, Toast, SpinLoading } from 'antd-mobile'
 import { CheckCircleOutline, CloseCircleOutline } from 'antd-mobile-icons'
 import { groupsApi } from '@/api/groups'
 import { attendanceApi } from '@/api/attendance'
+import { calendarApi } from '@/api/calendar'
 import type { GroupMember } from '@/types'
 
 function memberKey(m: GroupMember) {
@@ -36,10 +37,12 @@ export function AttendancePageMobile() {
   useEffect(() => {
     const initDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
     const datesP = attendanceApi.getMeetingDates(Number(id)).catch(() => [] as string[])
-    const groupP = groupsApi.getById(Number(id)).catch(() => null)
-    Promise.all([datesP, groupP]).then(([fromDb, group]) => {
-      const generated = generateMeetingDates(group?.meetingDay, 8, initDate)
-      const merged = Array.from(new Set([...fromDb, ...generated, initDate]))
+    const today = new Date().toISOString().split('T')[0]
+    const eightWeeksAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 56); return d.toISOString().split('T')[0] })()
+    const calP = calendarApi.getOccurrences({ from: eightWeeksAgo, to: today, types: 'HomeGroup', groupIds: String(id) }).catch(() => [])
+    Promise.all([datesP, calP]).then(([fromDb, occurrences]) => {
+      const fromCalendar = occurrences.filter(o => o.homeGroupId === Number(id)).map(o => o.date)
+      const merged = Array.from(new Set([...fromDb, ...fromCalendar, initDate]))
         .sort((a, b) => b.localeCompare(a))
       setMeetingDates(merged)
     })
@@ -249,32 +252,6 @@ export function AttendancePageMobile() {
       </div>
     </div>
   )
-}
-
-const UKR_DAYS: Record<string, number> = {
-  'Неділя': 0, 'Понеділок': 1, 'Вівторок': 2, 'Середа': 3,
-  'Четвер': 4, "Пʼятниця": 5, "П'ятниця": 5, 'Субота': 6,
-}
-
-function generateMeetingDates(meetingDay: string | undefined, weeks: number, fallbackDate?: string): string[] {
-  const today = new Date()
-  if (meetingDay) {
-    const target = UKR_DAYS[meetingDay]
-    if (target !== undefined) {
-      const daysAgo = (today.getDay() - target + 7) % 7
-      return Array.from({ length: weeks }, (_, i) => {
-        const d = new Date(today)
-        d.setDate(d.getDate() - daysAgo - i * 7)
-        return d.toISOString().split('T')[0]
-      })
-    }
-  }
-  const start = fallbackDate ? new Date(fallbackDate + 'T00:00:00') : today
-  return Array.from({ length: weeks }, (_, i) => {
-    const d = new Date(start)
-    d.setDate(d.getDate() - i * 7)
-    return d.toISOString().split('T')[0]
-  })
 }
 
 function formatMeetingDate(iso: string) {
