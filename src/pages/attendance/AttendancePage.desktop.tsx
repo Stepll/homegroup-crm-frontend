@@ -13,6 +13,14 @@ function memberKey(m: GroupMember) {
   return m.isAdmin ? `u_${m.userId}` : `p_${m.id}`
 }
 
+function weekKey(iso: string): string {
+  const d = new Date(iso + 'T00:00:00')
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  const mon = new Date(d); mon.setDate(diff)
+  return mon.toISOString().split('T')[0]
+}
+
 function formatMeetingDate(iso: string) {
   const d = new Date(iso + 'T00:00:00')
   return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', weekday: 'short', year: 'numeric' })
@@ -45,7 +53,10 @@ export function AttendancePageDesktop() {
     const calP = calendarApi.getOccurrences({ from: eightWeeksAgo, to: today, types: 'HomeGroup', groupIds: String(id) }).catch(() => [])
     Promise.all([datesP, calP]).then(([fromDb, occurrences]) => {
       const fromCalendar = occurrences.filter(o => o.homeGroupId === Number(id)).map(o => o.date)
-      const merged = Array.from(new Set([...fromDb, ...fromCalendar, initDate])).sort((a, b) => b.localeCompare(a))
+      // Calendar dates take priority per week — exclude fromDb dates from weeks already covered
+      const calendarWeeks = new Set(fromCalendar.map(weekKey))
+      const filteredFromDb = fromDb.filter(d => !calendarWeeks.has(weekKey(d)))
+      const merged = Array.from(new Set([...filteredFromDb, ...fromCalendar, initDate])).sort((a, b) => b.localeCompare(a))
       setMeetingDates(merged)
     })
   }, [id])
