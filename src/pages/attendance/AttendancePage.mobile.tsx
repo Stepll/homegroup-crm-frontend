@@ -42,9 +42,10 @@ export function AttendancePageMobile() {
     const calP = calendarApi.getOccurrences({ from: eightWeeksAgo, to: today, types: 'HomeGroup', groupIds: String(id) }).catch(() => [])
     Promise.all([datesP, calP]).then(([fromDb, occurrences]) => {
       const fromCalendar = occurrences.filter(o => o.homeGroupId === Number(id)).map(o => o.date)
-      const calendarWeeks = new Set(fromCalendar.map(weekKey))
-      const filteredFromDb = fromDb.filter(d => !calendarWeeks.has(weekKey(d)))
-      const merged = Array.from(new Set([...filteredFromDb, ...fromCalendar, initDate]))
+      // fromDb takes priority — calendar fills only weeks with no DB records
+      const dbWeeks = new Set(fromDb.map(weekKey))
+      const calendarFill = fromCalendar.filter(d => !dbWeeks.has(weekKey(d)))
+      const merged = Array.from(new Set([...fromDb, ...calendarFill, initDate]))
         .sort((a, b) => b.localeCompare(a))
       setMeetingDates(merged)
     })
