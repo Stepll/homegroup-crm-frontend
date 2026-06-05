@@ -4,7 +4,17 @@ import { NavBar, Button, Input, Popup, List, Toast, SpinLoading, Dialog } from '
 import { AddOutline, DeleteOutline, UpOutline, DownOutline, EditSOutline, CheckOutline } from 'antd-mobile-icons'
 import { planningApi } from '@/api/planning'
 import { groupsApi } from '@/api/groups'
+import { attendanceApi } from '@/api/attendance'
+import { calendarApi } from '@/api/calendar'
 import type { PlanBlock, PlanTemplate, MeetingPlanSummary } from '@/types'
+
+function weekKey(iso: string): string {
+  const d = new Date(iso + 'T00:00:00')
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  const mon = new Date(d); mon.setDate(diff)
+  return mon.toISOString().split('T')[0]
+}
 
 type OrgMember = { id: number; name: string }
 
@@ -222,13 +232,16 @@ export function PlanningPageMobile() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const groupId = Number(id)
-  const date = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+  const initDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+  const [date, setDate] = useState(initDate)
 
   const [blocks, setBlocks] = useState<PlanBlock[]>([])
   const [newBlockKeys, setNewBlockKeys] = useState<number[]>([])
   const [appliedTemplateName, setAppliedTemplateName] = useState<string | null>(null)
   const [templates, setTemplates] = useState<PlanTemplate[]>([])
   const [orgTeam, setOrgTeam] = useState<OrgMember[]>([])
+  const [meetingDates, setMeetingDates] = useState<string[]>([initDate])
+  const [planDates, setPlanDates] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [templatePopupVisible, setTemplatePopupVisible] = useState(false)
@@ -237,7 +250,27 @@ export function PlanningPageMobile() {
   const [newTemplateName, setNewTemplateName] = useState('')
   const [savingTemplate, setSavingTemplate] = useState(false)
 
+  // Load all available meeting dates once per group
   useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]
+    const eightWeeksAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 56); return d.toISOString().split('T')[0] })()
+    const datesP = attendanceApi.getMeetingDates(groupId).catch(() => [] as string[])
+    const calP = calendarApi.getOccurrences({ from: eightWeeksAgo, to: today, types: 'HomeGroup', groupIds: String(groupId) }).catch(() => [])
+    const plansP = planningApi.getPlans(groupId).catch(() => [] as MeetingPlanSummary[])
+    Promise.all([datesP, calP, plansP]).then(([fromDb, occurrences, plans]) => {
+      const fromCalendar = occurrences.filter(o => o.homeGroupId === groupId).map(o => o.date)
+      const dbWeeks = new Set(fromDb.map(weekKey))
+      const calendarFill = fromCalendar.filter(d => !dbWeeks.has(weekKey(d)))
+      const planSet = new Set(plans.map(p => p.meetingDate))
+      const allDates = Array.from(new Set([...fromDb, ...calendarFill, ...planSet, initDate]))
+        .sort((a, b) => b.localeCompare(a))
+      setMeetingDates(allDates)
+      setPlanDates(planSet)
+    })
+  }, [groupId])
+
+  useEffect(() => {
+    setLoading(true)
     Promise.all([
       planningApi.getPlan(groupId, date),
       planningApi.getTemplates(),
@@ -251,7 +284,11 @@ export function PlanningPageMobile() {
       if (plan) {
         setBlocks(plan.blocks.map((b) => ({ ...b, info: b.info ?? '', responsible: b.responsible ?? '' })))
         setAppliedTemplateName(plan.appliedTemplateName ?? null)
+      } else {
+        setBlocks([])
+        setAppliedTemplateName(null)
       }
+      setNewBlockKeys([])
     }).finally(() => setLoading(false))
   }, [groupId, date])
 
@@ -356,9 +393,21 @@ export function PlanningPageMobile() {
       {/* Header: date + template tag + buttons */}
       <div style={{ padding: '10px 16px', background: '#fff', borderBottom: '1px solid var(--color-border-light)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
-            {fmtHeader(date)}
-          </span>
+          <select
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            style={{
+              fontSize: 15, fontWeight: 700, color: 'var(--color-text)',
+              background: 'transparent', border: 'none', outline: 'none',
+              cursor: 'pointer', maxWidth: 220,
+            }}
+          >
+            {meetingDates.map((d) => (
+              <option key={d} value={d}>
+                {fmtHeader(d)}{planDates.has(d) ? ' · план' : ''}
+              </option>
+            ))}
+          </select>
           <div style={{ flex: 1 }} />
           {blocks.length > 0 && (
             <button

@@ -86,20 +86,23 @@ export function SchedulePageMobile() {
     const w = editing
     setSaving(true)
     try {
+      const sourceDateForMove = w.effectiveDate ?? w.defaultDate
+
       if (modalCancelled && w.effectiveDate !== null) {
         await scheduleApi.cancel(groupId, w.effectiveDate)
-      } else if (!modalCancelled && w.status === 'cancelled' && modalDate) {
+      } else if (!modalCancelled && w.status === 'cancelled') {
         await scheduleApi.uncancel(groupId, w.defaultDate)
       }
       const newDateStr = modalDate?.format('YYYY-MM-DD')
-      if (!modalCancelled && newDateStr && w.effectiveDate && newDateStr !== w.effectiveDate) {
-        await scheduleApi.move(groupId, w.effectiveDate, newDateStr, modalMovePlan)
+      if (!modalCancelled && newDateStr && newDateStr !== sourceDateForMove) {
+        await scheduleApi.move(groupId, sourceDateForMove, newDateStr, modalMovePlan)
       }
       setEditing(null)
       await loadData()
       Toast.show({ content: 'Збережено', icon: 'success' })
-    } catch {
-      Toast.show({ content: 'Помилка збереження', icon: 'fail' })
+    } catch (e) {
+      console.error('Schedule save error:', e)
+      Toast.show({ content: `Помилка: ${String(e)}`, icon: 'fail' })
     } finally {
       setSaving(false)
     }

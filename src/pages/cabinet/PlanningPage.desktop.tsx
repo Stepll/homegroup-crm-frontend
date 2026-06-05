@@ -1,14 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { Button, Input, Typography, Space, Card, Modal, AutoComplete, Spin } from 'antd'
+import { Button, Input, Typography, Space, Card, Modal, AutoComplete, Spin, Select } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, UpOutlined, DownOutlined, EditOutlined, CheckOutlined, SaveOutlined } from '@ant-design/icons'
 import { planningApi } from '@/api/planning'
 import { groupsApi } from '@/api/groups'
+import { attendanceApi } from '@/api/attendance'
+import { calendarApi } from '@/api/calendar'
 import type { PlanBlock, PlanTemplate, MeetingPlanSummary } from '@/types'
 
 const { Title, Text } = Typography
 
 type OrgMember = { id: number; name: string }
+
+function weekKey(iso: string): string {
+  const d = new Date(iso + 'T00:00:00')
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  const mon = new Date(d); mon.setDate(diff)
+  return mon.toISOString().split('T')[0]
+}
 
 // ── Block card ────────────────────────────────────────────────────────────────
 
@@ -166,13 +176,16 @@ export function PlanningPageDesktop() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const groupId = Number(id)
-  const date = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+  const initDate = searchParams.get('date') ?? new Date().toISOString().split('T')[0]
+  const [date, setDate] = useState(initDate)
 
   const [blocks, setBlocks] = useState<PlanBlock[]>([])
   const [newBlockKeys, setNewBlockKeys] = useState<number[]>([])
   const [appliedTemplateName, setAppliedTemplateName] = useState<string | null>(null)
   const [templates, setTemplates] = useState<PlanTemplate[]>([])
   const [orgTeam, setOrgTeam] = useState<OrgMember[]>([])
+  const [meetingDates, setMeetingDates] = useState<string[]>([initDate])
+  const [planDates, setPlanDates] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [templateModalOpen, setTemplateModalOpen] = useState(false)
@@ -180,7 +193,27 @@ export function PlanningPageDesktop() {
   const [newTemplateName, setNewTemplateName] = useState('')
   const [savingTemplate, setSavingTemplate] = useState(false)
 
+  // Load meeting dates list (DB + calendar) once per group
   useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]
+    const eightWeeksAgo = (() => { const d = new Date(); d.setDate(d.getDate() - 56); return d.toISOString().split('T')[0] })()
+    const datesP = attendanceApi.getMeetingDates(groupId).catch(() => [] as string[])
+    const calP = calendarApi.getOccurrences({ from: eightWeeksAgo, to: today, types: 'HomeGroup', groupIds: String(groupId) }).catch(() => [])
+    const plansP = planningApi.getPlans(groupId).catch(() => [] as MeetingPlanSummary[])
+    Promise.all([datesP, calP, plansP]).then(([fromDb, occurrences, plans]) => {
+      const fromCalendar = occurrences.filter(o => o.homeGroupId === groupId).map(o => o.date)
+      const dbWeeks = new Set(fromDb.map(weekKey))
+      const calendarFill = fromCalendar.filter(d => !dbWeeks.has(weekKey(d)))
+      const planSet = new Set(plans.map(p => p.meetingDate))
+      const allDates = Array.from(new Set([...fromDb, ...calendarFill, ...planSet, initDate]))
+        .sort((a, b) => b.localeCompare(a))
+      setMeetingDates(allDates)
+      setPlanDates(planSet)
+    })
+  }, [groupId])
+
+  useEffect(() => {
+    setLoading(true)
     Promise.all([
       planningApi.getPlan(groupId, date),
       planningApi.getTemplates(),
@@ -191,7 +224,11 @@ export function PlanningPageDesktop() {
       if (plan) {
         setBlocks(plan.blocks.map((b) => ({ ...b, info: b.info ?? '', responsible: b.responsible ?? '' })))
         setAppliedTemplateName(plan.appliedTemplateName ?? null)
+      } else {
+        setBlocks([])
+        setAppliedTemplateName(null)
       }
+      setNewBlockKeys([])
     }).finally(() => setLoading(false))
   }, [groupId, date])
 
@@ -294,7 +331,16 @@ export function PlanningPageDesktop() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <Space>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/cabinet/${groupId}`)}>Назад</Button>
-          <Title level={3} style={{ margin: 0 }}>Планування — {fmtHeader(date)}</Title>
+          <Title level={3} style={{ margin: 0 }}>Планування</Title>
+          <Select
+            value={date}
+            onChange={setDate}
+            style={{ minWidth: 260 }}
+            options={meetingDates.map((d) => ({
+              label: `${fmtHeader(d)}${planDates.has(d) ? ' · є план' : ''}`,
+              value: d,
+            }))}
+          />
         </Space>
         <Space>
           {blocks.length > 0 && (

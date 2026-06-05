@@ -82,23 +82,27 @@ export function SchedulePageDesktop() {
     const w = modal.week
     setSaving(true)
     try {
-      // Cancellation toggle
+      // Source date for any move: current effective date, or default if currently cancelled
+      const sourceDateForMove = w.effectiveDate ?? w.defaultDate
+
+      // Step 1: cancellation toggle
       if (modalCancelled && w.effectiveDate !== null) {
         await scheduleApi.cancel(groupId, w.effectiveDate)
-      } else if (!modalCancelled && w.status === 'cancelled' && modalDate) {
+      } else if (!modalCancelled && w.status === 'cancelled') {
         await scheduleApi.uncancel(groupId, w.defaultDate)
       }
 
-      // Date change
+      // Step 2: date change — works even if previously cancelled (uses defaultDate as source)
       const newDateStr = modalDate?.format('YYYY-MM-DD')
-      if (!modalCancelled && newDateStr && w.effectiveDate && newDateStr !== w.effectiveDate) {
-        await scheduleApi.move(groupId, w.effectiveDate, newDateStr, modalMovePlan)
+      if (!modalCancelled && newDateStr && newDateStr !== sourceDateForMove) {
+        await scheduleApi.move(groupId, sourceDateForMove, newDateStr, modalMovePlan)
       }
 
       setModal(null)
       await loadData()
-    } catch {
-      Modal.error({ title: 'Помилка збереження' })
+    } catch (e) {
+      console.error('Schedule save error:', e)
+      Modal.error({ title: 'Помилка збереження', content: String(e) })
     } finally {
       setSaving(false)
     }
