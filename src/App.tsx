@@ -28,6 +28,7 @@ import { PersonActivityPage } from '@/pages/people/PersonActivityPage'
 import { GroupCabinetPage } from '@/pages/cabinet/GroupCabinetPage'
 import { PlanningPage } from '@/pages/cabinet/PlanningPage'
 import { StatsPage } from '@/pages/cabinet/StatsPage'
+import { SchedulePage } from '@/pages/cabinet/SchedulePage'
 import { CalendarPage } from '@/pages/calendar/CalendarPage'
 
 export function App() {
@@ -52,6 +53,7 @@ export function App() {
             <Route path="cabinet/:id/attendance-table" element={<ProtectedRoute permission="attendance.view"><AttendanceTablePage /></ProtectedRoute>} />
             <Route path="cabinet/:id/plan" element={<ProtectedRoute permission="planning.view"><PlanningPage /></ProtectedRoute>} />
             <Route path="cabinet/:id/stats" element={<ProtectedRoute permission="attendance.stats"><StatsPage /></ProtectedRoute>} />
+            <Route path="cabinet/:id/schedule" element={<ProtectedRoute permission="groups.schedule.manage"><SchedulePage /></ProtectedRoute>} />
             <Route path="calendar" element={<ProtectedRoute permission="page.calendar"><CalendarPage /></ProtectedRoute>} />
             <Route path="people" element={<ProtectedRoute permission="page.people"><PeoplePage /></ProtectedRoute>} />
             <Route path="people/new" element={<ProtectedRoute permission="people.create"><PersonCreatePage /></ProtectedRoute>} />

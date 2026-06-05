@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button, Card, Drawer, Dropdown, Spin, Empty, Modal, Form, Input, Select, TimePicker, Tag, Row, Col, Statistic, Typography, Flex, Alert, Divider, Switch, Timeline } from 'antd'
-import { EditOutlined, PlusOutlined, DeleteOutlined, RightOutlined, DownOutlined, UpOutlined } from '@ant-design/icons'
+import { EditOutlined, PlusOutlined, DeleteOutlined, RightOutlined, DownOutlined, UpOutlined, SettingOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { groupsApi } from '@/api/groups'
 import { useAuth } from '@/store/auth'
@@ -84,7 +84,7 @@ export function GroupCabinetPageDesktop() {
 function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }) {
   const navigate = useNavigate()
   const perms = usePermissions([
-    'groups.edit', 'groups.nextMeeting.manage', 'groups.events.manage',
+    'groups.edit', 'groups.nextMeeting.manage', 'groups.schedule.manage', 'groups.events.manage',
     'attendance.record', 'planning.view', 'planning.sendToTelegram',
   ])
   const {
@@ -305,6 +305,9 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
               )}
               {perms['groups.nextMeeting.manage'] && (
                 <Button size="small" danger disabled={!nextMeetingDate} onClick={handleSkipMeeting}>Скасувати</Button>
+              )}
+              {perms['groups.schedule.manage'] && (
+                <Button size="small" icon={<SettingOutlined />} onClick={() => navigate(`/cabinet/${groupId}/schedule`)} title="Налаштування графіку" />
               )}
               {perms['planning.sendToTelegram'] && (
                 <Button size="small" type="primary" loading={sendingPlan}

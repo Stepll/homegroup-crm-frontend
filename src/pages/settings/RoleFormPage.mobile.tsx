@@ -47,6 +47,7 @@ const PERMISSION_GROUPS: PermGroup[] = [
     items: [
       { key: 'groups.members.manage', label: 'Додавати / видаляти / синхронізувати членів' },
       { key: 'groups.nextMeeting.manage', label: 'Змінювати / пропускати дату зустрічі' },
+      { key: 'groups.schedule.manage', label: 'Налаштування графіку (переноси / скасування за тижнями)' },
       { key: 'groups.events.manage', label: 'Додавати / видаляти події групи' },
       { key: 'groups.create', label: 'Створювати нові групи' },
       { key: 'groups.edit', label: 'Редагувати налаштування групи' },

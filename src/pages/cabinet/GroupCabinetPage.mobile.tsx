@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { NavBar, List, SpinLoading, Toast, Empty, Popup, Input, Button, Dialog, Switch, ActionSheet } from 'antd-mobile'
-import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteOutline } from 'antd-mobile-icons'
+import { EditSOutline, RightOutline, DownOutline, UpOutline, AddOutline, DeleteOutline, SetOutline } from 'antd-mobile-icons'
 import { useAuth } from '@/store/auth'
 import { usePermission, usePermissions } from '@/hooks/usePermission'
 import { useCabinetData, computePrevMeetingDate, formatDateUk, formatBirthday, formatEventDate } from './useCabinetData'
@@ -76,7 +76,7 @@ export function GroupCabinetPageMobile() {
 function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boolean }) {
   const navigate = useNavigate()
   const perms = usePermissions([
-    'groups.edit', 'groups.nextMeeting.manage', 'groups.events.manage',
+    'groups.edit', 'groups.nextMeeting.manage', 'groups.schedule.manage', 'groups.events.manage',
     'groups.members.manage', 'attendance.record', 'planning.view',
     'planning.edit', 'planning.sendToTelegram',
   ])
@@ -411,6 +411,13 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
                 <Button size="mini" fill="outline" disabled={!nextMeetingDate}
                   style={{ '--border-color': 'var(--adm-color-danger)', '--text-color': 'var(--adm-color-danger)' } as React.CSSProperties}
                   onClick={handleCancelMeeting}>Скасувати</Button>
+              )}
+              {perms['groups.schedule.manage'] && (
+                <Button size="mini" fill="outline"
+                  style={{ '--border-color': 'var(--color-border)', '--text-color': 'var(--color-text-secondary)' } as React.CSSProperties}
+                  onClick={() => navigate(`/cabinet/${groupId}/schedule`)}>
+                  <SetOutline />
+                </Button>
               )}
               {perms['planning.sendToTelegram'] && (
                 <Button size="mini" fill="solid" disabled={!hasPlanForNextMeeting || !group.telegramGroupId || sendingPlan} loading={sendingPlan}
