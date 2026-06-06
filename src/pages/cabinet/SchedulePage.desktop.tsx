@@ -47,6 +47,7 @@ export function SchedulePageDesktop() {
   const [modalDate, setModalDate] = useState<Dayjs | null>(null)
   const [modalCancelled, setModalCancelled] = useState(false)
   const [modalMovePlan, setModalMovePlan] = useState(true)
+  const [modalMoveAttendance, setModalMoveAttendance] = useState(true)
   const [saving, setSaving] = useState(false)
 
   async function loadData() {
@@ -74,6 +75,7 @@ export function SchedulePageDesktop() {
     setModalDate(week.effectiveDate ? dayjs(week.effectiveDate) : dayjs(week.defaultDate))
     setModalCancelled(week.effectiveDate === null)
     setModalMovePlan(true)
+    setModalMoveAttendance(true)
     setModal({ week })
   }
 
@@ -95,7 +97,7 @@ export function SchedulePageDesktop() {
       // Step 2: date change — works even if previously cancelled (uses defaultDate as source)
       const newDateStr = modalDate?.format('YYYY-MM-DD')
       if (!modalCancelled && newDateStr && newDateStr !== sourceDateForMove) {
-        await scheduleApi.move(groupId, sourceDateForMove, newDateStr, modalMovePlan)
+        await scheduleApi.move(groupId, sourceDateForMove, newDateStr, modalMovePlan, modalMoveAttendance)
       }
 
       setModal(null)
@@ -228,14 +230,12 @@ export function SchedulePageDesktop() {
                     Перенести план з оригінальної дати
                   </Checkbox>
                 )}
+                {modal.week.attendanceRecordCount > 0 && (
+                  <Checkbox checked={modalMoveAttendance} onChange={(e) => setModalMoveAttendance(e.target.checked)}>
+                    Перенести {modal.week.attendanceRecordCount} записів відвідуваності з {fmtDate(modal.week.effectiveDate ?? modal.week.defaultDate)}
+                  </Checkbox>
+                )}
               </>
-            )}
-            {modal.week.attendanceRecordCount > 0 && (
-              <Alert
-                type="warning"
-                showIcon
-                message={`На поточній даті є ${modal.week.attendanceRecordCount} записів відвідуваності. Перенесення не перенесе ці записи.`}
-              />
             )}
           </div>
         )}

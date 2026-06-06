@@ -23,8 +23,8 @@ export const scheduleApi = {
   uncancel: (groupId: number, date: string) =>
     api.delete(`/groups/${groupId}/schedule/cancel`, { params: { date } }),
 
-  move: (groupId: number, fromDate: string, toDate: string, movePlan: boolean) =>
-    api.post(`/groups/${groupId}/schedule/move`, { fromDate, toDate, movePlan }),
+  move: (groupId: number, fromDate: string, toDate: string, movePlan: boolean, moveAttendance: boolean) =>
+    api.post(`/groups/${groupId}/schedule/move`, { fromDate, toDate, movePlan, moveAttendance }),
 
   resetWeek: (groupId: number, weekStart: string, restorePlan: boolean) =>
     api.post(`/groups/${groupId}/schedule/reset-week`, { weekStart, restorePlan }),

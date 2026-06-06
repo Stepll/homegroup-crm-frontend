@@ -51,6 +51,7 @@ export function SchedulePageMobile() {
   const [modalDate, setModalDate] = useState<Dayjs | null>(null)
   const [modalCancelled, setModalCancelled] = useState(false)
   const [modalMovePlan, setModalMovePlan] = useState(true)
+  const [modalMoveAttendance, setModalMoveAttendance] = useState(true)
   const [saving, setSaving] = useState(false)
 
   async function loadData() {
@@ -78,6 +79,7 @@ export function SchedulePageMobile() {
     setModalDate(w.effectiveDate ? dayjs(w.effectiveDate) : dayjs(w.defaultDate))
     setModalCancelled(w.effectiveDate === null)
     setModalMovePlan(true)
+    setModalMoveAttendance(true)
     setEditing(w)
   }
 
@@ -95,7 +97,7 @@ export function SchedulePageMobile() {
       }
       const newDateStr = modalDate?.format('YYYY-MM-DD')
       if (!modalCancelled && newDateStr && newDateStr !== sourceDateForMove) {
-        await scheduleApi.move(groupId, sourceDateForMove, newDateStr, modalMovePlan)
+        await scheduleApi.move(groupId, sourceDateForMove, newDateStr, modalMovePlan, modalMoveAttendance)
       }
       setEditing(null)
       await loadData()
@@ -218,13 +220,14 @@ export function SchedulePageMobile() {
                     <Switch checked={modalMovePlan} onChange={setModalMovePlan} />
                   </div>
                 )}
-              </>
-            )}
 
-            {editing.attendanceRecordCount > 0 && (
-              <div style={{ marginTop: 12, padding: '10px 12px', background: '#FEF3C7', borderRadius: 8, fontSize: 12, color: '#92400E' }}>
-                На поточній даті є {editing.attendanceRecordCount} записів відвідуваності.
-              </div>
+                {editing.attendanceRecordCount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: '1px solid var(--color-border-light)' }}>
+                    <span style={{ fontSize: 13 }}>Перенести {editing.attendanceRecordCount} відмічень</span>
+                    <Switch checked={modalMoveAttendance} onChange={setModalMoveAttendance} />
+                  </div>
+                )}
+              </>
             )}
 
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
