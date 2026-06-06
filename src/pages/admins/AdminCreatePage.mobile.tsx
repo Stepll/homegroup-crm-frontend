@@ -66,16 +66,16 @@ export function AdminCreatePageMobile() {
 
         {/* Basic info */}
         <div style={block}>
-          <Field label="Ім'я">
+          <Field label="Ім'я" required>
             <Input value={name} onChange={setName} placeholder="Ім'я" />
           </Field>
           <Field label="Прізвище">
             <Input value={lastName} onChange={setLastName} placeholder="Прізвище" />
           </Field>
-          <Field label="Email">
+          <Field label="Email" required>
             <Input value={email} onChange={setEmail} placeholder="email@example.com" type="email" />
           </Field>
-          <Field label="Пароль">
+          <Field label="Пароль" required>
             <Input value={password} onChange={setPassword} placeholder="••••••••" type="password" />
           </Field>
         </div>
@@ -155,10 +155,12 @@ export function AdminCreatePageMobile() {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div style={{ padding: '12px 0', borderBottom: '1px solid var(--color-border-light)' }}>
-      <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>
+        {label}{required && <span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>}
+      </div>
       <div style={inputWrap}>{children}</div>
     </div>
   )

@@ -166,7 +166,7 @@ export function AdminTasksBlock({ adminId }: Props) {
         bodyStyle={{ borderRadius: '16px 16px 0 0', padding: '20px 16px 36px' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Нова задача</div>
         <div style={{ marginBottom: 14 }}>
-          <div style={fieldLabel}>Назва</div>
+          <div style={fieldLabel}>Назва<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span></div>
           <div style={inputWrap}><Input value={draftTitle} onChange={setDraftTitle} placeholder="Назва задачі" autoFocus /></div>
         </div>
         <div style={{ marginBottom: 14 }}>
@@ -193,7 +193,7 @@ export function AdminTasksBlock({ adminId }: Props) {
         bodyStyle={{ borderRadius: '16px 16px 0 0', padding: '20px 16px 36px' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Редагувати задачу</div>
         <div style={{ marginBottom: 14 }}>
-          <div style={fieldLabel}>Назва</div>
+          <div style={fieldLabel}>Назва<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span></div>
           <div style={inputWrap}><Input value={draftTitle} onChange={setDraftTitle} placeholder="Назва задачі" /></div>
         </div>
         <div style={{ marginBottom: 14 }}>

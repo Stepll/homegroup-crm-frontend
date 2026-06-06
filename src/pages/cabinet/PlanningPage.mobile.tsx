@@ -497,6 +497,9 @@ export function PlanningPageMobile() {
       <Popup visible={saveTemplateVisible} onMaskClick={() => setSaveTemplateVisible(false)}
         bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Зберегти як шаблон</div>
+        <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>
+          Назва шаблону<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>
+        </div>
         <div style={inputWrap}>
           <Input value={newTemplateName} onChange={setNewTemplateName} placeholder="Назва шаблону" autoFocus />
         </div>

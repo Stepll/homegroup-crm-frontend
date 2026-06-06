@@ -193,7 +193,7 @@ export function HomeGroupFormPageMobile() {
 
         {/* Name */}
         <div style={sectionStyle}>
-          <label style={labelStyle}>Назва</label>
+          <label style={labelStyle}>Назва<span style={requiredStyle}>*</span></label>
           <div style={inputWrap}>
             <Input
               placeholder="Назва групи"
@@ -405,6 +405,7 @@ export function HomeGroupFormPageMobile() {
         {/* Add field popup */}
         <Popup visible={addFieldVisible} onMaskClick={() => setAddFieldVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
           <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Нове поле</div>
+          <label style={{ ...labelStyle, marginBottom: 6 }}>Назва поля<span style={requiredStyle}>*</span></label>
           <div style={inputWrap}>
             <Input placeholder="Назва поля" value={newFieldName} onChange={setNewFieldName} autoFocus />
           </div>
@@ -465,3 +466,4 @@ const inputWrap: React.CSSProperties = {
   background: '#fff', borderRadius: 'var(--radius-md)',
   border: '1.5px solid var(--color-border)', padding: '10px 14px',
 }
+const requiredStyle: React.CSSProperties = { color: '#EF4444', marginLeft: 4 }

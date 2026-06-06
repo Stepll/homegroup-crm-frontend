@@ -48,11 +48,11 @@ function FilterPill({
   )
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontWeight: 500, marginBottom: 4 }}>
-        {label}
+        {label}{required && <span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>}
       </div>
       {children}
     </div>
@@ -256,7 +256,7 @@ function EventForm({
               <label htmlFor="isHomeGroupMeeting" style={{ fontSize: 14, cursor: 'pointer' }}>Це зустріч домашньої групи</label>
             </div>
           )}
-          <FormField label="Назва"><input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Назва події" style={inputStyle} /></FormField>
+          <FormField label="Назва" required><input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Назва події" style={inputStyle} /></FormField>
           <FormField label="Опис"><textarea value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Необов'язково" rows={2} style={{ ...inputStyle, resize: 'none' }} /></FormField>
           <FormField label="Локація"><input value={form.location} onChange={(e) => set('location', e.target.value)} placeholder="Де відбудеться?" style={inputStyle} /></FormField>
         </>

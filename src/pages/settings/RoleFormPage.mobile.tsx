@@ -172,7 +172,7 @@ export function RoleFormPageMobile() {
 
         {/* Name */}
         <div style={sectionStyle}>
-          <label style={labelStyle}>Назва</label>
+          <label style={labelStyle}>Назва<span style={requiredStyle}>*</span></label>
           <div style={inputWrap}>
             <Input
               placeholder="Назва ролі"
@@ -297,3 +297,4 @@ const inputWrap: React.CSSProperties = {
   background: '#fff', borderRadius: 'var(--radius-md)',
   border: '1.5px solid var(--color-border)', padding: '10px 14px',
 }
+const requiredStyle: React.CSSProperties = { color: '#EF4444', marginLeft: 4 }

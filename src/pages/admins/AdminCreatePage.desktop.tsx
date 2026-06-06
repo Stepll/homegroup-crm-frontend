@@ -58,7 +58,7 @@ export function AdminCreatePageDesktop() {
       <div style={{ background: '#fff', borderRadius: 8, border: '1px solid rgba(0,0,0,0.08)', padding: 24 }}>
         <Row gutter={[16, 0]}>
           <Col span={12}>
-            <div style={labelStyle}>Ім'я</div>
+            <div style={labelStyle}>Ім'я<span style={requiredStyle}>*</span></div>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ім'я" size="large" />
           </Col>
           <Col span={12}>
@@ -68,12 +68,12 @@ export function AdminCreatePageDesktop() {
         </Row>
 
         <div style={{ marginTop: 16 }}>
-          <div style={labelStyle}>Email</div>
+          <div style={labelStyle}>Email<span style={requiredStyle}>*</span></div>
           <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" type="email" size="large" />
         </div>
 
         <div style={{ marginTop: 16 }}>
-          <div style={labelStyle}>Пароль</div>
+          <div style={labelStyle}>Пароль<span style={requiredStyle}>*</span></div>
           <Input.Password value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" size="large" />
         </div>
 
@@ -131,3 +131,4 @@ const labelStyle: React.CSSProperties = {
   fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,0.45)',
   textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6,
 }
+const requiredStyle: React.CSSProperties = { color: '#EF4444', marginLeft: 4 }

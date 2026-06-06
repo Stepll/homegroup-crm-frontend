@@ -330,6 +330,7 @@ export function AdminDetailPageDesktop() {
       <Modal open={pwdOpen} title="Новий пароль" onCancel={() => setPwdOpen(false)}
         confirmLoading={pwdSaving} okText="Зберегти" cancelText="Скасувати"
         onOk={handleSetPassword} destroyOnClose>
+        <div style={{ ...labelStyle, marginBottom: 6 }}>Новий пароль<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span></div>
         <Input.Password value={newPwd} onChange={(e) => setNewPwd(e.target.value)} placeholder="Новий пароль" autoFocus />
       </Modal>
     </div>

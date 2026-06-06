@@ -513,6 +513,9 @@ export function PersonDetailPageMobile() {
       {/* ── Popup: Нове поле ── */}
       <Popup visible={addFieldVisible} onMaskClick={() => setAddFieldVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Нове поле</div>
+        <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>
+          Назва поля<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>
+        </div>
         <div style={inputWrap}>
           <Input placeholder="Назва поля" value={newFieldName} onChange={setNewFieldName} autoFocus />
         </div>

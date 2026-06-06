@@ -316,7 +316,7 @@ function EventFormModal({
 
           {!isAutoHomeGroup && (
             <div>
-              <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 4 }}>Назва</div>
+              <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 4 }}>Назва<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span></div>
               <Input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Назва події" />
             </div>
           )}

@@ -429,6 +429,9 @@ export function PlanningPageDesktop() {
         cancelText="Скасувати"
         confirmLoading={savingTemplate}
       >
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+          Назва шаблону<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>
+        </div>
         <Input
           value={newTemplateName}
           onChange={(e) => setNewTemplateName(e.target.value)}

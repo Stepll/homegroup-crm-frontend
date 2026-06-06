@@ -384,6 +384,9 @@ export function PersonDetailPageDesktop() {
           }
         }}
         destroyOnClose>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+          Назва поля<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>
+        </div>
         <Input placeholder="Назва поля" value={newFieldName} onChange={(e) => setNewFieldName(e.target.value)} autoFocus />
       </Modal>
     </div>

@@ -105,7 +105,7 @@ export function LoginPageMobile() {
               color: 'var(--color-text)',
               marginBottom: 'var(--space-2)',
             }}>
-              Email
+              Email<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>
             </label>
             <div style={fieldStyle('email')}>
               <input
@@ -138,7 +138,7 @@ export function LoginPageMobile() {
               color: 'var(--color-text)',
               marginBottom: 'var(--space-2)',
             }}>
-              Пароль
+              Пароль<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>
             </label>
             <div style={fieldStyle('password')}>
               <input

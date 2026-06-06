@@ -63,7 +63,7 @@ export function RoomFormPageDesktop() {
 
       <div style={{ background: '#fff', borderRadius: 8, border: '1px solid rgba(0,0,0,0.08)', padding: 24 }}>
         <div style={{ marginBottom: 20 }}>
-          <div style={labelStyle}>Назва</div>
+          <div style={labelStyle}>Назва<span style={requiredStyle}>*</span></div>
           <Input
             placeholder="Наприклад: Зала А, Конференц-зал"
             value={name} onChange={(e) => setName(e.target.value)} size="large"
@@ -136,3 +136,4 @@ const labelStyle: React.CSSProperties = {
   fontSize: 12, fontWeight: 600, color: 'rgba(0,0,0,0.45)',
   textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8,
 }
+const requiredStyle: React.CSSProperties = { color: '#EF4444', marginLeft: 4 }

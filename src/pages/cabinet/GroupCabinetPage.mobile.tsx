@@ -671,8 +671,8 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
       {/* Edit event popup */}
       <Popup visible={editEventVisible} onMaskClick={() => setEditEventVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Редагувати подію</div>
-        <FormField label="Назва"><Input value={editEventName} onChange={setEditEventName} placeholder="Назва події" autoFocus /></FormField>
-        <FormField label="Дата"><input type="date" value={editEventDate} onChange={(e) => setEditEventDate(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField>
+        <FormField label="Назва" required><Input value={editEventName} onChange={setEditEventName} placeholder="Назва події" autoFocus /></FormField>
+        <FormField label="Дата" required><input type="date" value={editEventDate} onChange={(e) => setEditEventDate(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button block loading={savingEvent} onClick={handleUpdateEvent} style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Зберегти</Button>
           <Button block fill="outline" onClick={() => setEditEventVisible(false)}>Скасувати</Button>
@@ -682,8 +682,8 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
       {/* Add event popup */}
       <Popup visible={addEventVisible} onMaskClick={() => setAddEventVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Нова подія</div>
-        <FormField label="Назва"><Input value={newEventName} onChange={setNewEventName} placeholder="Назва події" autoFocus /></FormField>
-        <FormField label="Дата"><input type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField>
+        <FormField label="Назва" required><Input value={newEventName} onChange={setNewEventName} placeholder="Назва події" autoFocus /></FormField>
+        <FormField label="Дата" required><input type="date" value={newEventDate} onChange={(e) => setNewEventDate(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button block loading={addingEvent} onClick={handleAddEvent} style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Додати</Button>
           <Button block fill="outline" onClick={() => setAddEventVisible(false)}>Скасувати</Button>
@@ -694,7 +694,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
       <Popup visible={rescheduleVisible} onMaskClick={() => setRescheduleVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Перенести домашку</div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ flex: 1 }}><FormField label="Нова дата"><input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField></div>
+          <div style={{ flex: 1 }}><FormField label="Нова дата" required><input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField></div>
           <div style={{ width: 110 }}><FormField label="Час початку"><input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} style={{ ...nativeSelect, padding: 0 }} /></FormField></div>
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
@@ -763,7 +763,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
       <Popup visible={addNeedVisible} onMaskClick={() => setAddNeedVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Нова потреба</div>
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>Імʼя людини</div>
+          <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>Імʼя людини<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span></div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ flex: 1, ...inputWrap }}><Input value={newNeedSubject} onChange={(v) => { setNewNeedSubject(v); setNewNeedPersonId(null); setNewNeedUserId(null) }} placeholder="Ім'я або введіть вручну" /></div>
             <Button size="small" fill="outline" onClick={() => openMemberPicker('add')} style={{ flexShrink: 0, '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}>З групи</Button>
@@ -775,7 +775,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
             </div>
           )}
         </div>
-        <FormField label="Потреба"><Input value={newNeedDesc} onChange={setNewNeedDesc} placeholder="Опис потреби" /></FormField>
+        <FormField label="Потреба" required><Input value={newNeedDesc} onChange={setNewNeedDesc} placeholder="Опис потреби" /></FormField>
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <Button block loading={addingNeed} onClick={handleAddNeed} style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Додати</Button>
           <Button block fill="outline" onClick={() => setAddNeedVisible(false)}>Скасувати</Button>
@@ -786,7 +786,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
       <Popup visible={editNeedVisible} onMaskClick={() => setEditNeedVisible(false)} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Редагувати потребу</div>
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>Імʼя людини</div>
+          <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>Імʼя людини<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span></div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ flex: 1, ...inputWrap }}><Input value={editNeedSubject} onChange={(v) => { setEditNeedSubject(v); setEditNeedPersonId(null); setEditNeedUserId(null) }} placeholder="Ім'я" /></div>
             <Button size="small" fill="outline" onClick={() => openMemberPicker('edit')} style={{ flexShrink: 0, '--border-color': 'var(--color-primary)', '--text-color': 'var(--color-primary)' } as React.CSSProperties}>З групи</Button>
@@ -798,7 +798,7 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
             </div>
           )}
         </div>
-        <FormField label="Потреба"><Input value={editNeedDesc} onChange={setEditNeedDesc} placeholder="Опис потреби" /></FormField>
+        <FormField label="Потреба" required><Input value={editNeedDesc} onChange={setEditNeedDesc} placeholder="Опис потреби" /></FormField>
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <Button block loading={savingNeed} onClick={handleUpdateNeed} style={{ '--background-color': 'var(--color-primary)', '--text-color': '#fff', '--border-color': 'var(--color-primary)' } as React.CSSProperties}>Зберегти</Button>
           <Button block fill="outline" onClick={() => setEditNeedVisible(false)}>Скасувати</Button>
@@ -1204,7 +1204,7 @@ function EditGroupPopupMobile({ group, visible, onClose, onSaved }: {
   return (
     <Popup visible={visible} onMaskClick={onClose} bodyStyle={{ padding: 24, borderRadius: '16px 16px 0 0' }}>
       <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Редагувати групу</div>
-      <FormField label="Назва групи"><Input value={name} onChange={setName} placeholder="Назва" /></FormField>
+      <FormField label="Назва групи" required><Input value={name} onChange={setName} placeholder="Назва" /></FormField>
       <FormField label="День домашки">
         <select value={meetingDay} onChange={(e) => setMeetingDay(e.target.value)} style={nativeSelect}>
           <option value="">— не вибрано —</option>
@@ -1240,10 +1240,12 @@ function StatCard({ label, value }: { label: string; value: string }) {
   )
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 4, fontWeight: 500 }}>
+        {label}{required && <span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>}
+      </div>
       <div style={inputWrap}>{children}</div>
     </div>
   )

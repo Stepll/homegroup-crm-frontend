@@ -60,7 +60,7 @@ export function LoginPageDesktop() {
 
         <form onSubmit={handleSubmit} noValidate>
           <div style={{ marginBottom: 16 }}>
-            <div style={labelStyle}>Email</div>
+            <div style={labelStyle}>Email<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span></div>
             <Input
               type="email"
               value={email}
@@ -72,7 +72,7 @@ export function LoginPageDesktop() {
           </div>
 
           <div style={{ marginBottom: 28 }}>
-            <div style={labelStyle}>Пароль</div>
+            <div style={labelStyle}>Пароль<span style={{ color: '#EF4444', marginLeft: 4 }}>*</span></div>
             <Input.Password
               value={password}
               onChange={(e) => setPassword(e.target.value)}
