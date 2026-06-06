@@ -204,8 +204,11 @@ export function PlanningPageDesktop() {
       const fromCalendar = occurrences.filter(o => o.homeGroupId === groupId).map(o => o.date)
       const dbWeeks = new Set(fromDb.map(weekKey))
       const calendarFill = fromCalendar.filter(d => !dbWeeks.has(weekKey(d)))
+      // Plans only used as marker, NOT as a source of selectable dates.
+      // If a plan exists on a moved-out date (e.g. Friday after move to Thursday),
+      // it stays in DB but isn't selectable — only Thursday appears.
       const planSet = new Set(plans.map(p => p.meetingDate))
-      const allDates = Array.from(new Set([...fromDb, ...calendarFill, ...planSet, initDate]))
+      const allDates = Array.from(new Set([...fromDb, ...calendarFill, initDate]))
         .sort((a, b) => b.localeCompare(a))
       setMeetingDates(allDates)
       setPlanDates(planSet)

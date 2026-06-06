@@ -261,8 +261,9 @@ export function PlanningPageMobile() {
       const fromCalendar = occurrences.filter(o => o.homeGroupId === groupId).map(o => o.date)
       const dbWeeks = new Set(fromDb.map(weekKey))
       const calendarFill = fromCalendar.filter(d => !dbWeeks.has(weekKey(d)))
+      // Plans only as marker, not a source of selectable dates
       const planSet = new Set(plans.map(p => p.meetingDate))
-      const allDates = Array.from(new Set([...fromDb, ...calendarFill, ...planSet, initDate]))
+      const allDates = Array.from(new Set([...fromDb, ...calendarFill, initDate]))
         .sort((a, b) => b.localeCompare(a))
       setMeetingDates(allDates)
       setPlanDates(planSet)
