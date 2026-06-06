@@ -26,7 +26,11 @@ src/
                             getNeeds, addNeed, updateNeed, deleteNeed,
                             getNotifSettings, updateNotifSettings)
     roles.ts              — rolesApi
-    attendance.ts         — attendanceApi (getByGroup, getSummary, record, getMeta, saveMeta)
+    attendance.ts         — attendanceApi (getByGroup, getSummary, getMeetingDates,
+                            record, recordBulk, getMeta, saveMeta, deleteMeeting,
+                            getTable, getDots)
+    schedule.ts           — scheduleApi (getWeeks, cancel, uncancel, move, resetWeek)
+    calendar.ts           — calendarApi (getOccurrences, CRUD events) + roomsApi
     personStatuses.ts     — personStatusesApi (getAll, create, update, delete)
     churchEvents.ts       — churchEventsApi (getAll, add, delete)
     admins.ts             — adminsApi (getMe, getAll, getById, create, update, updateProfile,
@@ -108,9 +112,12 @@ src/
 /admins/:id                    — read-only профіль будь-якого адміна; потребує admins.viewProfiles
 /cabinet                       — вибір групи (для адмінів) або одразу кабінет
 /cabinet/:id                   — кабінет домашки
-/cabinet/:id/attendance        — відмічання присутніх
-/cabinet/:id/plan              — планування зустрічі (?date=yyyy-MM-dd)
+/cabinet/:id/attendance        — відмічання присутніх (?date=)
+/cabinet/:id/attendance-table  — таблиця відвідуваності
+/cabinet/:id/plan              — планування зустрічі (?date=, з селектом дат)
 /cabinet/:id/stats             — статистика групи
+/cabinet/:id/schedule          — налаштування графіку (переноси/скасування за тижнями)
+                                 [groups.schedule.manage]
 /people                        — список людей + адмінів
 /people/new
 /people/:id
@@ -157,20 +164,42 @@ src/
 
 ### AttendancePage
 - Card-based toggle (зелений = присутній, сірий = відсутній)
-- **Date selector** — `<select>` зі списком реальних дат зустрічей (з `attendanceApi.getSummary`),
-  відсортований від нових до старих; дата з `?date=` query param додається якщо ще немає записів
-- **Pre-populate присутності** — при зміні дати одразу завантажує існуючі записи
-  (`attendanceApi.getByGroup(id, date, date)`) і підсвічує вже відмічених
-- Гості block: числовий інпут + "Вказати інформацію про гостей" link → textarea
+- Фільтрує `isFormer: true` членів (минулих не показує)
+- **Date selector** — `<select>` зі списком меетинг-дат:
+  - `attendanceApi.getMeetingDates` (union Attendance + Meta + Calendar real overrides)
+  - `calendarApi.getOccurrences` (8 тижнів назад, HomeGroup) — заповнює тижні без DB-даних
+  - Merging logic: fromDb має пріоритет per-week через `weekKey`, calendar заповнює лише тижні
+    без DB-даних
+- Pre-populate присутності — при зміні дати завантажує існуючі записи і підсвічує
+- Гості block: числовий інпут + інфо textarea
 - Save: `attendanceApi.record(...)` + `attendanceApi.saveMeta(...)` паралельно
-- Зберігає назад до `/cabinet/:id`
+
+### SchedulePage (`/cabinet/:id/schedule`)
+- Permission: `groups.schedule.manage`. Доступ з шестерні поряд із кнопками
+  "Перенести/Скасувати" в кабінеті
+- Список тижнів (4 минулих + 8 майбутніх за замовчуванням, кнопка "Показати ще минулі")
+- Кожен тиждень: status badge (default | cancelled | rescheduled_internal | moved_in | moved_out),
+  effectiveDate, optional movedFromDate/movedToDate, hasPlan, attendanceRecordCount
+- Modal/Popup на тиждень: toggle "Скасована", DatePicker, опційні чекбокси
+  "Перенести план з оригінальної дати" і "Перенести N записів відвідуваності"
+- Кнопка "Скинути тиждень" — викликає reset-week (двостороння очистка через MovedFrom/To
+  links + опційне відновлення плану через OriginalMeetingDate)
+
+### AttendanceTablePage
+- Excel-like таблиця з sticky headers
+- Active members перші, former — в кінці (червоний border + чорний divider між ними)
+- Cell states: outside membership period (#E5E7EB), no data (#F3F4F6 interactive),
+  присутній (зелений), відсутній (червоний), скасована зустріч (#FEF9C3 жовтий)
+- Move-out shadows не з'являються як стовпчики (бекенд фільтрує)
+- Cancellation toggle в column modal → саве через `saveMeta` з isCancelled
 
 ### PlanningPage
 - `BlockCard` компонент: два режими — **view** (текст + олівець/урна) та **edit** (blue border, checkmark кнопка)
-  - `defaultEditing` prop → нові блоки одразу в edit mode (`newBlockKeys` state)
-  - Відповідальний з орг команди — підкреслене посилання, клік → `/settings/admins/:id`
-- Шаблони: застосувати існуючий (popup) або зберегти поточний план як шаблон
-- PastPlansDrawer — список минулих планів з expandable деталями
+- **Date selector в шапці** — antd `Select` (desktop) / native `<select>` (mobile)
+  - Список з `getMeetingDates` + calendar HomeGroup + plan dates (з `planningApi.getPlans`)
+  - Помітка "· план" біля дат що мають план
+  - Перемикання дати reload-ить план + блоки (`useEffect [groupId, date]`)
+- Шаблони: застосувати існуючий або зберегти поточний як шаблон
 - Зберігає plan до бекенду, перевизначає блоки при upsert
 
 ### StatsPage
@@ -434,6 +463,17 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
       "З групи" picker (mobile) / antd Select з showSearch (desktop) — lazy-load членів групи
       вибір члена → заповнює ім'я + зберігає personId/userId
       якщо прив'язано → ім'я = клікабельне посилання на /people/:id або /admins/:id
+- [x] SchedulePage (`/cabinet/:id/schedule`) — desktop + mobile налаштування графіку:
+      список тижнів з status badges, модалка з date picker + checkbox-ами
+      (перенести план, перенести записи відвідуваності), reset week
+      [groups.schedule.manage permission, шестерня в кабінеті]
+- [x] AttendancePage використовує `getMeetingDates` (union DB + calendar) для date selector
+- [x] PlanningPage — Select дати в шапці зі списком DB + calendar + plan dates,
+      перемикання дати reload-ить план
+- [x] AttendanceTablePage — чорний divider між active/former, червоний border для former,
+      sortованих в кінець; cells outside membership period (#E5E7EB);
+      no-data cells (#F3F4F6 interactive)
+- [x] Attendance marking page фільтрує `isFormer: true` членів
 
 ## TODO
 - [ ] Pull-to-refresh
