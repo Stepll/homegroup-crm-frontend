@@ -80,7 +80,7 @@ export function AttendanceImportExportPopupDesktop({ visible, onClose, defaultGr
       const from = dateRange?.[0] ? dateRange[0].format('YYYY-MM-DD') : undefined
       const to = dateRange?.[1] ? dateRange[1].format('YYYY-MM-DD') : undefined
       const blob = isTemplate
-        ? await attendanceApi.template(exportGroupIds)
+        ? await attendanceApi.template(exportGroupIds, from, to)
         : await attendanceApi.export(exportGroupIds, from, to)
       const filename = isTemplate
         ? `attendance-template-${new Date().toISOString().slice(0, 10)}.xlsx`
@@ -346,7 +346,7 @@ function ExportScreen(props: {
           placeholder={['Від', 'До']}
         />
         <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
-          Якщо не вказано — експортуються всі відомі дати
+          Експорт: фільтрує наявні дані. Шаблон: генерує порожні колонки по днях зустрічей групи.
         </Text>
       </div>
     </div>

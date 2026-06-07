@@ -47,9 +47,9 @@ export const attendanceApi = {
       responseType: 'blob',
     }).then((r) => r.data as Blob),
 
-  template: (groupIds: number[]) =>
+  template: (groupIds: number[], from?: string, to?: string) =>
     api.get('/attendance/template', {
-      params: { groupIds: groupIds.join(',') },
+      params: { groupIds: groupIds.join(','), from: from || undefined, to: to || undefined },
       responseType: 'blob',
     }).then((r) => r.data as Blob),
 

@@ -76,7 +76,7 @@ export function AttendanceImportExportPopupMobile({ visible, onClose, defaultGro
     setExporting(true)
     try {
       const blob = isTemplate
-        ? await attendanceApi.template(exportGroupIds)
+        ? await attendanceApi.template(exportGroupIds, exportFrom || undefined, exportTo || undefined)
         : await attendanceApi.export(exportGroupIds, exportFrom || undefined, exportTo || undefined)
       const filename = isTemplate
         ? `attendance-template-${new Date().toISOString().slice(0, 10)}.xlsx`
@@ -355,7 +355,7 @@ function ExportScreen(props: {
                  style={dateInputStyle} placeholder="До" />
         </div>
         <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 4 }}>
-          Якщо не вказано — експортуються всі відомі дати
+          Експорт: фільтрує наявні дані. Шаблон: генерує порожні колонки по днях зустрічей групи.
         </div>
       </div>
 
