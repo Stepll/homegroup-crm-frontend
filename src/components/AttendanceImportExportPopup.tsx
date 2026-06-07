@@ -3,6 +3,7 @@ import { Popup, Button, Toast, SpinLoading, Checkbox, Switch, Dialog, Selector }
 import { CloseOutline, FileOutline, DownlandOutline } from 'antd-mobile-icons'
 import { attendanceApi, downloadBlob } from '@/api/attendance'
 import { groupsApi } from '@/api/groups'
+import { usePermission } from '@/hooks/usePermission'
 import type {
   Group, ImportPreviewResponse, ImportSheetPreview, ImportSheetDecision,
   PersonDecision, ConflictResolution, ImportConflict, ImportPersonPreview,
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function AttendanceImportExportPopup({ visible, onClose, defaultGroupId, onImported }: Props) {
+  const canImport = usePermission('attendance.record')
   const [mode, setMode] = useState<Mode>('menu')
 
   // Shared
@@ -182,7 +184,11 @@ export function AttendanceImportExportPopup({ visible, onClose, defaultGroupId, 
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
         {mode === 'menu' && (
-          <MenuScreen onPickExport={() => setMode('export')} onPickImport={() => setMode('import-upload')} />
+          <MenuScreen
+            canImport={canImport}
+            onPickExport={() => setMode('export')}
+            onPickImport={() => setMode('import-upload')}
+          />
         )}
 
         {mode === 'export' && (
@@ -259,7 +265,7 @@ export function AttendanceImportExportPopup({ visible, onClose, defaultGroupId, 
 
 // ─── Sub-screens ────────────────────────────────────────────────────────────────
 
-function MenuScreen({ onPickExport, onPickImport }: { onPickExport: () => void; onPickImport: () => void }) {
+function MenuScreen({ canImport, onPickExport, onPickImport }: { canImport: boolean; onPickExport: () => void; onPickImport: () => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <button onClick={onPickExport} style={menuItemStyle}>
@@ -272,15 +278,17 @@ function MenuScreen({ onPickExport, onPickImport }: { onPickExport: () => void; 
         </div>
       </button>
 
-      <button onClick={onPickImport} style={menuItemStyle}>
-        <FileOutline fontSize={28} color="var(--color-primary)" />
-        <div style={{ flex: 1, textAlign: 'left' }}>
-          <div style={{ fontSize: 15, fontWeight: 600 }}>Імпорт з Excel</div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2 }}>
-            Завантажити заповнений шаблон
+      {canImport && (
+        <button onClick={onPickImport} style={menuItemStyle}>
+          <FileOutline fontSize={28} color="var(--color-primary)" />
+          <div style={{ flex: 1, textAlign: 'left' }}>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>Імпорт з Excel</div>
+            <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginTop: 2 }}>
+              Завантажити заповнений шаблон
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
+      )}
     </div>
   )
 }
