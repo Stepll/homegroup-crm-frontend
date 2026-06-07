@@ -1,5 +1,8 @@
 import { api } from './client'
-import type { AttendanceRecord, AttendanceSummary, AttendanceTableResponse } from '@/types'
+import type {
+  AttendanceRecord, AttendanceSummary, AttendanceTableResponse,
+  ImportPreviewResponse, ImportApplyRequest, ImportApplyResponse,
+} from '@/types'
 
 export interface AttendanceDotsResponse {
   dates: string[]
@@ -37,4 +40,38 @@ export const attendanceApi = {
 
   getDots: (groupId: number, limit = 5) =>
     api.get<AttendanceDotsResponse>('/attendance/dots', { params: { groupId, limit } }).then((r) => r.data),
+
+  export: (groupIds: number[], from?: string, to?: string) =>
+    api.get('/attendance/export', {
+      params: { groupIds: groupIds.join(','), from: from || undefined, to: to || undefined },
+      responseType: 'blob',
+    }).then((r) => r.data as Blob),
+
+  template: (groupIds: number[]) =>
+    api.get('/attendance/template', {
+      params: { groupIds: groupIds.join(',') },
+      responseType: 'blob',
+    }).then((r) => r.data as Blob),
+
+  importPreview: (file: File) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return api.post<ImportPreviewResponse>('/attendance/import/preview', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
+
+  importApply: (req: ImportApplyRequest) =>
+    api.post<ImportApplyResponse>('/attendance/import/apply', req).then((r) => r.data),
+}
+
+export function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

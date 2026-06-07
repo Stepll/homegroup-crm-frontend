@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Typography, Space, Modal, Switch, InputNumber, Input, Spin } from 'antd'
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, SaveOutlined, FileExcelOutlined } from '@ant-design/icons'
 import { attendanceApi } from '@/api/attendance'
 import { usePermissions } from '@/hooks/usePermission'
+import { AttendanceImportExportPopup } from '@/components/AttendanceImportExportPopup'
 import type { AttendanceTableMember, AttendanceTableResponse } from '@/types'
 
 const { Title, Text } = Typography
@@ -80,6 +81,21 @@ export function AttendanceTablePageDesktop() {
   const [sheetCancelled, setSheetCancelled] = useState(false)
   const [sheetGuestCount, setSheetGuestCount] = useState(0)
   const [sheetGuestInfo, setSheetGuestInfo] = useState('')
+
+  const [ioOpen, setIoOpen] = useState(false)
+
+  async function reload() {
+    setLoading(true)
+    try {
+      const d = await attendanceApi.getTable(groupId)
+      setData(d)
+      const state = cloneTable(d)
+      setCurrent(state)
+      originalRef.current = cloneTable(d)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     attendanceApi.getTable(groupId)
@@ -252,14 +268,19 @@ export function AttendanceTablePageDesktop() {
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
           <Title level={3} style={{ margin: 0 }}>Таблиця відвідуваності</Title>
         </Space>
-        {isDirty && (
-          <Space>
-            <Button onClick={cancel} disabled={saving}>Скасувати</Button>
-            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={save}>
-              Зберегти зміни
-            </Button>
-          </Space>
-        )}
+        <Space>
+          {isDirty && (
+            <>
+              <Button onClick={cancel} disabled={saving}>Скасувати</Button>
+              <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={save}>
+                Зберегти зміни
+              </Button>
+            </>
+          )}
+          <Button icon={<FileExcelOutlined />} onClick={() => setIoOpen(true)}>
+            Імпорт / Експорт
+          </Button>
+        </Space>
       </div>
 
       {/* ── Scrollable table ── */}
@@ -481,6 +502,13 @@ export function AttendanceTablePageDesktop() {
           </div>
         )}
       </Modal>
+
+      <AttendanceImportExportPopup
+        visible={ioOpen}
+        onClose={() => setIoOpen(false)}
+        defaultGroupId={groupId}
+        onImported={reload}
+      />
     </div>
   )
 }

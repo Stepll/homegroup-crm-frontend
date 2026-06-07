@@ -366,3 +366,126 @@ export interface PersonActivity {
   newValue?: string | null
   createdAt: string
 }
+
+// ─── Attendance Import/Export ──────────────────────────────────────────────────
+
+export interface GroupOption {
+  id: number
+  name: string
+}
+
+export interface PersonMatchSuggestion {
+  personId: number | null
+  userId: number | null
+  name: string
+  lastName: string | null
+  primaryGroupName: string | null
+  isAdmin: boolean
+}
+
+export interface ImportPersonPreview {
+  rowIndex: number
+  name: string
+  lastName: string | null
+  fileIdHint: string | null
+  matchedPersonId: number | null
+  matchedUserId: number | null
+  matchType: 'by_id' | 'by_name' | 'unmatched'
+  suggestions: PersonMatchSuggestion[]
+  statusFromFile: string | null
+  oversightFromFile: string | null
+  joinedAtFromFile: string | null
+  detectedLeftAt: string | null
+  filePresentCount: number
+  fileAbsentCount: number
+}
+
+export interface ImportDatePreview {
+  colIndex: number
+  date: string
+  existedInDb: boolean
+  fileCancelled: boolean
+  dbCancelled: boolean | null
+  fileGuests: number
+  dbGuests: number | null
+  fileNotes: string | null
+  dbNotes: string | null
+}
+
+export interface ImportConflict {
+  index: number
+  type: 'attendance' | 'cancellation' | 'guests' | 'notes' | string
+  date: string
+  personRowIndex: number | null
+  personName: string | null
+  fileValue: string | null
+  dbValue: string | null
+}
+
+export interface ImportChangesSummary {
+  newAttendanceRecords: number
+  updatedAttendanceRecords: number
+  newMeetings: number
+  cancelledMeetings: number
+  newMetaRecords: number
+  updatedMetaRecords: number
+}
+
+export interface ImportSheetPreview {
+  sheetIndex: number
+  sheetName: string
+  matchedGroupId: number | null
+  matchedGroupName: string | null
+  dates: ImportDatePreview[]
+  people: ImportPersonPreview[]
+  conflicts: ImportConflict[]
+  changes: ImportChangesSummary
+}
+
+export interface ImportPreviewResponse {
+  importId: string
+  expiresAt: string
+  sheets: ImportSheetPreview[]
+  availableGroups: GroupOption[]
+}
+
+export interface PersonDecision {
+  rowIndex: number
+  action: 'skip' | 'use' | 'create' | 'link'
+  targetPersonId: number | null
+  targetUserId: number | null
+}
+
+export interface ConflictResolution {
+  type: string
+  date: string
+  personRowIndex: number | null
+  useFile: boolean
+}
+
+export interface ImportSheetDecision {
+  sheetIndex: number
+  groupId: number | null
+  personDecisions: PersonDecision[]
+  conflictResolutions: ConflictResolution[]
+  importStatus: boolean
+  importOversight: boolean
+  importJoinedAt: boolean
+  importLeftAt: boolean
+}
+
+export interface ImportApplyRequest {
+  importId: string
+  sheets: ImportSheetDecision[]
+}
+
+export interface ImportApplyResponse {
+  sheetsProcessed: number
+  attendanceCreated: number
+  attendanceUpdated: number
+  metaCreated: number
+  metaUpdated: number
+  peopleCreated: number
+  membershipsCreated: number
+  membershipsLeft: number
+}

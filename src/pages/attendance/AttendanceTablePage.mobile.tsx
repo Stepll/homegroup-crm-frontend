@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { NavBar, Toast, SpinLoading, Popup, Button, Switch, Dialog } from 'antd-mobile'
+import { MoreOutline } from 'antd-mobile-icons'
 import { attendanceApi } from '@/api/attendance'
 import { usePermissions } from '@/hooks/usePermission'
+import { AttendanceImportExportPopup } from '@/components/AttendanceImportExportPopup'
 import type { AttendanceTableMember, AttendanceTableResponse } from '@/types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -76,6 +78,22 @@ export function AttendanceTablePageMobile() {
 
   // Bottom sheet state
   const [colSheet, setColSheet] = useState<string | null>(null) // date string
+
+  // Import/Export popup
+  const [ioOpen, setIoOpen] = useState(false)
+
+  async function reload() {
+    setLoading(true)
+    try {
+      const d = await attendanceApi.getTable(groupId)
+      setData(d)
+      const state = cloneTable(d)
+      setCurrent(state)
+      originalRef.current = cloneTable(d)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Temp fields inside column sheet
   const [sheetNotes, setSheetNotes] = useState('')
@@ -270,7 +288,18 @@ export function AttendanceTablePageMobile() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden' }}>
-      <NavBar onBack={() => navigate(-1)}>Таблиця відвідуваності</NavBar>
+      <NavBar
+        onBack={() => navigate(-1)}
+        right={
+          <button
+            onClick={() => setIoOpen(true)}
+            style={{ background: 'none', border: 'none', padding: 6, cursor: 'pointer', display: 'flex' }}
+            aria-label="Імпорт / Експорт"
+          >
+            <MoreOutline fontSize={22} />
+          </button>
+        }
+      >Таблиця відвідуваності</NavBar>
 
       {/* ── Scrollable table area ── */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative', paddingBottom: isDirty ? 72 : 0 }}>
@@ -528,6 +557,13 @@ export function AttendanceTablePageMobile() {
           </div>
         )}
       </Popup>
+
+      <AttendanceImportExportPopup
+        visible={ioOpen}
+        onClose={() => setIoOpen(false)}
+        defaultGroupId={groupId}
+        onImported={reload}
+      />
     </div>
   )
 }
