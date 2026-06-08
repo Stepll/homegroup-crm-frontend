@@ -668,7 +668,7 @@ export function CalendarPageDesktop() {
                 style={{
                   flex: 1, position: 'relative',
                   borderLeft: '1px solid rgba(0,0,0,0.06)',
-                  background: isToday ? 'rgba(42,175,202,0.02)' : undefined,
+                  backgroundColor: isToday ? 'rgba(42,175,202,0.02)' : undefined,
                   backgroundImage: `repeating-linear-gradient(to bottom, transparent 0px, transparent ${HOUR_HEIGHT - 1}px, rgba(0,0,0,0.03) ${HOUR_HEIGHT - 1}px, rgba(0,0,0,0.03) ${HOUR_HEIGHT}px)`,
                 }}
               >
