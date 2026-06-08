@@ -36,7 +36,7 @@ export function PersonCreatePageDesktop() {
   return (
     <div style={{ padding: 24, maxWidth: 520 }}>
       <Space style={{ marginBottom: 20 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/people')}>Назад</Button>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
         <Title level={3} style={{ margin: 0 }}>Нова людина</Title>
       </Space>
 

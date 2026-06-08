@@ -321,7 +321,7 @@ export function PersonActivityPageMobile() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--color-bg)' }}>
-      <NavBar onBack={() => navigate(`/people/${personId}`)}>
+      <NavBar onBack={() => navigate(-1)}>
         {fullName || 'Активність'}
       </NavBar>
 

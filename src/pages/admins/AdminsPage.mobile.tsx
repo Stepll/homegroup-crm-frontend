@@ -27,7 +27,7 @@ export function AdminsPageMobile() {
   return (
     <div>
       <NavBar
-        onBack={() => navigate('/settings')}
+        onBack={() => navigate(-1)}
         right={<Button size="small" color="primary" onClick={() => navigate('/settings/admins/new')}>+ Додати</Button>}
       >
         Адміни

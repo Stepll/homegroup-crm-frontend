@@ -180,7 +180,7 @@ export function AdminDetailPageMobile() {
   if (loading || !admin) {
     return (
       <div>
-        <NavBar onBack={() => navigate('/settings/admins')}>Адмін</NavBar>
+        <NavBar onBack={() => navigate(-1)}>Адмін</NavBar>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><SpinLoading color="primary" /></div>
       </div>
     )
@@ -277,7 +277,7 @@ export function AdminDetailPageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate('/settings/admins')}>{fullName || 'Адмін'}</NavBar>
+      <NavBar onBack={() => navigate(-1)}>{fullName || 'Адмін'}</NavBar>
 
       <div style={{ padding: '0 16px' }}>
 

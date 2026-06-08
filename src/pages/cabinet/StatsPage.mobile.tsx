@@ -179,7 +179,7 @@ export function StatsPageMobile() {
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      <NavBar onBack={() => navigate(`/cabinet/${groupId}`)}>Статистика</NavBar>
+      <NavBar onBack={() => navigate(-1)}>Статистика</NavBar>
 
       {/* Period selector */}
       <div style={{ display: 'flex', gap: 8, padding: '12px 16px', background: '#fff', borderBottom: '1px solid var(--color-border-light)' }}>

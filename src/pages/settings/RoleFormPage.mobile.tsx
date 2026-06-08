@@ -144,7 +144,7 @@ export function RoleFormPageMobile() {
   if (loading) {
     return (
       <div>
-        <NavBar onBack={() => navigate('/settings/roles')}>{isNew ? 'Нова роль' : 'Редагування'}</NavBar>
+        <NavBar onBack={() => navigate(-1)}>{isNew ? 'Нова роль' : 'Редагування'}</NavBar>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><SpinLoading color="primary" /></div>
       </div>
     )
@@ -152,7 +152,7 @@ export function RoleFormPageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate('/settings/roles')}>
+      <NavBar onBack={() => navigate(-1)}>
         {isNew ? 'Нова роль' : 'Редагування ролі'}
       </NavBar>
 

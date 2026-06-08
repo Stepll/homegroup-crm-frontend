@@ -40,7 +40,7 @@ export function PersonStatusesPageMobile() {
   return (
     <div>
       <NavBar
-        onBack={() => navigate('/settings')}
+        onBack={() => navigate(-1)}
         right={
           <Button
             size="mini"

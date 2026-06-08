@@ -322,7 +322,7 @@ export function PlanningPageDesktop() {
   if (loading) return (
     <div style={{ padding: 24 }}>
       <Space style={{ marginBottom: 20 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/cabinet/${groupId}`)}>Назад</Button>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
         <Title level={3} style={{ margin: 0 }}>Планування</Title>
       </Space>
       <div style={{ textAlign: 'center', padding: 60 }}><Spin size="large" /></div>
@@ -333,7 +333,7 @@ export function PlanningPageDesktop() {
     <div style={{ padding: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/cabinet/${groupId}`)}>Назад</Button>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
           <Title level={3} style={{ margin: 0 }}>Планування</Title>
           <Select
             value={date}

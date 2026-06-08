@@ -27,7 +27,7 @@ export function GroupDetailPageDesktop() {
   return (
     <div style={{ padding: 24, maxWidth: 720 }}>
       <Space style={{ marginBottom: 20 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/groups')}>Назад</Button>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
         <Title level={3} style={{ margin: 0 }}>{group.name}</Title>
       </Space>
 

@@ -60,7 +60,7 @@ export function AdminCreatePageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate('/settings/admins')}>Новий адмін</NavBar>
+      <NavBar onBack={() => navigate(-1)}>Новий адмін</NavBar>
 
       <div style={{ padding: '0 16px' }}>
 

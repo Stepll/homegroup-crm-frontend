@@ -57,7 +57,7 @@ export function RoomFormPageDesktop() {
   return (
     <div style={{ padding: 24, maxWidth: 520 }}>
       <Space style={{ marginBottom: 20 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/settings/rooms')}>Назад</Button>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
         <Title level={3} style={{ margin: 0 }}>{isNew ? 'Нова кімната' : 'Редагування кімнати'}</Title>
       </Space>
 

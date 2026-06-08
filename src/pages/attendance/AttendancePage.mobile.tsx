@@ -132,7 +132,7 @@ export function AttendancePageMobile() {
 
   return (
     <div style={{ paddingBottom: 100 }}>
-      <NavBar onBack={() => navigate(`/cabinet/${id}`)}>Відвідуваність</NavBar>
+      <NavBar onBack={() => navigate(-1)}>Відвідуваність</NavBar>
 
       {/* Summary bar */}
       <div style={{ padding: '12px 16px 14px', background: '#fff', borderBottom: '1px solid var(--color-border-light)' }}>

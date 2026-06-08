@@ -175,7 +175,7 @@ export function AdminActivityPageDesktop() {
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 48px)' }}>
       <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid rgba(0,0,0,0.06)', flexShrink: 0 }}>
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/admins/${adminId}`)}>Назад</Button>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
           <Title level={4} style={{ margin: 0 }}>{fullName || 'Активність'}</Title>
         </Space>
       </div>

@@ -74,7 +74,7 @@ export function StatsPageDesktop() {
     <div style={{ padding: 24, maxWidth: 960 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/cabinet/${groupId}`)}>Назад</Button>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
           <Title level={3} style={{ margin: 0 }}>Статистика</Title>
         </Space>
         <Segmented

@@ -136,7 +136,7 @@ export function SchedulePageMobile() {
   if (loading) {
     return (
       <>
-        <NavBar onBack={() => navigate(`/cabinet/${id}`)}>Графік зустрічей</NavBar>
+        <NavBar onBack={() => navigate(-1)}>Графік зустрічей</NavBar>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 48 }}><SpinLoading color="primary" /></div>
       </>
     )
@@ -144,7 +144,7 @@ export function SchedulePageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate(`/cabinet/${id}`)}>Графік зустрічей</NavBar>
+      <NavBar onBack={() => navigate(-1)}>Графік зустрічей</NavBar>
 
       <div style={{ padding: '12px 16px', background: '#fff', borderBottom: '1px solid var(--color-border-light)' }}>
         <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 2 }}>Дефолтний розклад</div>

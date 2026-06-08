@@ -382,14 +382,14 @@ export function PlanningPageMobile() {
 
   if (loading) return (
     <div>
-      <NavBar onBack={() => navigate(`/cabinet/${groupId}`)}>Планування</NavBar>
+      <NavBar onBack={() => navigate(-1)}>Планування</NavBar>
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><SpinLoading color="primary" /></div>
     </div>
   )
 
   return (
     <div style={{ paddingBottom: 100 }}>
-      <NavBar onBack={() => navigate(`/cabinet/${groupId}`)}>Планування</NavBar>
+      <NavBar onBack={() => navigate(-1)}>Планування</NavBar>
 
       {/* Header: date + template tag + buttons */}
       <div style={{ padding: '10px 16px', background: '#fff', borderBottom: '1px solid var(--color-border-light)' }}>

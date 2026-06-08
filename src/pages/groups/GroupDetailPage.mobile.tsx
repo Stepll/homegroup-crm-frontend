@@ -23,7 +23,7 @@ export function GroupDetailPageMobile() {
 
   return (
     <div>
-      <NavBar onBack={() => navigate('/groups')}>
+      <NavBar onBack={() => navigate(-1)}>
         {group.name}
       </NavBar>
       <div style={{ padding: 16 }}>

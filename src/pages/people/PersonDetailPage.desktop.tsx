@@ -139,7 +139,7 @@ export function PersonDetailPageDesktop() {
   return (
     <div style={{ padding: 24, maxWidth: 960 }}>
       <Space style={{ marginBottom: 20 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/people')}>Назад</Button>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
         <Title level={3} style={{ margin: 0 }}>{fullName || 'Людина'}</Title>
       </Space>
 

@@ -142,7 +142,7 @@ export function SchedulePageDesktop() {
     return (
       <div style={{ padding: 24 }}>
         <Space style={{ marginBottom: 20 }}>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/cabinet/${id}`)}>Назад</Button>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
           <Title level={3} style={{ margin: 0 }}>Графік зустрічей</Title>
         </Space>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 48 }}><Spin size="large" /></div>
@@ -153,7 +153,7 @@ export function SchedulePageDesktop() {
   return (
     <div style={{ padding: 24, maxWidth: 820 }}>
       <Space style={{ marginBottom: 20 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/cabinet/${id}`)}>Назад</Button>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
         <Title level={3} style={{ margin: 0 }}>Графік зустрічей</Title>
       </Space>
 

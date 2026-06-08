@@ -143,7 +143,7 @@ export function RoleFormPageDesktop() {
   return (
     <div style={{ padding: 24, maxWidth: 800 }}>
       <Space style={{ marginBottom: 20 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/settings/roles')}>Назад</Button>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
         <Title level={3} style={{ margin: 0 }}>{isNew ? 'Нова роль' : 'Редагування ролі'}</Title>
       </Space>
 

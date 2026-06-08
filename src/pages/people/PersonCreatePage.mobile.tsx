@@ -35,7 +35,7 @@ export function PersonCreatePageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate('/people')}>Нова людина</NavBar>
+      <NavBar onBack={() => navigate(-1)}>Нова людина</NavBar>
 
       <div style={{ padding: '0 12px' }}>
 

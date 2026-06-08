@@ -62,7 +62,7 @@ export function AdminProfilePageMobile() {
   if (loading || !admin) {
     return (
       <div>
-        <NavBar onBack={() => navigate('/people')}>Профіль</NavBar>
+        <NavBar onBack={() => navigate(-1)}>Профіль</NavBar>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><SpinLoading color="primary" /></div>
       </div>
     )
@@ -73,7 +73,7 @@ export function AdminProfilePageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate('/people')}>{fullName || 'Профіль'}</NavBar>
+      <NavBar onBack={() => navigate(-1)}>{fullName || 'Профіль'}</NavBar>
 
       {/* Hero */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 16px 8px', gap: 10 }}>

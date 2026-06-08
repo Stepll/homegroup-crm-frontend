@@ -130,7 +130,7 @@ export function AdminDetailPageDesktop() {
   return (
     <div style={{ padding: 24, maxWidth: 960 }}>
       <Space style={{ marginBottom: 20 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/settings/admins')}>Назад</Button>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>Назад</Button>
         <Title level={3} style={{ margin: 0 }}>{fullName || 'Адмін'}</Title>
       </Space>
 

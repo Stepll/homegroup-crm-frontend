@@ -177,7 +177,7 @@ export function HomeGroupFormPageMobile() {
   if (loading) {
     return (
       <div>
-        <NavBar onBack={() => navigate('/settings/home-groups')}>{isNew ? 'Нова група' : 'Редагування'}</NavBar>
+        <NavBar onBack={() => navigate(-1)}>{isNew ? 'Нова група' : 'Редагування'}</NavBar>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><SpinLoading color="primary" /></div>
       </div>
     )
@@ -185,7 +185,7 @@ export function HomeGroupFormPageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate('/settings/home-groups')}>
+      <NavBar onBack={() => navigate(-1)}>
         {isNew ? 'Нова домашня група' : 'Редагування групи'}
       </NavBar>
 

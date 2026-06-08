@@ -55,7 +55,7 @@ export function RoomFormPageMobile() {
   if (loading) {
     return (
       <div>
-        <NavBar onBack={() => navigate('/settings/rooms')}>Кімната</NavBar>
+        <NavBar onBack={() => navigate(-1)}>Кімната</NavBar>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}>
           <SpinLoading color="primary" />
         </div>
@@ -65,7 +65,7 @@ export function RoomFormPageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate('/settings/rooms')}>
+      <NavBar onBack={() => navigate(-1)}>
         {isNew ? 'Нова кімната' : 'Редагування кімнати'}
       </NavBar>
 

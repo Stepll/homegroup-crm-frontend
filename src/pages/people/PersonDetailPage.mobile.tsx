@@ -159,7 +159,7 @@ export function PersonDetailPageMobile() {
   if (loading || !person) {
     return (
       <div>
-        <NavBar onBack={() => navigate('/people')}>Людина</NavBar>
+        <NavBar onBack={() => navigate(-1)}>Людина</NavBar>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><SpinLoading color="primary" /></div>
       </div>
     )
@@ -289,7 +289,7 @@ export function PersonDetailPageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate('/people')}>{fullName || 'Людина'}</NavBar>
+      <NavBar onBack={() => navigate(-1)}>{fullName || 'Людина'}</NavBar>
 
       <div style={{ padding: '0 16px' }}>
 

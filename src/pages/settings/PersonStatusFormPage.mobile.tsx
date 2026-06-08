@@ -50,7 +50,7 @@ export function PersonStatusFormPageMobile() {
   if (loading) {
     return (
       <div>
-        <NavBar onBack={() => navigate('/settings/person-statuses')}>
+        <NavBar onBack={() => navigate(-1)}>
           {isNew ? 'Новий статус' : 'Редагування'}
         </NavBar>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}>
@@ -62,7 +62,7 @@ export function PersonStatusFormPageMobile() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <NavBar onBack={() => navigate('/settings/person-statuses')}>
+      <NavBar onBack={() => navigate(-1)}>
         {isNew ? 'Новий статус' : 'Редагування статусу'}
       </NavBar>
 
