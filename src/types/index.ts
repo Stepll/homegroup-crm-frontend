@@ -357,7 +357,7 @@ export interface AdminTask {
 
 export interface PersonActivity {
   id: number
-  type: 'comment' | 'status_change' | 'oversight_change'
+  type: 'comment' | 'status_change' | 'oversight_change' | 'person_converted'
   content?: string
   authorId?: number
   authorName?: string
