@@ -28,12 +28,12 @@ export function MyOversightWidget() {
     if (people.length === 0) return
     const groupIds = [...new Set(people.map((p) => p.primaryGroupId).filter((id): id is number => id != null))]
     Promise.all(
-      groupIds.map((gid) =>
+      groupIds.map((gid): Promise<{ gid: number; r: AttendanceDotsResponse }> =>
         attendanceApi.getDots(gid).then((r) => ({ gid, r }))
       )
     ).then((results) => {
       const map: Record<number, Dot[]> = {}
-      for (const { gid, r }: { gid: number; r: AttendanceDotsResponse } of results) {
+      for (const { gid, r } of results) {
         const cancelled = new Set(r.cancelledDates)
         const recordMap = new Map<string, boolean>()
         for (const rec of r.records) {
