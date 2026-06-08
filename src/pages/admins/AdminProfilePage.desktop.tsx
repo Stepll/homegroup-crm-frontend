@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button, Card, Spin, Typography, Space, Tag, Row, Col, Descriptions } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, MessageOutlined } from '@ant-design/icons'
 import { adminsApi } from '@/api/admins'
 import { attendanceApi } from '@/api/attendance'
 import { groupsApi } from '@/api/groups'
@@ -82,6 +82,9 @@ export function AdminProfilePageDesktop() {
                   {admin.telegram && <Button size="small" href={`https://t.me/${admin.telegram.replace('@', '')}`} target="_blank">Telegram</Button>}
                 </Space>
               )}
+              <Button icon={<MessageOutlined />} onClick={() => navigate(`/admins/${adminId}/activity`)} style={{ width: '100%', marginTop: 8 }}>
+                Коментарі та активність
+              </Button>
             </div>
           </Card>
           <div style={{ marginTop: 16 }}>

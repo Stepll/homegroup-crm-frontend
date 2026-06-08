@@ -130,6 +130,18 @@ export function AdminProfilePageMobile() {
 
       <div style={{ padding: '0 16px' }}>
 
+        <Button
+          block
+          onClick={() => navigate(`/admins/${adminId}/activity`)}
+          style={{
+            '--background-color': 'transparent', '--border-color': 'var(--color-primary)',
+            '--text-color': 'var(--color-primary)', '--border-radius': 'var(--radius-md)',
+            height: 44, fontSize: 'var(--font-base)', fontWeight: 500, marginBottom: 12,
+          } as React.CSSProperties}
+        >
+          Коментарі та активність
+        </Button>
+
         <AdminTasksBlock adminId={adminId} />
 
         <BlockCard title="Особиста інформація">

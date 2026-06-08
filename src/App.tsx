@@ -25,6 +25,7 @@ import { RoomFormPage } from '@/pages/settings/RoomFormPage'
 import { PersonCreatePage } from '@/pages/people/PersonCreatePage'
 import { PersonDetailPage } from '@/pages/people/PersonDetailPage'
 import { PersonActivityPage } from '@/pages/people/PersonActivityPage'
+import { AdminActivityPage } from '@/pages/admins/AdminActivityPage'
 import { GroupCabinetPage } from '@/pages/cabinet/GroupCabinetPage'
 import { PlanningPage } from '@/pages/cabinet/PlanningPage'
 import { StatsPage } from '@/pages/cabinet/StatsPage'
@@ -73,6 +74,7 @@ export function App() {
             <Route path="settings/rooms/:id" element={<ProtectedRoute permission="settings.rooms"><RoomFormPage /></ProtectedRoute>} />
           </Route>
           <Route path="people/:id/activity" element={<ProtectedRoute permission="people.view"><PersonActivityPage /></ProtectedRoute>} />
+          <Route path="admins/:id/activity" element={<ProtectedRoute permission="admins.viewProfiles"><AdminActivityPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
