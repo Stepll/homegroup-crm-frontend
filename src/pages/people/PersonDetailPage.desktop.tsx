@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button, Card, Spin, Typography, Space, Tag, Row, Col, Descriptions, Modal, Input, Select, Switch, Divider } from 'antd'
-import { ArrowLeftOutlined, EditOutlined, MessageOutlined, DeleteOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, EditOutlined, MessageOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons'
 import { peopleApi } from '@/api/people'
 import { groupsApi } from '@/api/groups'
 import { adminsApi } from '@/api/admins'
 import { personStatusesApi, type PersonStatus } from '@/api/personStatuses'
 import { attendanceApi } from '@/api/attendance'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
+import { ConvertToAdminModal } from '@/components/ConvertToAdminModal'
 import { usePermission } from '@/hooks/usePermission'
 import type { Person, CustomField, Group, Admin, AttendanceRecord } from '@/types'
 
@@ -21,6 +22,8 @@ export function PersonDetailPageDesktop() {
   const navigate = useNavigate()
   const personId = Number(id)
   const canViewSensitive = usePermission('people.viewSensitive')
+  const canConvert = usePermission('people.convertToAdmin')
+  const [convertOpen, setConvertOpen] = useState(false)
 
   const [person, setPerson] = useState<Person | null>(null)
   const [groups, setGroups] = useState<Group[]>([])
@@ -172,6 +175,11 @@ export function PersonDetailPageDesktop() {
               <Button icon={<MessageOutlined />} onClick={() => navigate(`/people/${personId}/activity`)} style={{ width: '100%' }}>
                 Коментарі та активність
               </Button>
+              {canConvert && (
+                <Button icon={<UserAddOutlined />} onClick={() => setConvertOpen(true)} style={{ width: '100%' }}>
+                  Перевести в адміни
+                </Button>
+              )}
               <Button danger icon={<DeleteOutlined />} onClick={handleDelete} style={{ width: '100%' }}>
                 Видалити людину
               </Button>
@@ -389,6 +397,14 @@ export function PersonDetailPageDesktop() {
         </div>
         <Input placeholder="Назва поля" value={newFieldName} onChange={(e) => setNewFieldName(e.target.value)} autoFocus />
       </Modal>
+
+      <ConvertToAdminModal
+        open={convertOpen}
+        personId={personId}
+        personName={fullName || person.name}
+        onCancel={() => setConvertOpen(false)}
+        onSuccess={(newAdminId) => { setConvertOpen(false); navigate(`/admins/${newAdminId}`, { replace: true }) }}
+      />
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { adminsApi } from '@/api/admins'
 import { personStatusesApi, type PersonStatus } from '@/api/personStatuses'
 import { attendanceApi } from '@/api/attendance'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
+import { ConvertToAdminModal } from '@/components/ConvertToAdminModal'
 import { usePermission } from '@/hooks/usePermission'
 import type { Person, CustomField, Group, Admin, AttendanceRecord } from '@/types'
 
@@ -86,6 +87,8 @@ export function PersonDetailPageMobile() {
   const navigate = useNavigate()
   const personId = Number(id)
   const canViewSensitive = usePermission('people.viewSensitive')
+  const canConvert = usePermission('people.convertToAdmin')
+  const [convertOpen, setConvertOpen] = useState(false)
 
   const [person, setPerson] = useState<Person | null>(null)
   const [groups, setGroups] = useState<Group[]>([])
@@ -418,6 +421,17 @@ export function PersonDetailPageMobile() {
           ))}
         </div>
 
+        {canConvert && (
+          <Button block onClick={() => setConvertOpen(true)}
+            style={{
+              '--background-color': 'transparent', '--border-color': 'var(--color-primary)',
+              '--text-color': 'var(--color-primary)', '--border-radius': 'var(--radius-md)',
+              height: 48, fontSize: 'var(--font-base)', fontWeight: 600, marginTop: 8,
+            } as React.CSSProperties}>
+            Перевести в адміни
+          </Button>
+        )}
+
         {/* Delete */}
         <Button block onClick={handleDelete}
           style={{
@@ -428,6 +442,14 @@ export function PersonDetailPageMobile() {
           Видалити людину
         </Button>
       </div>
+
+      <ConvertToAdminModal
+        open={convertOpen}
+        personId={personId}
+        personName={[person.name, person.lastName].filter(Boolean).join(' ') || person.name}
+        onCancel={() => setConvertOpen(false)}
+        onSuccess={(newAdminId) => { setConvertOpen(false); navigate(`/admins/${newAdminId}`, { replace: true }) }}
+      />
 
       {/* ── Popup: Особиста інформація ── */}
       <PopupForm visible={personalOpen} title="Особиста інформація" onClose={() => setPersonalOpen(false)} onSave={savePersonal} saving={saving}>

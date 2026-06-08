@@ -36,6 +36,7 @@ const PERMISSION_GROUPS: PermGroup[] = [
       { key: 'people.edit', label: 'Редагувати профілі' },
       { key: 'people.delete', label: 'Видаляти людей' },
       { key: 'people.customFields', label: 'Управляти кастомними полями' },
+      { key: 'people.convertToAdmin', label: 'Переводити людину в адміна' },
     ],
   },
   {

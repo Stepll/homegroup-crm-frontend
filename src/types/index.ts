@@ -98,6 +98,7 @@ export interface Admin {
   ministry?: string
   isBaptizedWithSpirit: boolean
   status?: { id: number; name: string; color: string } | null
+  customFields: CustomField[]
 }
 
 export interface GroupMember {

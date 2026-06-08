@@ -38,4 +38,31 @@ export const peopleApi = {
 
   deleteActivity: (personId: number, entryId: number) =>
     api.delete(`/people/${personId}/activity/${entryId}`),
+
+  convertPreview: (personId: number) =>
+    api.get<ConvertToAdminPreview>(`/people/${personId}/convert-to-admin/preview`).then((r) => r.data),
+
+  convertToAdmin: (personId: number, data: {
+    email: string
+    password: string
+    roleIds: number[]
+    primaryGroupId: number | null
+    visibleGroupIds: number[]
+  }) => api.post<number>(`/people/${personId}/convert-to-admin`, data).then((r) => r.data),
+}
+
+export type ConvertToAdminPreview = {
+  id: number
+  name: string
+  lastName: string | null
+  email: string | null
+  emailAvailable: boolean
+  primaryGroupId: number | null
+  primaryGroupName: string | null
+  attendanceCount: number
+  customFieldValueCount: number
+  activityCount: number
+  groupNeedCount: number
+  groupMembershipCount: number
+  groupMemberHistoryCount: number
 }
