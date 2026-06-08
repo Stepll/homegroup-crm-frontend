@@ -532,6 +532,23 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
       тогли (joinedAt/leftAt/status/oversight, default joinedAt+leftAt ON), per-conflict
       Radio з bulk «всі з файлу/БД», вирішення невпізнаних людей (skip/create/link).
       Меню імпорту приховане для тих в кого нема `attendance.record`.
+- [x] Convert Person → Admin — кнопка «Перевести в адміни» на PersonDetailPage
+      (desktop + mobile, permission `people.convertToAdmin`). Модалка `ConvertToAdminModal`
+      підтягує preview з бекенду (counts), email-availability check, форма email/password/
+      roles/primaryGroup/visibleGroups. На успіх → редірект на `/admins/:id`.
+- [x] Admin activity feed — `/admins/:id/activity` (desktop + mobile, дзеркало
+      PersonActivityPage). Кнопка «Коментарі та активність» в Hero-блоці адмінів.
+      Permission `admins.viewProfiles`. Системні події включають `person_converted` —
+      «Конвертовано з людини: <ім'я>».
+- [x] /profile page mirroring — на власному `/profile` додано блок `AdminTasksBlock` і
+      кнопку «Коментарі та активність» (веде на `/admins/<myId>/activity`).
+- [x] Back navigation fix — кнопки «Назад» (NavBar `onBack`, Button «Назад») у 37 файлах
+      використовують `navigate(-1)` замість фіксованих шляхів. Тепер з домашки → людини
+      → назад повертає в кабінет, а не на список людей.
+- [x] Calendar desktop bug fixes — (1) сітка завантажує події на повний тиждень
+      (Mon–Sun, не Mon–Fri); (2) сьогоднішня колонка не затирає годинну сітку
+      (заміна CSS `background` shorthand на `backgroundColor`, щоб не скидати
+      `backgroundImage` з repeating-linear-gradient).
 
 ## TODO
 - [ ] Pull-to-refresh
