@@ -4,12 +4,13 @@ import {
   Button, Card, Spin, Typography, Space, Tag, Row, Col, Descriptions,
   Modal, Input, Select, Switch, Divider,
 } from 'antd'
-import { LogoutOutlined, EditOutlined, LockOutlined } from '@ant-design/icons'
+import { LogoutOutlined, EditOutlined, LockOutlined, MessageOutlined } from '@ant-design/icons'
 import { adminsApi } from '@/api/admins'
 import { attendanceApi } from '@/api/attendance'
 import { groupsApi } from '@/api/groups'
 import { personStatusesApi, type PersonStatus } from '@/api/personStatuses'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
+import { AdminTasksBlock } from '@/components/AdminTasksBlock'
 import { useAuth } from '@/store/auth'
 import type { Admin, Group, AttendanceRecord } from '@/types'
 
@@ -137,11 +138,17 @@ export function ProfilePageDesktop() {
                 {admin.phone && <Button size="small" href={`tel:${admin.phone}`}>Подзвонити</Button>}
                 {admin.telegram && <Button size="small" href={`https://t.me/${admin.telegram.replace('@', '')}`} target="_blank">Telegram</Button>}
               </Space>
+              <Button icon={<MessageOutlined />} onClick={() => navigate(`/admins/${admin.id}/activity`)} style={{ width: '100%' }}>
+                Коментарі та активність
+              </Button>
               <Button icon={<LockOutlined />} onClick={() => { setNewPwd(''); setPwdOpen(true) }} style={{ width: '100%' }}>
                 Змінити пароль
               </Button>
             </div>
           </Card>
+          <div style={{ marginTop: 16 }}>
+            <AdminTasksBlock adminId={admin.id} />
+          </div>
         </Col>
 
         <Col xs={24} lg={16}>

@@ -7,6 +7,7 @@ import { attendanceApi } from '@/api/attendance'
 import { groupsApi } from '@/api/groups'
 import { personStatusesApi, type PersonStatus } from '@/api/personStatuses'
 import { AttendanceGrid } from '@/components/AttendanceGrid'
+import { AdminTasksBlock } from '@/components/AdminTasksBlock'
 import { useAuth } from '@/store/auth'
 import type { Admin, Group, AttendanceRecord } from '@/types'
 
@@ -293,6 +294,20 @@ export function ProfilePageMobile() {
       </div>
 
       <div style={{ padding: '0 16px' }}>
+
+        <Button
+          block
+          onClick={() => navigate(`/admins/${admin.id}/activity`)}
+          style={{
+            '--background-color': 'transparent', '--border-color': 'var(--color-primary)',
+            '--text-color': 'var(--color-primary)', '--border-radius': 'var(--radius-md)',
+            height: 44, fontSize: 'var(--font-base)', fontWeight: 500, marginBottom: 12,
+          } as React.CSSProperties}
+        >
+          Коментарі та активність
+        </Button>
+
+        <AdminTasksBlock adminId={admin.id} />
 
         {/* ── Особиста інформація ── */}
         <BlockCard title="Особиста інформація" onEdit={openPersonal}>
