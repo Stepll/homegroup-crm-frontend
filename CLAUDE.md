@@ -28,7 +28,8 @@ src/
     roles.ts              — rolesApi
     attendance.ts         — attendanceApi (getByGroup, getSummary, getMeetingDates,
                             record, recordBulk, getMeta, saveMeta, deleteMeeting,
-                            getTable, getDots)
+                            getTable, getDots, export, template, importPreview,
+                            importApply) + downloadBlob helper
     schedule.ts           — scheduleApi (getWeeks, cancel, uncancel, move, resetWeek)
     calendar.ts           — calendarApi (getOccurrences, CRUD events) + roomsApi
     personStatuses.ts     — personStatusesApi (getAll, create, update, delete)
@@ -46,6 +47,9 @@ src/
     ProtectedRoute.tsx    — redirect to /login if not authed; permission? prop → redirect / if no access
     AttendanceGrid.tsx    — shared 12-month activity grid (props: personId?, userId?,
                             group?, attendance[], loading, noGroupMessage?)
+    AttendanceImportExportPopup.tsx           — dispatcher (useIsDesktop)
+    AttendanceImportExportPopup.mobile.tsx    — antd-mobile Popup version
+    AttendanceImportExportPopup.desktop.tsx   — antd Modal version
   pages/
     auth/
       LoginPage.tsx
@@ -192,6 +196,31 @@ src/
   присутній (зелений), відсутній (червоний), скасована зустріч (#FEF9C3 жовтий)
 - Move-out shadows не з'являються як стовпчики (бекенд фільтрує)
 - Cancellation toggle в column modal → саве через `saveMeta` з isCancelled
+- **Кнопка Імпорт/Експорт** у NavBar (mobile: `MoreOutline`) / toolbar (desktop:
+  `FileExcelOutlined`) → відкриває `AttendanceImportExportPopup` з `defaultGroupId`
+  поточної групи. Після успішного імпорту викликається `reload()` що перезавантажує таблицю.
+
+### AttendanceImportExportPopup (`src/components/`)
+Split mobile/desktop через `useIsDesktop`:
+- `.mobile.tsx` — antd-mobile `Popup` bottom-sheet 90vh, native HTML date inputs, рядки чекбоксів
+- `.desktop.tsx` — antd `Modal` (640px для menu/upload/export, 1000px для preview),
+  `RangePicker`, drag-and-drop зона, `Tabs` для вкладок, `Collapse` для конфліктів і людей,
+  2-колонкова сітка на preview (ліва: група + тогли + summary, права: конфлікти + люди)
+
+State machine: `menu → export | import-upload → import-preview → import-applying`.
+
+Export: чекбокси груп + «Всі домашки» (з indeterminate стан на desktop), опційний період →
+кнопки «Експорт» / «Шаблон». Період для шаблону = бек генерує колонки по `MeetingDay`.
+
+Import preview: за вкладкою (`ImportSheetPreview`) → `groupId` Select, 4 тогли
+(joinedAt/leftAt/status/oversight — joinedAt + leftAt default ON), changes summary,
+блок конфліктів (Radio.Group файл/БД + «Всі з файлу/БД» bulk-кнопки),
+блок людей (`Невпізнано` з Radio skip/create/link + Select на suggestions, `Знайдено`
+з Switch include/skip).
+
+Apply: відправляє `ImportApplyRequest`, показує success Modal з лічильниками.
+
+Permission: меню імпорту приховується для тих в кого нема `attendance.record`.
 
 ### PlanningPage
 - `BlockCard` компонент: два режими — **view** (текст + олівець/урна) та **edit** (blue border, checkmark кнопка)
@@ -386,6 +415,27 @@ GroupMember: {
   status?, primaryGroupId?, primaryGroupName?, primaryGroupColor?,
   createdAt, isAdmin, userId?, roleTag?: { name, color } | null
 }
+
+// Attendance Import/Export
+GroupOption: { id, name }
+ImportPreviewResponse: { importId, expiresAt, sheets: ImportSheetPreview[], availableGroups: GroupOption[] }
+ImportSheetPreview: { sheetIndex, sheetName, matchedGroupId?, matchedGroupName?,
+                      dates: ImportDatePreview[], people: ImportPersonPreview[],
+                      conflicts: ImportConflict[], changes: ImportChangesSummary }
+ImportPersonPreview: { rowIndex, name, lastName?, fileIdHint?, matchedPersonId?,
+                       matchedUserId?, matchType: 'by_id'|'by_name'|'unmatched',
+                       suggestions: PersonMatchSuggestion[], statusFromFile?,
+                       oversightFromFile?, joinedAtFromFile?, detectedLeftAt?,
+                       filePresentCount, fileAbsentCount }
+ImportConflict: { index, type: 'attendance'|'cancellation'|'guests'|'notes',
+                  date, personRowIndex?, personName?, fileValue?, dbValue? }
+ImportApplyRequest: { importId, sheets: ImportSheetDecision[] }
+ImportSheetDecision: { sheetIndex, groupId?, personDecisions: PersonDecision[],
+                       conflictResolutions: ConflictResolution[],
+                       importStatus, importOversight, importJoinedAt, importLeftAt }
+PersonDecision: { rowIndex, action: 'skip'|'use'|'create'|'link',
+                  targetPersonId?, targetUserId? }
+ConflictResolution: { type, date, personRowIndex?, useFile }
 ```
 
 ## API Client
@@ -474,6 +524,14 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
       sortованих в кінець; cells outside membership period (#E5E7EB);
       no-data cells (#F3F4F6 interactive)
 - [x] Attendance marking page фільтрує `isFormer: true` членів
+- [x] Attendance Excel import/export popup — кнопка в NavBar AttendanceTablePage
+      (mobile + desktop через `useIsDesktop`). Mobile = antd-mobile Popup bottom-sheet,
+      desktop = antd Modal з табами/Collapse. Стейт-машина: menu → export/upload → preview →
+      applying. Export з multi-group вибором + опційним періодом; шаблон у періоді
+      генерує колонки на бекенді по `MeetingDay`. Import preview: per-sheet group select,
+      тогли (joinedAt/leftAt/status/oversight, default joinedAt+leftAt ON), per-conflict
+      Radio з bulk «всі з файлу/БД», вирішення невпізнаних людей (skip/create/link).
+      Меню імпорту приховане для тих в кого нема `attendance.record`.
 
 ## TODO
 - [ ] Pull-to-refresh
