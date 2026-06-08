@@ -444,10 +444,10 @@ export function CalendarPageDesktop() {
     const effectiveTypes = new Set(types)
     if (groupIds.size === 0) effectiveTypes.delete('HomeGroup')
     if (effectiveTypes.size === 0) { setOccurrences([]); return }
-    const fri = addDays(start, 4)
+    const sun = addDays(start, 6)
     calendarApi.getOccurrences({
       from: formatDate(start),
-      to: formatDate(fri),
+      to: formatDate(sun),
       types: [...effectiveTypes].join(','),
       groupIds: groupIds.size > 0 ? [...groupIds].join(',') : undefined,
     }).then(setOccurrences).catch(() => {})
