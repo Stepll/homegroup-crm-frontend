@@ -6,16 +6,30 @@ import { useDashboardPage } from './useDashboardPage'
 import { AttendanceWidget } from './widgets/AttendanceWidget'
 import { GroupStatsWidget } from './widgets/GroupStatsWidget'
 import { UpcomingEventsWidget } from './widgets/UpcomingEventsWidget'
+import { MyTasksWidget } from './widgets/MyTasksWidget'
+import { MyOversightWidget } from './widgets/MyOversightWidget'
+import { InactiveMembersWidget } from './widgets/InactiveMembersWidget'
+import { GroupsComparisonWidget } from './widgets/GroupsComparisonWidget'
+import { StatusDistributionWidget } from './widgets/StatusDistributionWidget'
+import { GroupsAttendanceSummaryWidget } from './widgets/GroupsAttendanceSummaryWidget'
 import type { ComponentType } from 'react'
 
 const WIDGET_COMPONENTS: Record<string, ComponentType> = {
   attendance: AttendanceWidget,
+  myTasks: MyTasksWidget,
+  myOversight: MyOversightWidget,
+  inactiveMembers: InactiveMembersWidget,
+  groupsComparison: GroupsComparisonWidget,
+  statusDistribution: StatusDistributionWidget,
+  groupsAttendanceSummary: GroupsAttendanceSummaryWidget,
   groupStats: GroupStatsWidget,
   upcomingEvents: UpcomingEventsWidget,
 }
 
 // widgets that prefer full width on desktop (tall/complex)
-const FULL_WIDTH_WIDGETS = new Set(['groupStats'])
+const FULL_WIDTH_WIDGETS = new Set([
+  'groupStats', 'groupsComparison', 'groupsAttendanceSummary', 'inactiveMembers',
+])
 
 export function DashboardPageDesktop() {
   const { user } = useAuth()

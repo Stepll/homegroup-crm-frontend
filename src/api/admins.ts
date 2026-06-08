@@ -49,6 +49,11 @@ export const adminsApi = {
   getDashboardConfig: () => api.get<WidgetConfig[]>('/admins/me/dashboard').then((r) => r.data),
   saveDashboardConfig: (config: WidgetConfig[]) => api.put('/admins/me/dashboard', { config }),
 
+  getMyTasks: () =>
+    api.get<AdminTask[]>('/admins/me/tasks').then((r) => r.data),
+  toggleMyTask: (taskId: number) =>
+    api.patch<AdminTask>(`/admins/me/tasks/${taskId}/toggle`).then((r) => r.data),
+
   getTasks: (adminId: number) =>
     api.get<AdminTask[]>(`/admins/${adminId}/tasks`).then((r) => r.data),
   createTask: (adminId: number, title: string, description?: string) =>
