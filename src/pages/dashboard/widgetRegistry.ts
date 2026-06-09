@@ -50,6 +50,11 @@ export const ALL_WIDGETS: WidgetDef[] = [
     label: 'Найближчі події',
     description: 'Дні народження та події твоєї домашки',
   },
+  {
+    id: 'randomNeed',
+    label: 'Молитовна потреба',
+    description: 'Випадкова активна потреба з можливістю змінити статус',
+  },
 ]
 
 export interface WidgetConfig {

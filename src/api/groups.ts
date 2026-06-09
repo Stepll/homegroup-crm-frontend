@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Group, GroupCabinet, GroupCustomField, GroupEvent, GroupNeed, GroupStats, GroupMember } from '@/types'
+import type { Group, GroupCabinet, GroupCustomField, GroupEvent, GroupNeed, GroupStats, GroupMember, AllNeed } from '@/types'
 
 export const groupsApi = {
   getAll: () => api.get<Group[]>('/groups').then((r) => r.data),
@@ -81,6 +81,9 @@ export const groupsApi = {
 
   deleteNeed: (groupId: number, needId: number) =>
     api.delete(`/groups/${groupId}/needs/${needId}`),
+
+  getAllNeeds: (groupId?: number, status = 'active') =>
+    api.get<AllNeed[]>('/groups/all-needs', { params: { groupId, status } }).then(r => r.data),
 
   setMemberJoinedAt: (groupId: number, data: { personId?: number | null; userId?: number | null; joinedAt: string }) =>
     api.patch(`/groups/${groupId}/members/joined-at`, data),

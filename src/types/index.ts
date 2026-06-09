@@ -194,6 +194,19 @@ export interface GroupEvent {
   daysUntil: number
 }
 
+export interface AllNeed {
+  id: number
+  homeGroupId: number
+  groupName: string
+  groupColor: string
+  subjectName: string
+  description: string
+  status: string
+  createdAt: string
+  personId?: number | null
+  userId?: number | null
+}
+
 export interface GroupNeed {
   id: number
   subjectName: string

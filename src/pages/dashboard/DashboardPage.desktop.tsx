@@ -12,6 +12,7 @@ import { InactiveMembersWidget } from './widgets/InactiveMembersWidget'
 import { GroupsComparisonWidget } from './widgets/GroupsComparisonWidget'
 import { StatusDistributionWidget } from './widgets/StatusDistributionWidget'
 import { GroupsAttendanceSummaryWidget } from './widgets/GroupsAttendanceSummaryWidget'
+import { RandomNeedWidget } from './widgets/RandomNeedWidget'
 import type { ComponentType } from 'react'
 
 const WIDGET_COMPONENTS: Record<string, ComponentType> = {
@@ -24,6 +25,7 @@ const WIDGET_COMPONENTS: Record<string, ComponentType> = {
   groupsAttendanceSummary: GroupsAttendanceSummaryWidget,
   groupStats: GroupStatsWidget,
   upcomingEvents: UpcomingEventsWidget,
+  randomNeed: RandomNeedWidget,
 }
 
 // widgets that prefer full width on desktop (tall/complex)
