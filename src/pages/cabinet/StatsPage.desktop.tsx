@@ -135,30 +135,35 @@ export function StatsPageDesktop() {
                 <AttendanceChart meetings={stats.meetings} />
               </Card>
 
-              <Card title="Минулі зустрічі">
-                {[...stats.meetings].reverse().map((m) => {
-                  const fmtDate = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })
-                  const rateColor = m.attendanceRate >= 80 ? '#22c55e' : m.attendanceRate >= 50 ? '#F97316' : '#ef4444'
-                  return (
-                    <div key={m.date} style={{ padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              {atRisk.length > 0 && (
+                <Card title="Під ризиком" style={{ marginBottom: 16 }} extra={<Text type="secondary" style={{ fontSize: 12 }}>3+ пропуски поспіль</Text>}>
+                  {atRisk.map((m) => {
+                    const key = m.personId ? `p_${m.personId}` : `u_${m.userId}`
+                    const lastDate = m.lastAttendedDate
+                      ? new Date(m.lastAttendedDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+                      : '—'
+                    return (
+                      <div key={key}
+                        onClick={() => navigate(m.personId ? `/people/${m.personId}` : `/admins/${m.userId}`)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid rgba(0,0,0,0.04)', cursor: 'pointer' }}>
                         <div>
-                          <Text strong>{fmtDate(m.date)}</Text>
-                          <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 2 }}>
-                            {m.presentCount}/{m.totalMembers} учасників{m.guestCount > 0 ? ` · ${m.guestCount} гостей` : ''}
-                          </Text>
+                          <Text style={{ fontWeight: 500 }}>{m.fullName}</Text>
+                          <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 1 }}>Останній раз: {lastDate}</Text>
                         </div>
-                        <Text strong style={{ color: rateColor, fontSize: 16 }}>{m.attendanceRate}%</Text>
+                        <span style={{ background: '#FEF3C7', color: '#D97706', borderRadius: 12, padding: '2px 10px', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                          {m.missedCount} пропусків
+                        </span>
                       </div>
-                      {m.absentees.length > 0 && (
-                        <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                          Відсутні: {m.absentees.join(', ')}
-                        </Text>
-                      )}
-                    </div>
-                  )
-                })}
-              </Card>
+                    )
+                  })}
+                </Card>
+              )}
+
+              {statusDist && statusDist.totalPeople > 0 && (
+                <Card title="Розподіл за статусом">
+                  <StatusPieChart items={statusDist.items} total={statusDist.totalPeople} />
+                </Card>
+              )}
             </Col>
 
             <Col xs={24} lg={12}>
@@ -186,44 +191,36 @@ export function StatsPageDesktop() {
               </Card>
             </Col>
           </Row>
-        </>
-      )}
 
-      {(atRisk.length > 0 || (statusDist && statusDist.totalPeople > 0)) && (
-        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-          {atRisk.length > 0 && (
-            <Col xs={24} lg={12}>
-              <Card title="Під ризиком" extra={<Text type="secondary" style={{ fontSize: 12 }}>3+ пропуски поспіль</Text>}>
-                {atRisk.map((m) => {
-                  const key = m.personId ? `p_${m.personId}` : `u_${m.userId}`
-                  const lastDate = m.lastAttendedDate
-                    ? new Date(m.lastAttendedDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
-                    : '—'
+          <Row style={{ marginTop: 16 }}>
+            <Col xs={24}>
+              <Card title="Минулі зустрічі">
+                {[...stats.meetings].reverse().map((m) => {
+                  const fmtDate = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('uk-UA', { weekday: 'short', day: 'numeric', month: 'short' })
+                  const rateColor = m.attendanceRate >= 80 ? '#22c55e' : m.attendanceRate >= 50 ? '#F97316' : '#ef4444'
                   return (
-                    <div key={key}
-                      onClick={() => navigate(m.personId ? `/people/${m.personId}` : `/admins/${m.userId}`)}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid rgba(0,0,0,0.04)', cursor: 'pointer' }}>
-                      <div>
-                        <Text style={{ fontWeight: 500 }}>{m.fullName}</Text>
-                        <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 1 }}>Останній раз: {lastDate}</Text>
+                    <div key={m.date} style={{ padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <Text strong>{fmtDate(m.date)}</Text>
+                          <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 2 }}>
+                            {m.presentCount}/{m.totalMembers} учасників{m.guestCount > 0 ? ` · ${m.guestCount} гостей` : ''}
+                          </Text>
+                        </div>
+                        <Text strong style={{ color: rateColor, fontSize: 16 }}>{m.attendanceRate}%</Text>
                       </div>
-                      <span style={{ background: '#FEF3C7', color: '#D97706', borderRadius: 12, padding: '2px 10px', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-                        {m.missedCount} пропусків
-                      </span>
+                      {m.absentees.length > 0 && (
+                        <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+                          Відсутні: {m.absentees.join(', ')}
+                        </Text>
+                      )}
                     </div>
                   )
                 })}
               </Card>
             </Col>
-          )}
-          {statusDist && statusDist.totalPeople > 0 && (
-            <Col xs={24} lg={12}>
-              <Card title="Розподіл за статусом">
-                <StatusPieChart items={statusDist.items} total={statusDist.totalPeople} />
-              </Card>
-            </Col>
-          )}
-        </Row>
+          </Row>
+        </>
       )}
     </div>
   )

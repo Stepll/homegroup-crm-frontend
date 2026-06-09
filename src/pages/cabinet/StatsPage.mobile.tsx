@@ -245,6 +245,41 @@ export function StatsPageMobile() {
             ))}
           </div>
 
+          {atRisk.length > 0 && (
+            <div style={card}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <SectionLabel>Під ризиком</SectionLabel>
+                <span style={{ fontSize: 10, color: 'var(--color-text-tertiary)' }}>3+ пропуски поспіль</span>
+              </div>
+              {atRisk.map((m) => {
+                const key = m.personId ? `p_${m.personId}` : `u_${m.userId}`
+                const lastDate = m.lastAttendedDate
+                  ? new Date(m.lastAttendedDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+                  : '—'
+                return (
+                  <div key={key}
+                    onClick={() => navigate(m.personId ? `/people/${m.personId}` : `/admins/${m.userId}`)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--color-border-light)', cursor: 'pointer' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 14, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.fullName}</div>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 1 }}>Останній раз: {lastDate}</div>
+                    </div>
+                    <span style={{ background: '#FEF3C7', color: '#D97706', borderRadius: 12, padding: '2px 9px', fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>
+                      {m.missedCount} пропусків
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {statusDist && statusDist.totalPeople > 0 && (
+            <div style={card}>
+              <SectionLabel>Розподіл за статусом</SectionLabel>
+              <MiniPieChart items={statusDist.items} total={statusDist.totalPeople} />
+            </div>
+          )}
+
           {/* Meeting list */}
           <div style={card}>
             <SectionLabel>Минулі зустрічі</SectionLabel>
@@ -255,44 +290,6 @@ export function StatsPageMobile() {
 
         </div>
       )}
-
-      {/* These sections are period-independent */}
-      <div style={{ padding: '0 16px' }}>
-        {atRisk.length > 0 && (
-          <div style={card}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <SectionLabel>Під ризиком</SectionLabel>
-              <span style={{ fontSize: 10, color: 'var(--color-text-tertiary)' }}>3+ пропуски поспіль</span>
-            </div>
-            {atRisk.map((m) => {
-              const key = m.personId ? `p_${m.personId}` : `u_${m.userId}`
-              const lastDate = m.lastAttendedDate
-                ? new Date(m.lastAttendedDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
-                : '—'
-              return (
-                <div key={key}
-                  onClick={() => navigate(m.personId ? `/people/${m.personId}` : `/admins/${m.userId}`)}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--color-border-light)', cursor: 'pointer' }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 14, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.fullName}</div>
-                    <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginTop: 1 }}>Останній раз: {lastDate}</div>
-                  </div>
-                  <span style={{ background: '#FEF3C7', color: '#D97706', borderRadius: 12, padding: '2px 9px', fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>
-                    {m.missedCount} пропусків
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {statusDist && statusDist.totalPeople > 0 && (
-          <div style={card}>
-            <SectionLabel>Розподіл за статусом</SectionLabel>
-            <MiniPieChart items={statusDist.items} total={statusDist.totalPeople} />
-          </div>
-        )}
-      </div>
     </div>
   )
 }
