@@ -213,10 +213,13 @@ export function StatsPageMobile() {
           {/* Summary card */}
           <div style={card}>
             <div style={{ display: 'flex', gap: 0 }}>
-              <SumStat label="Ср. відвід." value={`${stats.summary.avgAttendanceRate}%`} />
+              <SumStat label="Ср. відвід." value={`${stats.summary.avgAttendanceRate}%`} prev={`${stats.summary.prevAvgAttendanceRate}%`} change={stats.summary.avgAttendanceRate - stats.summary.prevAvgAttendanceRate} />
+              <SumStat label="Нових" value={`${stats.summary.newMembers}`} prev={`${stats.summary.prevNewMembers}`} change={stats.summary.newMembers - stats.summary.prevNewMembers} />
+              <SumStat label="Учасників" value={`${stats.summary.totalMembers}`} prev={`${stats.summary.prevTotalMembers}`} change={stats.summary.totalMembers - stats.summary.prevTotalMembers} />
+            </div>
+            <div style={{ display: 'flex', gap: 0, borderTop: '1px solid var(--color-border-light)', marginTop: 4 }}>
               <SumStat label="Зустрічей" value={`${stats.summary.meetingCount}`} />
               <SumStat label="Гостей" value={`${stats.summary.totalGuests}`} />
-              <SumStat label="Нових" value={`${stats.summary.newMembers}`} />
             </div>
           </div>
 
@@ -258,11 +261,20 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function SumStat({ label, value }: { label: string; value: string }) {
+function SumStat({ label, value, prev, change }: { label: string; value: string; prev?: string; change?: number }) {
   return (
     <div style={{ flex: 1, textAlign: 'center', padding: '10px 4px' }}>
       <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>{value}</div>
-      <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 2 }}>{label}</div>
+      {prev != null && (
+        <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 1 }}>
+          {prev}{change != null && change !== 0 && (
+            <span style={{ color: change > 0 ? '#22C55E' : '#EF4444', marginLeft: 2 }}>
+              {change > 0 ? '↑' : '↓'}
+            </span>
+          )}
+        </div>
+      )}
+      <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{label}</div>
     </div>
   )
 }

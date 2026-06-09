@@ -590,9 +590,9 @@ function CabinetViewMobile({ groupId, isAdmin }: { groupId: number; isAdmin: boo
                 onClick={() => navigate(`/cabinet/${groupId}/stats`)}>Деталі →</Button>
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
-              <StatCard label="Ср. відвідуваність" value={`${stats.avgAttendanceRate}%`} />
-              <StatCard label="Нових цього місяця" value={`${stats.newMembersThisMonth}`} />
-              <StatCard label="Всього учасників" value={`${stats.totalMembers}`} />
+              <StatCard label="Ср. відвід. (3м)" value={`${stats.avgAttendanceRate}%`} prev={`${stats.prevAvgAttendanceRate}%`} change={stats.avgAttendanceRate - stats.prevAvgAttendanceRate} />
+              <StatCard label="Нових (3 міс)" value={`${stats.newMembers}`} prev={`${stats.prevNewMembers}`} change={stats.newMembers - stats.prevNewMembers} />
+              <StatCard label="Всього учасників" value={`${stats.totalMembers}`} prev={`${stats.prevTotalMembers}`} change={stats.totalMembers - stats.prevTotalMembers} />
             </div>
           </div>
         </div>
@@ -1231,11 +1231,20 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{children}</div>
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({ label, value, prev, change }: { label: string; value: string; prev?: string; change?: number }) {
   return (
     <div style={{ flex: 1, background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', padding: '10px 8px', textAlign: 'center' }}>
       <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)' }}>{value}</div>
-      <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 2 }}>{label}</div>
+      {prev != null && (
+        <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 1 }}>
+          {prev}{change != null && change !== 0 && (
+            <span style={{ color: change > 0 ? '#22C55E' : '#EF4444', marginLeft: 2 }}>
+              {change > 0 ? '↑' : '↓'}
+            </span>
+          )}
+        </div>
+      )}
+      <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)', marginTop: 1 }}>{label}</div>
     </div>
   )
 }

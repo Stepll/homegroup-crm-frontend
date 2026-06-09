@@ -14,6 +14,17 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: '6m', label: '6 місяців' },
 ]
 
+function PrevSuffix({ curr, prev, fmt = (v: number) => String(v) }: { curr: number; prev: number; fmt?: (v: number) => string }) {
+  const diff = curr - prev
+  if (diff === 0) return <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginLeft: 4 }}>{fmt(prev)}</span>
+  return (
+    <span style={{ fontSize: 11, marginLeft: 4 }}>
+      <span style={{ color: 'rgba(0,0,0,0.35)' }}>{fmt(prev)}</span>
+      <span style={{ color: diff > 0 ? '#22C55E' : '#EF4444', marginLeft: 2 }}>{diff > 0 ? '↑' : '↓'}</span>
+    </span>
+  )
+}
+
 function AttendanceChart({ meetings }: { meetings: GroupStats['meetings'] }) {
   if (meetings.length === 0) return null
   const CHART_H = 140
@@ -94,16 +105,19 @@ export function StatsPageDesktop() {
         <>
           <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
             <Col xs={12} sm={6}>
-              <Card><Statistic title="Ср. відвідуваність" value={`${stats.summary.avgAttendanceRate}%`} valueStyle={{ color: '#2AAFCA' }} /></Card>
+              <Card><Statistic title="Ср. відвідуваність" value={`${stats.summary.avgAttendanceRate}%`} valueStyle={{ color: '#2AAFCA' }} suffix={<PrevSuffix curr={stats.summary.avgAttendanceRate} prev={stats.summary.prevAvgAttendanceRate} fmt={(v: number) => `${v}%`} />} /></Card>
             </Col>
             <Col xs={12} sm={6}>
-              <Card><Statistic title="Зустрічей" value={stats.summary.meetingCount} /></Card>
+              <Card><Statistic title="Нових членів" value={stats.summary.newMembers} suffix={<PrevSuffix curr={stats.summary.newMembers} prev={stats.summary.prevNewMembers} />} /></Card>
             </Col>
             <Col xs={12} sm={6}>
-              <Card><Statistic title="Гостей" value={stats.summary.totalGuests} /></Card>
+              <Card><Statistic title="Учасників" value={stats.summary.totalMembers} suffix={<PrevSuffix curr={stats.summary.totalMembers} prev={stats.summary.prevTotalMembers} />} /></Card>
             </Col>
             <Col xs={12} sm={6}>
-              <Card><Statistic title="Нових членів" value={stats.summary.newMembers} /></Card>
+              <Card>
+                <Statistic title="Зустрічей" value={stats.summary.meetingCount} />
+                <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 4 }}>Гостей: {stats.summary.totalGuests}</div>
+              </Card>
             </Col>
           </Row>
 

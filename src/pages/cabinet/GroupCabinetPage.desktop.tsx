@@ -354,9 +354,9 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
           <Card title="Статистика" style={{ ...cardStyle, marginTop: 16 }}
             extra={<Button size="small" type="link" onClick={() => navigate(`/cabinet/${groupId}/stats`)}>Деталі →</Button>}>
             <Row gutter={16}>
-              <Col span={8}><Statistic title="Ср. відвідуваність" value={`${stats.avgAttendanceRate}%`} valueStyle={{ fontSize: 20 }} /></Col>
-              <Col span={8}><Statistic title="Нових цього місяця" value={stats.newMembersThisMonth} valueStyle={{ fontSize: 20 }} /></Col>
-              <Col span={8}><Statistic title="Всього учасників" value={stats.totalMembers} valueStyle={{ fontSize: 20 }} /></Col>
+              <Col span={8}><Statistic title="Ср. відвід. (3 міс)" value={`${stats.avgAttendanceRate}%`} valueStyle={{ fontSize: 20 }} suffix={<PrevSuffix curr={stats.avgAttendanceRate} prev={stats.prevAvgAttendanceRate} fmt={(v: number) => `${v}%`} />} /></Col>
+              <Col span={8}><Statistic title="Нових (3 міс)" value={stats.newMembers} valueStyle={{ fontSize: 20 }} suffix={<PrevSuffix curr={stats.newMembers} prev={stats.prevNewMembers} />} /></Col>
+              <Col span={8}><Statistic title="Всього учасників" value={stats.totalMembers} valueStyle={{ fontSize: 20 }} suffix={<PrevSuffix curr={stats.totalMembers} prev={stats.prevTotalMembers} />} /></Col>
             </Row>
           </Card>
 
@@ -879,6 +879,17 @@ function CabinetViewDesktop({ groupId, isAdmin }: { groupId: number; isAdmin: bo
 }
 
 // ── Org member row ────────────────────────────────────────────────────────────
+
+function PrevSuffix({ curr, prev, fmt = (v: number) => String(v) }: { curr: number; prev: number; fmt?: (v: number) => string }) {
+  const diff = curr - prev
+  if (diff === 0) return <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginLeft: 4 }}>{fmt(prev)}</span>
+  return (
+    <span style={{ fontSize: 11, marginLeft: 4 }}>
+      <span style={{ color: 'rgba(0,0,0,0.35)' }}>{fmt(prev)}</span>
+      <span style={{ color: diff > 0 ? '#22C55E' : '#EF4444', marginLeft: 2 }}>{diff > 0 ? '↑' : '↓'}</span>
+    </span>
+  )
+}
 
 function OrgMemberRowDesktop({ member }: { member: GroupCabinet['orgTeam'][0] }) {
   const navigate = useNavigate()

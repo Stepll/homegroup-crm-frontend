@@ -173,7 +173,11 @@ export interface GroupCabinet {
     oversees: { id: number; fullName: string }[]
     role?: { name: string; color: string }
   }[]
-  stats: { avgAttendanceRate: number; newMembersThisMonth: number; totalMembers: number }
+  stats: {
+    avgAttendanceRate: number; prevAvgAttendanceRate: number
+    newMembers: number; prevNewMembers: number
+    totalMembers: number; prevTotalMembers: number
+  }
   hasPlanForNextMeeting: boolean
   nextMeetingRoomId?: number
   nextMeetingEvents?: CabinetCalendarEvent[]
@@ -278,10 +282,11 @@ export interface PlanTemplate {
 
 export interface GroupStats {
   summary: {
-    avgAttendanceRate: number
+    avgAttendanceRate: number; prevAvgAttendanceRate: number
     meetingCount: number
     totalGuests: number
-    newMembers: number
+    newMembers: number; prevNewMembers: number
+    totalMembers: number; prevTotalMembers: number
   }
   meetings: {
     date: string
