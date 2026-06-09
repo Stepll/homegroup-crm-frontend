@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button, Typography, Space, Card, Row, Col, Statistic, Progress, Spin, Segmented } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { groupsApi } from '@/api/groups'
+import { dashboardApi, type InactiveMember, type StatusDistributionResponse } from '@/api/dashboard'
 import type { GroupStats } from '@/types'
 
 const { Title, Text } = Typography
@@ -75,11 +76,18 @@ export function StatsPageDesktop() {
   const [period, setPeriod] = useState<Period>('3m')
   const [stats, setStats] = useState<GroupStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [atRisk, setAtRisk] = useState<InactiveMember[]>([])
+  const [statusDist, setStatusDist] = useState<StatusDistributionResponse | null>(null)
 
   useEffect(() => {
     setLoading(true)
     groupsApi.getStats(groupId, period).then(setStats).finally(() => setLoading(false))
   }, [groupId, period])
+
+  useEffect(() => {
+    dashboardApi.inactiveMembers(groupId, 3).then(setAtRisk).catch(() => setAtRisk([]))
+    dashboardApi.statusDistribution(groupId).then(setStatusDist).catch(() => setStatusDist(null))
+  }, [groupId])
 
   return (
     <div style={{ padding: 24, maxWidth: 960 }}>
@@ -169,13 +177,9 @@ export function StatsPageDesktop() {
                           <Text strong style={{ color: rateColor }}>{p.attendanceRate}%</Text>
                         </Space>
                       </div>
-                      <Progress
-                        percent={p.attendanceRate}
-                        showInfo={false}
-                        strokeColor={rateColor}
-                        size="small"
-                        style={{ marginLeft: 28, marginBottom: 0 }}
-                      />
+                      <div style={{ marginLeft: 28 }}>
+                        <Progress percent={p.attendanceRate} showInfo={false} strokeColor={rateColor} size="small" style={{ marginBottom: 0 }} />
+                      </div>
                     </div>
                   )
                 })}
@@ -184,6 +188,79 @@ export function StatsPageDesktop() {
           </Row>
         </>
       )}
+
+      {(atRisk.length > 0 || (statusDist && statusDist.totalPeople > 0)) && (
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          {atRisk.length > 0 && (
+            <Col xs={24} lg={12}>
+              <Card title="Під ризиком" extra={<Text type="secondary" style={{ fontSize: 12 }}>3+ пропуски поспіль</Text>}>
+                {atRisk.map((m) => {
+                  const key = m.personId ? `p_${m.personId}` : `u_${m.userId}`
+                  const lastDate = m.lastAttendedDate
+                    ? new Date(m.lastAttendedDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+                    : '—'
+                  return (
+                    <div key={key}
+                      onClick={() => navigate(m.personId ? `/people/${m.personId}` : `/admins/${m.userId}`)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid rgba(0,0,0,0.04)', cursor: 'pointer' }}>
+                      <div>
+                        <Text style={{ fontWeight: 500 }}>{m.fullName}</Text>
+                        <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 1 }}>Останній раз: {lastDate}</Text>
+                      </div>
+                      <span style={{ background: '#FEF3C7', color: '#D97706', borderRadius: 12, padding: '2px 10px', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                        {m.missedCount} пропусків
+                      </span>
+                    </div>
+                  )
+                })}
+              </Card>
+            </Col>
+          )}
+          {statusDist && statusDist.totalPeople > 0 && (
+            <Col xs={24} lg={12}>
+              <Card title="Розподіл за статусом">
+                <StatusPieChart items={statusDist.items} total={statusDist.totalPeople} />
+              </Card>
+            </Col>
+          )}
+        </Row>
+      )}
+    </div>
+  )
+}
+
+function StatusPieChart({ items, total }: { items: StatusDistributionResponse['items']; total: number }) {
+  const size = 160, r = 70, cx = size / 2, cy = size / 2
+  let cum = 0
+  const segments = items.map((it) => {
+    const pct = it.count / total
+    const start = cum * 2 * Math.PI; cum += pct; const end = cum * 2 * Math.PI
+    return { ...it, start, end }
+  })
+  const arc = (s: number, e: number) => {
+    if (e - s >= 2 * Math.PI - 0.001)
+      return `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx - 0.01} ${cy - r} Z`
+    const x1 = cx + r * Math.sin(s), y1 = cy - r * Math.cos(s)
+    const x2 = cx + r * Math.sin(e), y2 = cy - r * Math.cos(e)
+    return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${e - s > Math.PI ? 1 : 0} 1 ${x2} ${y2} Z`
+  }
+  return (
+    <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+        {segments.map((s, i) => <path key={i} d={arc(s.start, s.end)} fill={s.color} />)}
+        <circle cx={cx} cy={cy} r={36} fill="#fff" />
+        <text x={cx} y={cy - 2} textAnchor="middle" fontSize={20} fontWeight={700} fill="rgba(0,0,0,0.85)">{total}</text>
+        <text x={cx} y={cy + 14} textAnchor="middle" fontSize={10} fill="rgba(0,0,0,0.45)">людей</text>
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minWidth: 140 }}>
+        {items.map((it, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: it.color, flexShrink: 0 }} />
+            <span style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</span>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>{it.count} <span style={{ color: 'rgba(0,0,0,0.35)', fontWeight: 400 }}>· {Math.round(it.count * 100 / total)}%</span></span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
