@@ -122,4 +122,5 @@ export interface NotifSettings {
   conflict: boolean
   conflictResolved: boolean
   attendanceAsk: boolean
+  needsRecordingAsk: boolean
 }

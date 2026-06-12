@@ -16,6 +16,7 @@ const NOTIF_ITEMS = [
   { key: 'conflict',       label: 'Накладка у розкладі',    description: 'Якщо час домашки збігається з іншою подією' },
   { key: 'conflictResolved', label: 'Накладку усунено',     description: 'Коли конфлікт розкладу вирішено' },
   { key: 'attendanceAsk', label: 'Відмітка присутніх',      description: 'Запит через годину після початку домашки' },
+  { key: 'needsRecordingAsk', label: 'Запис потреб',        description: 'Запит за 30 хв до кінця домашки' },
 ]
 
 // ── Group selector ────────────────────────────────────────────────────────────
