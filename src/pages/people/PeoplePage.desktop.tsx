@@ -1,7 +1,9 @@
-import { useState } from 'react'
-import { Table, Input, Button, Tag, Space, Select, Tooltip, Flex } from 'antd'
+import { useState, useEffect, useMemo } from 'react'
+import { Table, Input, Button, Tag, Space, Tooltip, Flex } from 'antd'
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
+import type { FilterValue, SorterResult, TablePaginationConfig } from 'antd/es/table/interface'
+import type { SortOrder } from 'antd/es/table/interface'
 import { usePeoplePage } from './usePeoplePage'
 import type { DotEntry } from './usePeoplePage'
 import type { GroupMember } from '@/types'
@@ -12,9 +14,27 @@ const DOT_COLORS: Record<'green' | 'red' | 'yellow', string> = {
   yellow: '#F59E0B',
 }
 
+// ── Table state persistence ───────────────────────────────────────────────────
+
+interface TableState {
+  sortField: string | null
+  sortOrder: SortOrder | null
+  filters: Record<string, FilterValue | null>
+}
+
+function loadTableState(): TableState {
+  try {
+    const s = localStorage.getItem('people-table-state')
+    if (s) return JSON.parse(s)
+  } catch {}
+  return { sortField: null, sortOrder: null, filters: {} }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function PeoplePageDesktop() {
   const {
-    people,
+    allPeople,
     groups,
     loading,
     search,
@@ -23,7 +43,6 @@ export function PeoplePageDesktop() {
     setShowAdmins,
     myOversight,
     setMyOversight,
-    showGroupFilter,
     tagSettings,
     attDots,
     handleItemClick,
@@ -31,13 +50,67 @@ export function PeoplePageDesktop() {
     navigate,
   } = usePeoplePage()
 
-  const [groupFilter, setGroupFilter] = useState<number[]>([])
+  const [tableState, setTableState] = useState<TableState>(loadTableState)
+  const [displayedCount, setDisplayedCount] = useState(0)
+
+  useEffect(() => {
+    setDisplayedCount(allPeople.length)
+  }, [allPeople])
+
+  useEffect(() => {
+    localStorage.setItem('people-table-state', JSON.stringify(tableState))
+  }, [tableState])
 
   const attEnabled = tagSettings.some((t) => t.key === 'attendance' && t.enabled)
 
-  const filtered = groupFilter.length === 0
-    ? people
-    : people.filter((m) => m.primaryGroupId != null && groupFilter.includes(m.primaryGroupId))
+  const roleFilters = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const m of allPeople) {
+      if (m.roleTag) map.set(m.roleTag.name, m.roleTag.name)
+    }
+    const result = [...map.keys()].map((name) => ({ text: name, value: name }))
+    if (allPeople.some((m) => !m.roleTag)) result.push({ text: '(без ролі)', value: '__none__' })
+    return result
+  }, [allPeople])
+
+  const statusFilters = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const m of allPeople) {
+      if (m.status) map.set(m.status.name, m.status.name)
+    }
+    const result = [...map.keys()].map((name) => ({ text: name, value: name }))
+    if (allPeople.some((m) => !m.status)) result.push({ text: '(без статусу)', value: '__none__' })
+    return result
+  }, [allPeople])
+
+  const oversightFilters = useMemo(() => {
+    const names = new Set<string>()
+    for (const m of allPeople) {
+      if (m.oversightUserName) names.add(m.oversightUserName)
+    }
+    const result = [...names].map((name) => ({ text: name, value: name }))
+    if (allPeople.some((m) => !m.oversightUserName))
+      result.push({ text: '(без опікуна)', value: '__none__' })
+    return result
+  }, [allPeople])
+
+  const handleTableChange = (
+    _pagination: TablePaginationConfig,
+    filters: Record<string, FilterValue | null>,
+    sorter: SorterResult<GroupMember> | SorterResult<GroupMember>[],
+    extra: { currentDataSource: GroupMember[] },
+  ) => {
+    const s = Array.isArray(sorter) ? sorter[0] : sorter
+    setTableState({
+      sortField: s.order ? (s.columnKey as string | null) ?? null : null,
+      sortOrder: s.order ?? null,
+      filters,
+    })
+    setDisplayedCount(extra.currentDataSource.length)
+  }
+
+  const sortOrder = (key: string): SortOrder | undefined =>
+    tableState.sortField === key ? (tableState.sortOrder ?? undefined) : undefined
 
   const columns: ColumnsType<GroupMember> = [
     {
@@ -60,6 +133,8 @@ export function PeoplePageDesktop() {
         const nb = [b.name, b.lastName].filter(Boolean).join(' ')
         return na.localeCompare(nb, 'uk')
       },
+      sortOrder: sortOrder('name'),
+      showSorterTooltip: false,
     },
     {
       title: 'Домашка',
@@ -81,7 +156,12 @@ export function PeoplePageDesktop() {
           <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>—</span>
         ),
       filters: groups.map((g) => ({ text: g.name, value: g.id })),
-      onFilter: (value, m) => m.primaryGroupId === value,
+      filteredValue: tableState.filters.group ?? null,
+      onFilter: (value, m) => m.primaryGroupId === (value as number),
+      sorter: (a, b) =>
+        (a.primaryGroupName ?? '').localeCompare(b.primaryGroupName ?? '', 'uk'),
+      sortOrder: sortOrder('group'),
+      showSorterTooltip: false,
     },
     {
       title: 'Роль',
@@ -102,6 +182,13 @@ export function PeoplePageDesktop() {
         ) : (
           <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>—</span>
         ),
+      filters: roleFilters,
+      filteredValue: tableState.filters.role ?? null,
+      onFilter: (value, m) =>
+        value === '__none__' ? !m.roleTag : m.roleTag?.name === (value as string),
+      sorter: (a, b) => (a.roleTag?.name ?? '').localeCompare(b.roleTag?.name ?? '', 'uk'),
+      sortOrder: sortOrder('role'),
+      showSorterTooltip: false,
     },
     {
       title: 'Статус',
@@ -122,6 +209,13 @@ export function PeoplePageDesktop() {
         ) : (
           <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>—</span>
         ),
+      filters: statusFilters,
+      filteredValue: tableState.filters.status ?? null,
+      onFilter: (value, m) =>
+        value === '__none__' ? !m.status : m.status?.name === (value as string),
+      sorter: (a, b) => (a.status?.name ?? '').localeCompare(b.status?.name ?? '', 'uk'),
+      sortOrder: sortOrder('status'),
+      showSorterTooltip: false,
     },
     {
       title: 'Опікун',
@@ -129,26 +223,46 @@ export function PeoplePageDesktop() {
       width: 140,
       render: (_, m) =>
         m.oversightUserName ? (
-          <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{m.oversightUserName}</span>
+          <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            {m.oversightUserName}
+          </span>
         ) : (
           <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>—</span>
         ),
+      filters: oversightFilters,
+      filteredValue: tableState.filters.oversight ?? null,
+      onFilter: (value, m) =>
+        value === '__none__'
+          ? !m.oversightUserName
+          : m.oversightUserName === (value as string),
+      sorter: (a, b) =>
+        (a.oversightUserName ?? '').localeCompare(b.oversightUserName ?? '', 'uk'),
+      sortOrder: sortOrder('oversight'),
+      showSorterTooltip: false,
     },
     ...(attEnabled
       ? [
           {
             title: 'Відвідуваність',
             key: 'attendance',
-            width: 130,
+            width: 160,
             render: (_: unknown, m: GroupMember) => {
               const key = m.isAdmin ? `u_${m.userId}` : `p_${m.id}`
               const dots: DotEntry[] = attDots[key] ?? []
-              if (dots.length === 0) return <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>—</span>
+              if (dots.length === 0)
+                return (
+                  <span style={{ color: 'var(--color-text-tertiary)', fontSize: 13 }}>—</span>
+                )
               return (
                 <Flex gap={4} align="center">
                   {dots.slice(0, 5).map((d, i) => {
                     const [, mo, day] = d.date.split('-')
-                    const label = d.color === 'green' ? 'Присутній' : d.color === 'yellow' ? 'Скасовано' : 'Відсутній'
+                    const label =
+                      d.color === 'green'
+                        ? 'Присутній'
+                        : d.color === 'yellow'
+                          ? 'Скасовано'
+                          : 'Відсутній'
                     return (
                       <Tooltip key={i} title={`${day}.${mo} — ${label}`}>
                         <div
@@ -167,6 +281,31 @@ export function PeoplePageDesktop() {
                 </Flex>
               )
             },
+            // Absence filter: how many red dots in last 5 meetings
+            filters: [
+              { text: '≥1 пропуск', value: 1 },
+              { text: '≥2 пропуски', value: 2 },
+              { text: '≥3 пропуски', value: 3 },
+              { text: '≥4 пропуски', value: 4 },
+              { text: '5 пропусків', value: 5 },
+            ],
+            filteredValue: tableState.filters.attendance ?? null,
+            filterMultiple: false,
+            onFilter: (value: unknown, m: GroupMember) => {
+              const key = m.isAdmin ? `u_${m.userId}` : `p_${m.id}`
+              const dots = attDots[key] ?? []
+              const absences = dots.filter((d) => d.color === 'red').length
+              return absences >= Number(value)
+            },
+            sorter: (a: GroupMember, b: GroupMember) => {
+              const keyA = a.isAdmin ? `u_${a.userId}` : `p_${a.id}`
+              const keyB = b.isAdmin ? `u_${b.userId}` : `p_${b.id}`
+              const absA = (attDots[keyA] ?? []).filter((d) => d.color === 'red').length
+              const absB = (attDots[keyB] ?? []).filter((d) => d.color === 'red').length
+              return absA - absB
+            },
+            sortOrder: sortOrder('attendance'),
+            showSorterTooltip: false,
           },
         ]
       : []),
@@ -176,7 +315,9 @@ export function PeoplePageDesktop() {
     <div style={{ padding: '24px 28px' }}>
       {/* Header */}
       <Flex justify="space-between" align="center" style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--color-text)' }}>Люди</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--color-text)' }}>
+          Люди
+        </h1>
         {canCreate && (
           <Button
             type="primary"
@@ -199,32 +340,14 @@ export function PeoplePageDesktop() {
           style={{ width: 260 }}
         />
 
-        {showGroupFilter && (
-          <Select
-            mode="multiple"
-            placeholder="Домашки"
-            allowClear
-            style={{ minWidth: 180 }}
-            value={groupFilter}
-            onChange={setGroupFilter}
-            maxTagCount={2}
-            options={groups.map((g) => ({
-              value: g.id,
-              label: (
-                <span>
-                  <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: g.color, marginRight: 6 }} />
-                  {g.name}
-                </span>
-              ),
-            }))}
-          />
-        )}
-
         <Space>
           <Button
             type={showAdmins && !myOversight ? 'primary' : 'default'}
             ghost={showAdmins && !myOversight}
-            onClick={() => { setShowAdmins((v) => !v); setMyOversight(false) }}
+            onClick={() => {
+              setShowAdmins((v) => !v)
+              setMyOversight(false)
+            }}
             size="middle"
           >
             Адміни
@@ -232,21 +355,31 @@ export function PeoplePageDesktop() {
           <Button
             type={myOversight ? 'primary' : 'default'}
             ghost={myOversight}
-            onClick={() => { setMyOversight((v) => !v); if (!myOversight) setShowAdmins(false) }}
+            onClick={() => {
+              setMyOversight((v) => !v)
+              if (!myOversight) setShowAdmins(false)
+            }}
             size="middle"
           >
             Під моєю опікою
           </Button>
         </Space>
 
-        <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--color-text-tertiary)', alignSelf: 'center' }}>
-          {filtered.length} осіб
+        <span
+          style={{
+            marginLeft: 'auto',
+            fontSize: 13,
+            color: 'var(--color-text-tertiary)',
+            alignSelf: 'center',
+          }}
+        >
+          {displayedCount} осіб
         </span>
       </Flex>
 
       {/* Table */}
       <Table
-        dataSource={filtered}
+        dataSource={allPeople}
         columns={columns}
         rowKey={(m) => (m.isAdmin ? `u_${m.userId}` : `p_${m.id}`)}
         loading={loading}
@@ -255,6 +388,7 @@ export function PeoplePageDesktop() {
           onClick: () => handleItemClick(m),
           style: { cursor: 'pointer' },
         })}
+        onChange={handleTableChange}
         size="middle"
         scroll={{ x: 800 }}
         locale={{ emptyText: 'Людей не знайдено' }}
@@ -263,4 +397,3 @@ export function PeoplePageDesktop() {
     </div>
   )
 }
-

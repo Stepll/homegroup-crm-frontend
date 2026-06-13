@@ -44,18 +44,39 @@ export function saveTagSettings(settings: TagItem[]) {
 export type DotEntry = { color: 'green' | 'red' | 'yellow'; date: string }
 export type AttDots = Record<string, DotEntry[]>
 
+// ── Hook state persistence ────────────────────────────────────────────────────
+
+interface PersistedHookState {
+  search?: string
+  showAdmins?: boolean
+  myOversight?: boolean
+  selectedGroupIds?: number[]
+}
+
+function loadHookState(): PersistedHookState | null {
+  try {
+    const s = localStorage.getItem('people-hook-state')
+    if (s) return JSON.parse(s)
+  } catch {}
+  return null
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function usePeoplePage() {
   const navigate = useNavigate()
   const canCreate = usePermission('people.create')
   const canViewPeople = usePermission('people.view')
   const canViewAdminProfiles = usePermission('admins.viewProfiles')
 
-  const [people, setPeople] = useState<GroupMember[]>([])
+  const [rawPeople, setRawPeople] = useState<GroupMember[]>([])
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [showAdmins, setShowAdmins] = useState(true)
-  const [myOversight, setMyOversight] = useState(false)
+  const [groupsLoaded, setGroupsLoaded] = useState(false)
+
+  const [search, setSearch] = useState<string>(() => loadHookState()?.search ?? '')
+  const [showAdmins, setShowAdmins] = useState<boolean>(() => loadHookState()?.showAdmins ?? true)
+  const [myOversight, setMyOversight] = useState<boolean>(() => loadHookState()?.myOversight ?? false)
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set())
   const [tagSettings, setTagSettings] = useState<TagItem[]>(loadTagSettings)
   const [attDots, setAttDots] = useState<AttDots>({})
@@ -63,23 +84,42 @@ export function usePeoplePage() {
   useEffect(() => {
     groupsApi.getAll().then((gs) => {
       setGroups(gs)
-      setSelectedGroupIds(new Set(gs.map((g) => g.id)))
+      const saved = loadHookState()?.selectedGroupIds
+      if (saved != null) {
+        const validIds = new Set(gs.map((g) => g.id))
+        setSelectedGroupIds(new Set(saved.filter((id) => validIds.has(id))))
+      } else {
+        setSelectedGroupIds(new Set(gs.map((g) => g.id)))
+      }
+      setGroupsLoaded(true)
     })
   }, [])
+
+  // Save hook state whenever anything changes (after groups have loaded)
+  useEffect(() => {
+    if (!groupsLoaded) return
+    const state: PersistedHookState = {
+      search,
+      showAdmins,
+      myOversight,
+      selectedGroupIds: [...selectedGroupIds],
+    }
+    localStorage.setItem('people-hook-state', JSON.stringify(state))
+  }, [search, showAdmins, myOversight, selectedGroupIds, groupsLoaded])
 
   useEffect(() => {
     setLoading(true)
     peopleApi
       .getAll(search || undefined, undefined, showAdmins && !myOversight, myOversight || undefined)
-      .then(setPeople)
+      .then(setRawPeople)
       .finally(() => setLoading(false))
   }, [search, showAdmins, myOversight])
 
   useEffect(() => {
     const attEnabled = tagSettings.some((t) => t.key === 'attendance' && t.enabled)
-    if (!attEnabled || people.length === 0) return
+    if (!attEnabled || rawPeople.length === 0) return
     const groupIds = [
-      ...new Set(people.map((p) => p.primaryGroupId).filter((id): id is number => id != null)),
+      ...new Set(rawPeople.map((p) => p.primaryGroupId).filter((id): id is number => id != null)),
     ]
     Promise.all(
       groupIds.map((gid) =>
@@ -98,7 +138,7 @@ export function usePeoplePage() {
           recordMap.set(k, rec.wasPresent)
         }
         const sortedDates = [...r.dates].reverse()
-        for (const person of people.filter((p) => p.primaryGroupId === gid)) {
+        for (const person of rawPeople.filter((p) => p.primaryGroupId === gid)) {
           const key = person.isAdmin ? `u_${person.userId}` : `p_${person.id}`
           const dots: DotEntry[] = sortedDates.map((date: string) => {
             if (cancelledSet.has(date)) return { color: 'yellow', date }
@@ -113,7 +153,7 @@ export function usePeoplePage() {
       }
       setAttDots(map)
     })
-  }, [people, tagSettings])
+  }, [rawPeople, tagSettings])
 
   const handleItemClick = (m: GroupMember) => {
     if (m.isAdmin) {
@@ -123,12 +163,13 @@ export function usePeoplePage() {
     }
   }
 
-  const allSelected = selectedGroupIds.size === groups.length
+  const allSelected = groupsLoaded && selectedGroupIds.size === groups.length
   const showGroupFilter = groups.length > 1
 
-  const filtered = allSelected
-    ? people
-    : people.filter((m) => m.primaryGroupId != null && selectedGroupIds.has(m.primaryGroupId))
+  // Mobile: filtered by group selection. Desktop: uses allPeople directly.
+  const groupFiltered = allSelected
+    ? rawPeople
+    : rawPeople.filter((m) => m.primaryGroupId != null && selectedGroupIds.has(m.primaryGroupId))
 
   const toggleGroupId = (id: number) =>
     setSelectedGroupIds((prev) => {
@@ -146,7 +187,8 @@ export function usePeoplePage() {
   }
 
   return {
-    people: filtered,
+    people: groupFiltered,  // mobile uses this (filtered by selectedGroupIds)
+    allPeople: rawPeople,   // desktop uses this (column filters handle grouping)
     groups,
     loading,
     search,
