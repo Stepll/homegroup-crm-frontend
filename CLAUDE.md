@@ -549,6 +549,9 @@ Vercel: `vercel.json` з rewrite `"source": "/(.*)", "destination": "/index.html
       (Mon–Sun, не Mon–Fri); (2) сьогоднішня колонка не затирає годинну сітку
       (заміна CSS `background` shorthand на `backgroundColor`, щоб не скидати
       `backgroundImage` з repeating-linear-gradient).
+- [x] Telegram сповіщення — додано `needsRecordingAsk` toggle (6-й) в блоці "Telegram сповіщення"
+      кабінету (desktop: GroupCabinetPage.desktop.tsx NOTIF_ITEMS;
+      mobile: GroupCabinetPage.mobile.tsx NOTIF_ITEMS).
 
 ## TODO
 - [ ] Pull-to-refresh
