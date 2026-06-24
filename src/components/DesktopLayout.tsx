@@ -15,6 +15,7 @@ import {
   ApartmentOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  StarOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '@/store/auth'
 
@@ -48,6 +49,11 @@ export function DesktopLayout() {
       key: '/cabinet',
       icon: <HomeOutlined />,
       label: 'Домашка',
+    },
+    hasPermission('church.attendance.view') && {
+      key: '/church',
+      icon: <StarOutlined />,
+      label: 'Служіння',
     },
     {
       key: '/profile',

@@ -29,11 +29,20 @@ function CalendarIcon() {
   )
 }
 
+function ChurchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor">
+      <path d="M11 2v2H9v2h2v2.07A7.001 7.001 0 0 0 12 22a7 7 0 0 0 1-13.93V8h2V6h-2V4h-2zm1 7.93V12h-1V9.93A5.002 5.002 0 0 1 17 15a5 5 0 1 1-10 0 5.002 5.002 0 0 1 5-7.07zM12 13a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+    </svg>
+  )
+}
+
 const ALL_TABS: { key: string; title: string; icon: FC; permission?: string }[] = [
   { key: '/', title: 'Дашборд', icon: AppOutline, permission: 'page.dashboard' },
   { key: '/people', title: 'Люди', icon: UserOutline, permission: 'page.people' },
   { key: '/calendar', title: 'Календар', icon: CalendarIcon, permission: 'page.calendar' },
   { key: '/cabinet', title: 'Домашка', icon: CabinetIcon, permission: 'page.cabinet' },
+  { key: '/church', title: 'Служіння', icon: ChurchIcon, permission: 'church.attendance.view' },
   { key: '/profile', title: 'Профіль', icon: ProfileIcon },
   { key: '/settings', title: 'Налаштування', icon: SetOutline, permission: 'page.settings' },
 ]

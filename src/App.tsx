@@ -31,6 +31,8 @@ import { PlanningPage } from '@/pages/cabinet/PlanningPage'
 import { StatsPage } from '@/pages/cabinet/StatsPage'
 import { SchedulePage } from '@/pages/cabinet/SchedulePage'
 import { CalendarPage } from '@/pages/calendar/CalendarPage'
+import { ChurchServicesPage } from '@/pages/church/ChurchServicesPage'
+import { ChurchStatsPage } from '@/pages/church/ChurchStatsPage'
 
 export function App() {
   return (
@@ -56,6 +58,8 @@ export function App() {
             <Route path="cabinet/:id/stats" element={<ProtectedRoute permission="attendance.stats"><StatsPage /></ProtectedRoute>} />
             <Route path="cabinet/:id/schedule" element={<ProtectedRoute permission="groups.schedule.manage"><SchedulePage /></ProtectedRoute>} />
             <Route path="calendar" element={<ProtectedRoute permission="page.calendar"><CalendarPage /></ProtectedRoute>} />
+            <Route path="church" element={<ProtectedRoute permission="church.attendance.view"><ChurchServicesPage /></ProtectedRoute>} />
+            <Route path="church/stats" element={<ProtectedRoute permission="church.attendance.view"><ChurchStatsPage /></ProtectedRoute>} />
             <Route path="people" element={<ProtectedRoute permission="page.people"><PeoplePage /></ProtectedRoute>} />
             <Route path="people/new" element={<ProtectedRoute permission="people.create"><PersonCreatePage /></ProtectedRoute>} />
             <Route path="people/:id" element={<ProtectedRoute permission="people.view"><PersonDetailPage /></ProtectedRoute>} />
