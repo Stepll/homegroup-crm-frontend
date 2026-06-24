@@ -26,12 +26,13 @@ export function ChurchRecordForm({ serviceType, record, onClose, onSaved }: Prop
 
   const handleSave = async () => {
     const count = parseInt(attendance)
-    if (!date) return Toast.show({ content: 'Вкажіть дату', icon: 'fail' })
-    if (isNaN(count) || count < 0) return Toast.show({ content: 'Вкажіть кількість присутніх', icon: 'fail' })
+    if (!date) { Toast.show({ content: 'Вкажіть дату', icon: 'fail' }); return }
+    if (isNaN(count) || count < 0) { Toast.show({ content: 'Вкажіть кількість присутніх', icon: 'fail' }); return }
 
     const communionVal = meta.hasCommunion && communion !== '' ? parseInt(communion) : null
     if (meta.hasCommunion && communion !== '' && isNaN(communionVal!)) {
-      return Toast.show({ content: 'Невірна кількість причасників', icon: 'fail' })
+      Toast.show({ content: 'Невірна кількість причасників', icon: 'fail' })
+      return
     }
 
     setSaving(true)
