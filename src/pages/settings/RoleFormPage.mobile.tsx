@@ -64,6 +64,13 @@ const PERMISSION_GROUPS: PermGroup[] = [
     ],
   },
   {
+    label: 'Служіння (церковні зібрання)',
+    items: [
+      { key: 'church.attendance.view', label: 'Переглядати записи і статистику' },
+      { key: 'church.attendance.record', label: 'Вносити / редагувати / видаляти записи' },
+    ],
+  },
+  {
     label: 'Планування',
     items: [
       { key: 'planning.view', label: 'Переглядати плани зустрічей' },
